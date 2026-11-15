@@ -51,3 +51,10 @@
 .mini-action:hover{border-color:#d9a84f;color:#f2c978}
 .voice-track{align-items:flex-start}
 @media(max-width:600px){.audio-track-content{gap:6px}.timeline-audio{width:100%;max-width:100%}}
+
+/* Voice track editing controls */
+.voice-edit-controls{display:grid;gap:12px;padding:14px;margin:14px 0;background:#101927;border:1px solid #2b394e;border-radius:9px}
+.voice-edit-controls>b{font:700 12px Manrope;color:#e9c27c}
+.voice-edit-controls label{display:grid;gap:7px;font-size:10px;color:#aebbd0}
+.voice-edit-controls input[type=range]{width:100%;accent-color:#d9a84f}
+.timeline-audio{min-width:180px}
