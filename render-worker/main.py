@@ -15,7 +15,10 @@ from fastapi.responses import FileResponse
 from PIL import Image, ImageDraw, ImageFont
 from starlette.background import BackgroundTask
 
-app = FastAPI(title="OfficerLab Render Worker + AI Gateway", version="1.1.0")\n\nfrom api.routes import router as ai_api_router\napp.include_router(ai_api_router)
+app = FastAPI(title="OfficerLab Render Worker + AI Gateway", version="1.1.0")
+
+from api.routes import router as ai_api_router
+app.include_router(ai_api_router)
 origins = [x.strip() for x in os.getenv(
     "CORS_ORIGINS",
     "https://officerlab-cinematic-studio.vercel.app,http://localhost:5173"
