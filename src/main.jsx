@@ -33,6 +33,7 @@ function App() {
   const [audioRecording, setAudioRecording] = useState(false);
   const [voiceUrl, setVoiceUrl] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
+  const [exportedVideoUrl, setExportedVideoUrl] = useState("");
   const [mediaUrl, setMediaUrl] = useState("");
   const [mediaName, setMediaName] = useState("");
   const [captions, setCaptions] = useState(true);
@@ -219,18 +220,42 @@ function App() {
   }
   async function exportPreview() {
     const canvas = canvasRef.current;
-    if (!canvas.captureStream || !window.MediaRecorder) { setStatus("Video export is not supported in this browser"); return; }
-    setBusy(true); setStatus("Rendering preview video…");
+    if (!canvas?.captureStream || !window.MediaRecorder) {
+      setStatus("This browser does not support canvas video recording. Try the latest Chrome.");
+      return;
+    }
+    setBusy(true); setExportedVideoUrl(""); setStatus("Recording preview — keep this tab open for 8 seconds…");
+    let stream;
     try {
-      const stream = canvas.captureStream(30);
-      const mime = MediaRecorder.isTypeSupported("video/webm;codecs=vp9") ? "video/webm;codecs=vp9" : "video/webm";
-      const mr = new MediaRecorder(stream, {mimeType:mime, videoBitsPerSecond:5000000});
+      stream = canvas.captureStream(30);
+      const candidates = ["video/webm;codecs=vp8,opus","video/webm;codecs=vp8","video/webm"];
+      const mimeType = candidates.find(type => MediaRecorder.isTypeSupported(type));
+      const options = { videoBitsPerSecond: 2500000 };
+      if (mimeType) options.mimeType = mimeType;
+      const mr = new MediaRecorder(stream, options);
       const parts = [];
-      mr.ondataavailable = e => { if(e.data.size) parts.push(e.data); };
-      mr.onstop = () => { downloadBlob(new Blob(parts,{type:mime}), "officerlab-preview.webm"); setBusy(false); setStatus("Preview export complete (WebM)"); };
-      mr.start();
-      setTimeout(() => mr.stop(), 8000);
-    } catch(e) { setBusy(false); setStatus("Export failed: " + e.message); }
+      mr.ondataavailable = event => { if (event.data && event.data.size > 0) parts.push(event.data); };
+      mr.onerror = event => {
+        stream?.getTracks().forEach(track => track.stop());
+        setBusy(false); setStatus("Browser video recording failed: " + (event.error?.message || "unknown error"));
+      };
+      mr.onstop = () => {
+        stream?.getTracks().forEach(track => track.stop());
+        const blob = new Blob(parts, { type: mr.mimeType || mimeType || "video/webm" });
+        setBusy(false);
+        if (!blob.size) { setStatus("No video data was captured. Try Chrome and keep the preview visible."); return; }
+        const url = URL.createObjectURL(blob);
+        setExportedVideoUrl(url);
+        setStatus("WebM ready — tap Download generated video below");
+      };
+      mr.start(1000);
+      window.setTimeout(() => {
+        if (mr.state !== "inactive") mr.stop();
+      }, 8000);
+    } catch (e) {
+      stream?.getTracks().forEach(track => track.stop());
+      setBusy(false); setStatus("Export failed: " + e.message);
+    }
   }
   function uploadMedia(e) {
     const f = e.target.files?.[0]; if (!f) return;
@@ -324,7 +349,7 @@ function App() {
 
         {active==="assets" && <section className="panel pad-panel"><div className="panel-head"><div><div className="eyebrow">MEDIA LIBRARY</div><h3>Project assets</h3></div><button className="btn primary" onClick={()=>fileRef.current?.click()}><Upload size={15}/> Import media</button></div><input ref={fileRef} type="file" accept="image/*,video/*,audio/*" hidden onChange={uploadMedia}/>{mediaUrl?<div className="asset-card"><div className="asset-icon"><FolderOpen/></div><div><b>{mediaName}</b><small>Imported project asset</small></div><button className="icon-btn" onClick={()=>{URL.revokeObjectURL(mediaUrl);setMediaUrl("");setMediaName("");}}><X size={16}/></button></div>:<div className="dropzone" onClick={()=>fileRef.current?.click()}><Upload size={27}/><b>Drop your media here</b><span>or click to browse • Images, video and audio</span></div>}<div className="note-box"><FileText size={18}/><div><b>Rights and credits</b><p>Track the source and licence of every third-party photo, map and music asset before publishing. The Cinematic Skill's Wikimedia Commons workflow can be integrated for credited public-domain and openly licensed images.</p></div></div></section>}
 
-        {active==="export" && <div className="two-col"><section className="panel pad-panel"><div className="eyebrow">DELIVERY</div><h3>Export your video</h3><p className="muted">Export a short animated canvas preview now, or save the project for the full rendering pipeline.</p><label className="field-label">Resolution<select value={quality} onChange={e=>setQuality(e.target.value)}><option>1080p</option><option>720p</option><option>4K</option></select></label><div className="toggle-row"><div><b>Gujarati captions</b><small>Include captions in preview and export SRT separately</small></div><input type="checkbox" checked={captions} onChange={e=>setCaptions(e.target.checked)}/></div><button className="btn primary full" disabled={busy} onClick={exportPreview}><Download size={16}/>{busy?"Rendering…":"Export 8-second preview (WebM)"}</button><button className="btn subtle full" onClick={downloadPreviewFrame}><Download size={16}/> Download current preview frame (PNG)</button><button className="btn subtle full" onClick={exportCaptions}><Captions size={16}/> Download subtitle file (.srt)</button><button className="btn subtle full" onClick={saveProject}><FileText size={16}/> Download editable project (.json)</button></section><section className="panel pad-panel"><div className="eyebrow">EXPORT STATUS</div><h3>Production readiness</h3><div className="readiness"><div><span>Script</span><b className="good">Ready</b></div><div><span>Scene graphics preview</span><b className="good">Ready</b></div><div><span>Voice capture</span><b className={voiceUrl?"good":"pending"}>{voiceUrl?"Recorded":"Optional"}</b></div><div><span>Presenter capture</span><b className={videoUrl?"good":"pending"}>{videoUrl?"Recorded":"Optional"}</b></div><div><span>Full cinematic render</span><b className="pending">Worker integration</b></div><div><span>Final MP4 + audio mux</span><b className="pending">Worker integration</b></div></div><div className="note-box"><Film size={18}/><div><b>About this build</b><p>The current browser export is a WebM motion-graphics preview, not the full Skia cinematic render. See README for the Vercel + Python worker deployment architecture.</p></div></div></section></div>}
+        {active==="export" && <div className="two-col"><section className="panel pad-panel"><div className="eyebrow">DELIVERY</div><h3>Export your video</h3><p className="muted">Export a short animated canvas preview now, or save the project for the full rendering pipeline.</p><label className="field-label">Resolution<select value={quality} onChange={e=>setQuality(e.target.value)}><option>1080p</option><option>720p</option><option>4K</option></select></label><div className="toggle-row"><div><b>Gujarati captions</b><small>Include captions in preview and export SRT separately</small></div><input type="checkbox" checked={captions} onChange={e=>setCaptions(e.target.checked)}/></div><button className="btn primary full" disabled={busy} onClick={exportPreview}><Download size={16}/>{busy?"Rendering…":"Export 8-second preview (WebM)"}</button>{exportedVideoUrl&&<div className="recorded"><Check size={16}/> Video file ready <a href={exportedVideoUrl} download="officerlab-preview.webm">Download generated video</a></div>}<button className="btn subtle full" onClick={downloadPreviewFrame}><Download size={16}/> Download current preview frame (PNG)</button><button className="btn subtle full" onClick={exportCaptions}><Captions size={16}/> Download subtitle file (.srt)</button><button className="btn subtle full" onClick={saveProject}><FileText size={16}/> Download editable project (.json)</button></section><section className="panel pad-panel"><div className="eyebrow">EXPORT STATUS</div><h3>Production readiness</h3><div className="readiness"><div><span>Script</span><b className="good">Ready</b></div><div><span>Scene graphics preview</span><b className="good">Ready</b></div><div><span>Voice capture</span><b className={voiceUrl?"good":"pending"}>{voiceUrl?"Recorded":"Optional"}</b></div><div><span>Presenter capture</span><b className={videoUrl?"good":"pending"}>{videoUrl?"Recorded":"Optional"}</b></div><div><span>Full cinematic render</span><b className="pending">Worker integration</b></div><div><span>Final MP4 + audio mux</span><b className="pending">Worker integration</b></div></div><div className="note-box"><Film size={18}/><div><b>About this build</b><p>The current browser export is a WebM motion-graphics preview, not the full Skia cinematic render. See README for the Vercel + Python worker deployment architecture.</p></div></div></section></div>}
       </div>
     </main>
     {showSettings&&<div className="modal-backdrop" onClick={()=>setShowSettings(false)}><div className="modal" onClick={e=>e.stopPropagation()}><div className="panel-head"><h3>Studio settings</h3><button className="icon-btn" onClick={()=>setShowSettings(false)}><X/></button></div><label className="field-label">Visual theme<select value={theme} onChange={e=>setTheme(e.target.value)}><option value="midnight">Midnight cinematic</option><option value="paper">Warm paper</option></select></label><p className="muted">Your project and recordings remain in this browser unless you download or export them.</p><button className="btn primary full" onClick={()=>setShowSettings(false)}>Done</button></div></div>}
