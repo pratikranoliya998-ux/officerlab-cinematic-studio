@@ -487,7 +487,7 @@ function App() {
     const controller = new AbortController();
     const timeout = window.setTimeout(() => controller.abort(), 75000);
     try {
-      const response = await fetch(endpoint.replace(/\\/$/, "") + "/health", { signal: controller.signal });
+      const response = await fetch(endpoint.replace(/\/$/, "") + "/health", { signal: controller.signal });
       if (!response.ok) throw new Error("HTTP " + response.status);
       const health = await response.json();
       if (!health.ok || !health.ffmpeg) throw new Error("Worker responded, but FFmpeg is unavailable.");
