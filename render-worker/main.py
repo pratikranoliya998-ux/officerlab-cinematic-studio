@@ -218,6 +218,8 @@ async def render(
             if not path:
                 continue
             args += ["-i", str(path)]
+            audio_input_index = input_index
+            input_index += 1
             source_start = max(0.0, float(clip.get("sourceStart") or 0))
             source_end = float(clip.get("sourceEnd") or 0)
             if source_end <= source_start:
@@ -226,11 +228,10 @@ async def render(
             volume = max(0.0, min(2.0, float(clip.get("volume", 1))))
             label = f"a{index}"
             filter_parts.append(
-                f"[{input_index}:a]atrim=start={source_start}:end={source_end},"
+                f"[{audio_input_index}:a]atrim=start={source_start}:end={source_end},"
                 f"asetpts=PTS-STARTPTS,volume={volume},adelay={offset_ms}|{offset_ms}[{label}]"
             )
             audio_labels.append(f"[{label}]")
-            input_index += 1
 
         presenter_path = file_paths.get("presenter.webm")
         presenter_label_added = False
