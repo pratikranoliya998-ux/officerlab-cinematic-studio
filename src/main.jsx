@@ -80,6 +80,7 @@ function App() {
     return () => cancelAnimationFrame(animationRef.current);
   }, [selectedScene?.id, selectedScene?.title, selectedScene?.text, theme, mediaUrl, captions]);
 
+  useEffect(()=>{setAudioClips(current=>current.map(clip=>clip.sceneId?{...clip,start:sceneStartSeconds(Number(clip.sceneId))}:clip));},[scenes]);
   useEffect(() => {
     if (!isPlaying || scenes.length === 0) return;
     const current = scenes.find(scene => scene.id === selected) || scenes[0];
@@ -323,7 +324,7 @@ function App() {
     if(!next||Math.abs(clip.start+clip.sourceEnd-clip.sourceStart-next.start)>.25||Math.abs(clip.sourceEnd-next.sourceStart)>.25){
       setStatus("Merge requires adjacent split segments from the same source");return;
     }
-    updateAudioClip(clip.id,{sourceEnd:next.sourceEnd});removeAudioClip(next.id);setStatus("Adjacent audio segments merged");
+    setAudioClips(old=>old.filter(c=>c.id!==next.id).map(c=>c.id===clip.id?{...c,sourceEnd:next.sourceEnd}:c));setStatus("Adjacent audio segments merged");
   }
   function attachAudioClipToScene(id,sceneId){
     updateAudioClip(id,{sceneId:sceneId||"",start:sceneId?sceneStartSeconds(Number(sceneId)):0});
@@ -366,7 +367,8 @@ function App() {
       const form=new FormData(),uploads=[];
       for(let i=0;i<audioClips.length;i++){
         const clip=audioClips[i],assetId="audio_"+i,blob=await fetch(clip.url).then(r=>r.blob());
-        form.append("files",blob,assetId+".audio");
+        const extension=(clip.name.split(".").pop()||"webm").toLowerCase().replace(/[^a-z0-9]/g,"")||"webm";
+        form.append("files",blob,assetId+"."+extension);
         uploads.push({...clip,assetId});
       }
       let presenterAssetId="";
