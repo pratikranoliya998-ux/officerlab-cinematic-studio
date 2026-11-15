@@ -40,6 +40,8 @@ function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [busy, setBusy] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [videoSetup, setVideoSetup] = useState({title:"",topic:"",category:"GPSC / GSSSB",exam:"GPSC Class 1-2",language:"Gujarati + English",duration:"10",aspect:"16:9 YouTube",style:"Cinematic explainer",presenter:"Graphics + face camera",voice:"Record my own voice",captions:"Gujarati + English",template:"Complete lesson"});
+  const [showCreate, setShowCreate] = useState(false);
   const dragSceneId = useRef(null);
   const videoRef = useRef(null);
   const cameraStream = useRef(null);
@@ -152,6 +154,26 @@ function App() {
     } catch(e) { setStatus("Microphone permission unavailable: " + e.message); }
   }
   function stopAudioRecording() { audioRecorder.current?.stop(); setAudioRecording(false); }
+  function createVideo() {
+    const title = videoSetup.title.trim() || videoSetup.topic.trim() || "New OfficerLab Video";
+    const topic = videoSetup.topic.trim() || "Your selected topic";
+    const base = [
+      ["Opening Hook","Title card", "આજનો મહત્વપૂર્ણ વિષય\n"+topic,"gold"],
+      ["Learning Objectives","Objectives","આજે આપણે શું શીખીશું?\nમુખ્ય મુદ્દાઓ અને પરીક્ષા ઉપયોગિતા","blue"],
+      ["Concept Foundation","Explainer",topic+"\nમૂળભૂત પરિચય અને વ્યાખ્યા","purple"],
+      ["Detailed Explanation","Deep dive","મુખ્ય જોગવાઈઓ અને મહત્વપૂર્ણ મુદ્દાઓ\nઉદાહરણ સાથે સમજૂતી","blue"],
+      ["Exam Focus","Exam analysis","GPSC / GSSSB માટે અગત્યના મુદ્દા\nતથ્ય, કલમો અને સંભવિત પ્રશ્નો","gold"],
+      ["Quick Revision","Recap","ઝડપી પુનરાવર્તન\nમુખ્ય મુદ્દાઓ યાદ રાખો","purple"],
+      ["Practice MCQs","Quiz","તમારી સમજ ચકાસો\nMCQ અને સમજૂતી","blue"],
+      ["Final Takeaway","Outro","આજના પાઠનો સાર\nOfficerLab સાથે તૈયારી ચાલુ રાખો","gold"]
+    ];
+    const chosen = videoSetup.template === "Shorts / Reels" ? [base[0],base[2],base[4],base[7]] : videoSetup.template === "MCQ Practice" ? [base[0],base[4],base[6],base[7]] : videoSetup.template === "Concept Explainer" ? [base[0],base[2],base[3],base[5],base[7]] : base;
+    const total = Math.max(1, Number(videoSetup.duration)||10) * 60;
+    const each = Math.max(5, Math.floor(total/chosen.length));
+    const nextScenes = chosen.map((s,i)=>({id:i+1,title:s[0],kind:s[1],duration:"00:"+String(Math.min(59,each)).padStart(2,"0"),text:s[2],accent:s[3]}));
+    const intro = "નમસ્કાર મિત્રો! OfficerLab માં આપનું સ્વાગત છે.\\nઆજે આપણે "+topic+" વિષયને સરળ ગુજરાતી અને જરૂરી English technical terms સાથે સમજવાના છીએ.\\nઆ પાઠમાં મૂળભૂત સંકલ્પનાઓ, અગત્યના મુદ્દાઓ, પરીક્ષાલક્ષી વિશ્લેષણ અને MCQ દ્વારા પુનરાવર્તન કરીશું.";
+    setProject(title); setScript(intro); setScenes(nextScenes); setSelected(1); setIsPlaying(false); setActive("studio"); setShowCreate(false); setStatus("New video workspace created — customize your storyboard");
+  }
   function addScene() {
     const id = Math.max(0, ...scenes.map(s => s.id)) + 1;
     const scene = { id, title: `Scene ${id}`, kind: "Explainer", duration: "00:10", text: "નવી દૃશ્ય રચના\nAdd your key message", accent: "blue" };
@@ -222,7 +244,7 @@ function App() {
   }
 
   const nav = [
-    ["studio","Studio",LayoutDashboard], ["script","Script & Story",FileText],
+    ["create","New Video",Plus], ["studio","Studio",LayoutDashboard], ["script","Script & Story",FileText],
     ["voice","Voice Studio",Mic], ["presenter","Presenter",Webcam],
     ["assets","Media Library",FolderOpen], ["export","Export",Film]
   ];
@@ -243,12 +265,37 @@ function App() {
     <main className="main">
       <header className="topbar">
         <div className="breadcrumb">Projects <span>/</span> <b>{project}</b></div>
-        <div className="top-actions"><span className="autosave"><Check size={14}/> Saved locally</span><button className="btn subtle" onClick={saveProject}><Download size={15}/> Save project</button><button className="btn primary" onClick={()=>setActive("export")}><Film size={15}/> Export video</button></div>
+        <div className="top-actions"><button className="btn primary" onClick={()=>setActive("create")}><Plus size={15}/> New video</button><span className="autosave"><Check size={14}/> Saved locally</span><button className="btn subtle" onClick={saveProject}><Download size={15}/> Save project</button><button className="btn primary" onClick={()=>setActive("export")}><Film size={15}/> Export video</button></div>
       </header>
 
       <div className="content">
         <div className="page-heading"><div><div className="eyebrow">CREATIVE WORKSPACE / 01</div><h1>{nav.find(n=>n[0]===active)?.[1] || "Studio"}</h1><p>Build cinematic educational videos in Gujarati and English.</p></div><div className="heading-right"><span className="status-chip"><span className="live-dot"/> {status}</span></div></div>
 
+        {active==="create" && <div className="create-layout">
+          <section className="panel pad-panel create-main">
+            <div className="eyebrow">NEW PROJECT / VIDEO BUILDER</div><h3>Start a fresh educational video</h3>
+            <p className="muted">Choose your content format and production settings. OfficerLab will create an editable starter storyboard; refine the script and scenes before recording or exporting.</p>
+            <div className="create-grid">
+              <label className="field-label">Video / project title<input value={videoSetup.title} onChange={e=>setVideoSetup(v=>({...v,title:e.target.value}))} placeholder="e.g. Food Safety Act 2006"/></label>
+              <label className="field-label">Topic / chapter<input value={videoSetup.topic} onChange={e=>setVideoSetup(v=>({...v,topic:e.target.value}))} placeholder="Enter the subject or chapter"/></label>
+              <label className="field-label">Exam / audience<select value={videoSetup.exam} onChange={e=>setVideoSetup(v=>({...v,exam:e.target.value}))}><option>GPSC Class 1-2</option><option>GSSSB Class 3</option><option>Food Safety Officer</option><option>Talati / Junior Clerk</option><option>UPSC / State PSC</option><option>General learners</option></select></label>
+              <label className="field-label">Subject category<select value={videoSetup.category} onChange={e=>setVideoSetup(v=>({...v,category:e.target.value}))}><option>GPSC / GSSSB</option><option>Indian Polity & Constitution</option><option>History & Culture</option><option>Geography</option><option>Economy</option><option>Science & Technology</option><option>Agriculture</option><option>Food Science & Food Laws</option><option>Reasoning & Quantitative Aptitude</option><option>Current Affairs</option><option>Government Rules & Administration</option><option>Other educational content</option></select></label>
+              <label className="field-label">Language<select value={videoSetup.language} onChange={e=>setVideoSetup(v=>({...v,language:e.target.value}))}><option>Gujarati + English</option><option>Gujarati</option><option>Hindi + English</option><option>Hindi</option><option>English</option></select></label>
+              <label className="field-label">Target duration<select value={videoSetup.duration} onChange={e=>setVideoSetup(v=>({...v,duration:e.target.value}))}><option value="1">1 minute</option><option value="3">3 minutes</option><option value="5">5 minutes</option><option value="10">10 minutes</option><option value="15">15 minutes</option><option value="20">20 minutes</option><option value="30">30 minutes</option><option value="45">45 minutes</option><option value="60">60 minutes</option></select></label>
+              <label className="field-label">Video format<select value={videoSetup.aspect} onChange={e=>setVideoSetup(v=>({...v,aspect:e.target.value}))}><option>16:9 YouTube</option><option>9:16 Shorts / Reels</option><option>1:1 Square</option><option>4:5 Social feed</option></select></label>
+              <label className="field-label">Visual style<select value={videoSetup.style} onChange={e=>setVideoSetup(v=>({...v,style:e.target.value}))}><option>Cinematic explainer</option><option>Classroom lecture</option><option>News bulletin</option><option>Documentary</option><option>Whiteboard teaching</option><option>Minimal presentation</option><option>Motion graphics</option></select></label>
+              <label className="field-label">Presenter layout<select value={videoSetup.presenter} onChange={e=>setVideoSetup(v=>({...v,presenter:e.target.value}))}><option>Graphics + face camera</option><option>Face camera full screen</option><option>Graphics only / faceless</option><option>Slides + presenter picture-in-picture</option></select></label>
+              <label className="field-label">Voiceover plan<select value={videoSetup.voice} onChange={e=>setVideoSetup(v=>({...v,voice:e.target.value}))}><option>Record my own voice</option><option>Presenter camera + mic together</option><option>Import recorded narration</option><option>AI text-to-speech (backend required)</option><option>No narration / music-led</option></select></label>
+              <label className="field-label">Captions<select value={videoSetup.captions} onChange={e=>setVideoSetup(v=>({...v,captions:e.target.value}))}><option>Gujarati + English</option><option>Gujarati</option><option>Hindi</option><option>English</option><option>No captions</option></select></label>
+              <label className="field-label">Storyboard template<select value={videoSetup.template} onChange={e=>setVideoSetup(v=>({...v,template:e.target.value}))}><option>Complete lesson</option><option>Concept Explainer</option><option>Shorts / Reels</option><option>MCQ Practice</option></select></label>
+            </div>
+            <button className="btn primary create-submit" onClick={createVideo}><Sparkles size={16}/> Create editable video project</button>
+          </section>
+          <aside className="panel pad-panel create-side"><div className="eyebrow">AVAILABLE WORKFLOW</div><h3>From idea to publish</h3>
+            <div className="workflow-list">{[["01","Plan","Topic, exam, duration and format"],["02","Storyboard","Opening, concepts, exam focus and recap"],["03","Script","Edit Gujarati / Hindi / English narration"],["04","Visuals","Import images, clips, diagrams and backgrounds"],["05","Voice & presenter","Record voice or camera + microphone"],["06","Timeline","Reorder scenes and set durations"],["07","Export","Preview, captions and project files"]].map(([n,t,d])=><div className="workflow-step"><b>{n}</b><span><strong>{t}</strong><small>{d}</small></span></div>)}</div>
+            <div className="note-box"><Sparkles size={18}/><div><b>Important</b><p>This creates a ready-to-edit storyboard and starter narration, not an automatically generated final MP4. AI script generation, TTS, stock-media search and full MP4 rendering need connected services / a rendering backend.</p></div></div>
+          </aside>
+        </div>}
         {active==="studio" && <>
           <div className="studio-grid">
             <section className="panel preview-panel">
