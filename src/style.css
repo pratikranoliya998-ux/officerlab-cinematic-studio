@@ -64,3 +64,21 @@
 .waveform i{display:block;flex:1;min-width:2px;border-radius:2px;background:linear-gradient(180deg,#e9c27c,#8b6936);opacity:.9}
 .extra-audio-track{align-items:center}
 .track-hint{font-size:10px;color:#aab7c9}
+
+/* Multitrack editing: positioned audio clips, trim/split controls and mobile layout */
+.audio-track-row{align-items:stretch}
+.audio-lane{height:54px;position:relative;flex:1;min-width:0;border:1px solid #2b394e;border-radius:6px;background:repeating-linear-gradient(90deg,#101a29 0,#101a29 calc(10% - 1px),#253246 10%);overflow:hidden}
+.audio-timeline-clip{position:absolute;top:7px;height:38px;min-width:38px;border:1px solid #638b83;border-radius:5px;background:linear-gradient(120deg,#244b4c,#203c43);color:#e3f0e9;padding:5px 7px;display:flex;flex-direction:column;justify-content:center;overflow:hidden;cursor:grab;user-select:none;touch-action:pan-y}
+.audio-timeline-clip b{font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.audio-timeline-clip small{font-size:8px;color:#c0d2cb;white-space:nowrap}
+.audio-timeline-clip.clip-selected{outline:2px solid #e7bc70;z-index:2}
+.lane-add{align-self:center;flex-shrink:0}
+.audio-editor-panel{margin:10px 0 14px;padding:13px;border:1px solid #2c3b50;border-radius:8px;background:#0d1623}
+.audio-editor-title,.audio-editor-actions{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.audio-editor-title>b{font-size:10px;color:#e4c27e}
+.audio-editor-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
+.audio-editor-grid label{display:grid;gap:5px;font-size:9px;color:#aebbd0}
+.audio-editor-grid input[type=range]{width:100%;accent-color:#d9a84f}
+.audio-editor-grid select{background:#101927;color:#e6ebf3;border:1px solid #35445a;border-radius:5px;padding:6px;font-size:10px}
+.audio-editor-actions{justify-content:flex-start;margin-top:12px}
+@media(max-width:600px){.audio-editor-grid{grid-template-columns:1fr}.audio-lane{min-width:120px}.audio-track-row{gap:6px}.track-label{width:42px}.lane-add{padding:6px}}
