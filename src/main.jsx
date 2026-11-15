@@ -170,7 +170,7 @@ function App() {
     const chosen = videoSetup.template === "Shorts / Reels" ? [base[0],base[2],base[4],base[7]] : videoSetup.template === "MCQ Practice" ? [base[0],base[4],base[6],base[7]] : videoSetup.template === "Concept Explainer" ? [base[0],base[2],base[3],base[5],base[7]] : base;
     const total = Math.max(1, Number(videoSetup.duration)||10) * 60;
     const each = Math.max(5, Math.floor(total/chosen.length));
-    const nextScenes = chosen.map((s,i)=>({id:i+1,title:s[0],kind:s[1],duration:"00:"+String(Math.min(59,each)).padStart(2,"0"),text:s[2],accent:s[3]}));
+    const nextScenes = chosen.map((s,i)=>({id:i+1,title:s[0],kind:s[1],duration:String(Math.floor(each/60)).padStart(2,"0")+":"+String(each%60).padStart(2,"0"),text:s[2],accent:s[3]}));
     const intro = "નમસ્કાર મિત્રો! OfficerLab માં આપનું સ્વાગત છે.\\nઆજે આપણે "+topic+" વિષયને સરળ ગુજરાતી અને જરૂરી English technical terms સાથે સમજવાના છીએ.\\nઆ પાઠમાં મૂળભૂત સંકલ્પનાઓ, અગત્યના મુદ્દાઓ, પરીક્ષાલક્ષી વિશ્લેષણ અને MCQ દ્વારા પુનરાવર્તન કરીશું.";
     setProject(title); setScript(intro); setScenes(nextScenes); setSelected(1); setIsPlaying(false); setActive("studio"); setShowCreate(false); setStatus("New video workspace created — customize your storyboard");
   }
@@ -238,7 +238,7 @@ function App() {
     setMediaUrl(URL.createObjectURL(f)); setMediaName(f.name); setStatus(`Imported ${f.name}`);
   }
   function saveProject() {
-    const data = { project, script, scenes, theme, captions, quality, createdAt: new Date().toISOString() };
+    const data = { project, script, scenes, videoSetup, theme, captions, quality, createdAt: new Date().toISOString() };
     downloadBlob(new Blob([JSON.stringify(data,null,2)],{type:"application/json"}), "officerlab-project.json");
     setStatus("Project file saved");
   }
