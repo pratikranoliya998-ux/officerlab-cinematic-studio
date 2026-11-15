@@ -3,7 +3,7 @@ import { createRoot } from "react-dom/client";
 import {
   Aperture, AudioLines, Captions, Check, ChevronDown, Clapperboard, Download,
   FileText, Film, FolderOpen, LayoutDashboard, Mic, MonitorPlay, Play, Plus,
-  Radio, Settings, Sparkles, Square, Upload, Video, Volume2, WandSparkles,
+  Radio, Settings, Sparkles, Square, Upload, Video, Volume2, WandSparkles, Pause,
   Webcam, X
 } from "lucide-react";
 import "./style.css";
@@ -39,6 +39,7 @@ function App() {
   const [quality, setQuality] = useState("1080p");
   const [showSettings, setShowSettings] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
   const videoRef = useRef(null);
   const cameraStream = useRef(null);
   const recorder = useRef(null);
@@ -55,6 +56,23 @@ function App() {
     drawPreview();
     return () => cancelAnimationFrame(animationRef.current);
   }, [selectedScene, theme, mediaUrl, captions]);
+
+  useEffect(() => {
+    if (!isPlaying || scenes.length === 0) return;
+    const current = scenes.find(scene => scene.id === selected) || scenes[0];
+    const [minutes, seconds] = (current.duration || "00:10").split(":").map(Number);
+    const durationMs = Math.max(1000, ((minutes || 0) * 60 + (seconds || 10)) * 1000);
+    const timer = window.setTimeout(() => {
+      const index = scenes.findIndex(scene => scene.id === current.id);
+      if (index >= scenes.length - 1) {
+        setIsPlaying(false);
+        setStatus("Scene preview finished");
+      } else {
+        setSelected(scenes[index + 1].id);
+      }
+    }, durationMs);
+    return () => window.clearTimeout(timer);
+  }, [isPlaying, selected, scenes]);
 
   function drawPreview() {
     const canvas = canvasRef.current;
@@ -210,7 +228,7 @@ function App() {
             <section className="panel preview-panel">
               <div className="panel-head"><div><span className="eyebrow">LIVE CANVAS</span><h3>Scene preview</h3></div><div className="head-actions"><span className="format-tag">16:9 • {quality}</span><button className="icon-btn" title="Upload background" onClick={()=>fileRef.current?.click()}><Upload size={16}/></button></div></div>
               <div className="canvas-wrap"><canvas ref={canvasRef} width="1280" height="720"/><div className="canvas-overlay"><span><Radio size={12}/> PREVIEW</span><span>00:00 / 00:38</span></div></div>
-              <div className="transport"><button className="play-btn" onClick={drawPreview}><Play size={16} fill="currentColor"/></button><div className="transport-line"><div/></div><span className="timecode">00:00:00</span><button className="icon-btn" onClick={()=>setCaptions(!captions)}><Captions size={17}/></button></div>
+              <div className="transport"><button className="play-btn" title={isPlaying ? "Pause scene preview" : "Play scene preview"} onClick={() => { setIsPlaying(value => !value); setStatus(isPlaying ? "Preview paused" : "Playing scene preview"); }}>{isPlaying ? <Pause size={16} fill="currentColor"/> : <Play size={16} fill="currentColor"/>}</button><div className="transport-line"><div/></div><span className="timecode">00:00:00</span><button className="icon-btn" onClick={()=>setCaptions(!captions)}><Captions size={17}/></button></div>
             </section>
             <section className="panel scene-panel">
               <div className="panel-head"><div><span className="eyebrow">SEQUENCE</span><h3>Scenes <span className="count">{scenes.length}</span></h3></div><button className="icon-btn gold" onClick={addScene}><Plus size={17}/></button></div>
