@@ -1,0 +1,31 @@
+name: Render worker validation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "render-worker/**"
+      - "render.yaml"
+      - ".github/workflows/render-worker.yml"
+  pull_request:
+    paths:
+      - "render-worker/**"
+      - "render.yaml"
+      - ".github/workflows/render-worker.yml"
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install worker dependencies
+        run: pip install -r render-worker/requirements.txt
+      - name: Compile Python source
+        run: python -m compileall -q render-worker
+      - name: Validate Render blueprint
+        run: python -c "import yaml; yaml.safe_load(open('render.yaml', encoding='utf-8'))"
+      - name: Build worker Docker image
+        run: docker build -t officerlab-render-worker ./render-worker
