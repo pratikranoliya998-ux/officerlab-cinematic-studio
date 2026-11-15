@@ -95,19 +95,17 @@ def make_scene_image(scene: dict, number: int, width: int, height: int, theme: s
     top = (14, 25, 46) if dark else (238, 233, 220)
     bottom = (7, 11, 20) if dark else (205, 197, 180)
     image = Image.new("RGB", (width, height))
-    pixels = image.load()
+    draw = ImageDraw.Draw(image, "RGBA")
     for y in range(height):
         ratio = y / max(1, height - 1)
         color = tuple(int(top[i] * (1 - ratio) + bottom[i] * ratio) for i in range(3))
-        ImageDraw.Draw(image).line((0, y, width, y), fill=color)
-    draw = ImageDraw.Draw(image, "RGBA")
+        draw.line((0, y, width, y), fill=(*color, 255))
     accent = (218, 170, 83, 255)
     draw.rectangle((int(width * .055), int(height * .10), int(width * .06), int(height * .30)), fill=accent)
     for x in range(int(width * .08), width, max(30, int(width * .09))):
         draw.line((x, 0, x, height), fill=(255, 255, 255, 10), width=1)
 
     margin = int(width * .085)
-    title_font = load_font(max(24, int(height * .052)), True)
     body_font = load_font(max(21, int(height * .039)), False)
     small_font = load_font(max(16, int(height * .018)), True)
     foreground = (247, 245, 239, 255) if dark else (25, 35, 53, 255)
