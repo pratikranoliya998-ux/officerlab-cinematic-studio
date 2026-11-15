@@ -82,3 +82,24 @@
 .audio-editor-grid select{background:#101927;color:#e6ebf3;border:1px solid #35445a;border-radius:5px;padding:6px;font-size:10px}
 .audio-editor-actions{justify-content:flex-start;margin-top:12px}
 @media(max-width:600px){.audio-editor-grid{grid-template-columns:1fr}.audio-lane{min-width:120px}.audio-track-row{gap:6px}.track-label{width:42px}.lane-add{padding:6px}}
+
+
+/* Expanded workspace switcher */
+.workspace-label{padding-bottom:9px}
+.project-pill{width:100%;text-align:left;cursor:pointer;margin-bottom:8px}
+.workspace-list{display:grid;gap:5px;margin:0 0 18px;padding:9px;background:#0e1724;border:1px solid #253349;border-radius:9px;max-height:230px;overflow:auto}
+.workspace-list-head{display:flex;align-items:center;justify-content:space-between;padding:2px 2px 6px;color:#7f8da3;font-size:8px;letter-spacing:1px;font-weight:700}
+.workspace-list-head button{display:inline-flex;align-items:center;gap:4px;border:1px solid #625034;border-radius:5px;background:#2b2418;color:#e9c27d;padding:5px 7px;font-size:9px}
+.workspace-item{display:flex;align-items:center;gap:8px;width:100%;min-width:0;padding:8px;border:1px solid transparent;border-radius:6px;background:transparent;color:#9eacc0;text-align:left;font-size:9px}
+.workspace-item span:nth-child(2){flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.workspace-item.active{background:#1b293b;border-color:#46546a;color:#f0d18d}
+.workspace-item-dot{width:6px;height:6px;flex-shrink:0;border-radius:50%;background:#72829a}
+.workspace-item.active .workspace-item-dot{background:#6fc49a;box-shadow:0 0 8px #6fc49a66}
+
+/* Live presenter PIP over the studio canvas; the recorded clip is also sent to the FFmpeg worker for final MP4 composition */
+.studio-presenter-pip{position:absolute;z-index:3;right:14px;bottom:14px;width:clamp(118px,25%,260px);aspect-ratio:16/9;border:2px solid #d8ad60;border-radius:8px;background:#05080e;overflow:hidden;box-shadow:0 8px 24px #0009}
+.studio-presenter-pip>span{position:absolute;z-index:2;top:6px;left:6px;display:flex;align-items:center;gap:5px;padding:4px 6px;border-radius:4px;background:#07101dcc;color:#f3d89f;font-size:7px;letter-spacing:.7px}
+.studio-presenter-pip>span i{width:6px;height:6px;border-radius:50%;background:#68d19d;box-shadow:0 0 8px #68d19d}
+.studio-presenter-pip video{display:block;width:100%;height:100%;object-fit:cover;background:#05080e}
+@media(max-width:800px){.workspace-list{position:absolute;z-index:10;left:62px;top:115px;width:230px;box-shadow:0 12px 32px #000b}.studio-presenter-pip{width:31%;right:8px;bottom:8px}}
+@media(max-width:460px){.workspace-list{left:52px;top:105px;width:220px}.studio-presenter-pip{width:38%;min-width:100px}}
