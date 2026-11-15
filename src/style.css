@@ -58,3 +58,9 @@
 .voice-edit-controls label{display:grid;gap:7px;font-size:10px;color:#aebbd0}
 .voice-edit-controls input[type=range]{width:100%;accent-color:#d9a84f}
 .timeline-audio{min-width:180px}
+
+/* Multitrack audio editor */
+.waveform{height:42px;display:flex;align-items:center;gap:2px;padding:5px 8px;min-width:180px;max-width:360px;flex:1;background:#0b1421;border:1px solid #2b3b52;border-radius:6px;overflow:hidden}
+.waveform i{display:block;flex:1;min-width:2px;border-radius:2px;background:linear-gradient(180deg,#e9c27c,#8b6936);opacity:.9}
+.extra-audio-track{align-items:center}
+.track-hint{font-size:10px;color:#aab7c9}
