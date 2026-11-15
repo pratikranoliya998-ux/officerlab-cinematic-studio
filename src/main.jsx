@@ -8,25 +8,48 @@ import {
 } from "lucide-react";
 import "./style.css";
 
-const starter = `નમસ્કાર મિત્રો! OfficerLab માં આપનું સ્વાગત છે.
-આજે આપણે ભારતીય બંધારણના મૂળભૂત અધિકારો વિશે સમજવાના છીએ.
-મૂળભૂત અધિકારો નાગરિકોના સર્વાંગી વિકાસ અને લોકશાહી વ્યવસ્થાનું રક્ષણ કરે છે.
-ભારતીય બંધારણના ભાગ 3 માં કલમ 12 થી 35 સુધી મૂળભૂત અધિકારોની જોગવાઈ કરવામાં આવી છે.
-ચાલો, હવે દરેક અધિકારને ઉદાહરણ સાથે સમજીએ.`;
+const starter = "";
 
 const initialScenes = [
-  { id: 1, title: "Opening Hook", kind: "Title card", duration: "00:08", text: "ભારતીય બંધારણ\nમૂળભૂત અધિકારો", accent: "gold" },
-  { id: 2, title: "Concept Overview", kind: "Explainer", duration: "00:18", text: "Fundamental Rights\nPart III | Articles 12–35", accent: "blue" },
-  { id: 3, title: "Key Takeaway", kind: "Highlight", duration: "00:12", text: "નાગરિકોના અધિકારો\nઅને લોકશાહીનું રક્ષણ", accent: "purple" }
+  { id: 1, title: "Opening Scene", kind: "Title card", duration: "00:08", text: "તમારા વિડિયોનું શીર્ષક\\nઅહીં ઉમેરો", accent: "gold" },
+  { id: 2, title: "Core Concept", kind: "Explainer", duration: "00:18", text: "મુખ્ય સંકલ્પના\\nતમારો વિષય અહીં ઉમેરો", accent: "blue" },
+  { id: 3, title: "Key Takeaway", kind: "Highlight", duration: "00:12", text: "મહત્વપૂર્ણ મુદ્દાઓ\\nઝડપી પુનરાવર્તન", accent: "purple" }
 ];
 
+const DEFAULT_VIDEO_SETUP = {
+  title: "", topic: "", category: "Other educational content", exam: "General learners",
+  language: "Gujarati + English", duration: "10", aspect: "16:9 YouTube",
+  style: "Cinematic explainer", presenter: "Slides + presenter picture-in-picture",
+  voice: "Presenter camera + mic together", captions: "Gujarati + English",
+  template: "Complete lesson"
+};
+
+function loadWorkspaceState() {
+  const fallback = {
+    id: "workspace-default", name: "Untitled OfficerLab Project", script: starter,
+    scenes: initialScenes, videoSetup: DEFAULT_VIDEO_SETUP, theme: "midnight",
+    captions: true, quality: "1080p"
+  };
+  try {
+    const saved = JSON.parse(localStorage.getItem("officerlab-workspaces-v1") || "null");
+    if (saved && Array.isArray(saved.projects) && saved.projects.length) {
+      const activeId = saved.projects.some(item => item.id === saved.activeId) ? saved.activeId : saved.projects[0].id;
+      return { ...saved, activeId, projects: saved.projects.map(item => ({ ...fallback, ...item })) };
+    }
+  } catch {}
+  return { activeId: fallback.id, projects: [fallback] };
+}
+
 function App() {
+  const [workspaceState, setWorkspaceState] = useState(loadWorkspaceState);
+  const initialWorkspace = workspaceState.projects.find(item => item.id === workspaceState.activeId) || workspaceState.projects[0];
+  const [workspaceOpen, setWorkspaceOpen] = useState(true);
   const [active, setActive] = useState("studio");
-  const [project, setProject] = useState("Fundamental Rights | GPSC");
-  const [script, setScript] = useState(starter);
-  const [scenes, setScenes] = useState(initialScenes);
+  const [project, setProject] = useState(initialWorkspace.name);
+  const [script, setScript] = useState(initialWorkspace.script || "");
+  const [scenes, setScenes] = useState(initialWorkspace.scenes || initialScenes);
   const [selected, setSelected] = useState(1);
-  const [theme, setTheme] = useState("midnight");
+  const [theme, setTheme] = useState(initialWorkspace.theme || "midnight");
   const [status, setStatus] = useState("Ready to create");
   const [cameraOn, setCameraOn] = useState(false);
   const [recording, setRecording] = useState(false);
@@ -54,15 +77,16 @@ function App() {
   const [exportedVideoUrl, setExportedVideoUrl] = useState("");
   const [mediaUrl, setMediaUrl] = useState("");
   const [mediaName, setMediaName] = useState("");
-  const [captions, setCaptions] = useState(true);
-  const [quality, setQuality] = useState("1080p");
+  const [captions, setCaptions] = useState(initialWorkspace.captions ?? true);
+  const [quality, setQuality] = useState(initialWorkspace.quality || "1080p");
   const [showSettings, setShowSettings] = useState(false);
   const [busy, setBusy] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [videoSetup, setVideoSetup] = useState({title:"",topic:"",category:"GPSC / GSSSB",exam:"GPSC Class 1-2",language:"Gujarati + English",duration:"10",aspect:"16:9 YouTube",style:"Cinematic explainer",presenter:"Graphics + face camera",voice:"Record my own voice",captions:"Gujarati + English",template:"Complete lesson"});
+  const [videoSetup, setVideoSetup] = useState(initialWorkspace.videoSetup || DEFAULT_VIDEO_SETUP);
   const [showCreate, setShowCreate] = useState(false);
   const dragSceneId = useRef(null);
   const videoRef = useRef(null);
+  const studioPresenterVideoRef = useRef(null);
   const cameraStream = useRef(null);
   const recorder = useRef(null);
   const chunks = useRef([]);
@@ -74,6 +98,37 @@ function App() {
   const voiceFileRef = useRef(null);
   const selectedScene = scenes.find(s => s.id === selected) || scenes[0];
   const wordCount = useMemo(() => script.trim() ? script.trim().split(/\s+/).length : 0, [script]);
+
+  useEffect(() => {
+    setWorkspaceState(current => {
+      const projects = current.projects.map(item => item.id === current.activeId
+        ? { ...item, name: project, script, scenes, videoSetup, theme, captions, quality }
+        : item);
+      const next = { ...current, projects };
+      try { localStorage.setItem("officerlab-workspaces-v1", JSON.stringify(next)); } catch {}
+      return next;
+    });
+  }, [project, script, scenes, videoSetup, theme, captions, quality]);
+
+  useEffect(() => {
+    const player = active === "studio" ? studioPresenterVideoRef.current
+      : active === "presenter" ? videoRef.current : null;
+    if (!player) return;
+    if (cameraOn && cameraStream.current) {
+      player.removeAttribute("src");
+      player.srcObject = cameraStream.current;
+      player.muted = true;
+      player.play().catch(() => setStatus("Camera connected. Tap the preview to start playback if needed."));
+    } else {
+      player.srcObject = null;
+      if (videoUrl) {
+        player.src = videoUrl;
+        player.load();
+      } else {
+        player.removeAttribute("src");
+      }
+    }
+  }, [active, cameraOn, videoUrl]);
 
   useEffect(() => {
     drawPreview();
@@ -176,6 +231,71 @@ function App() {
     } catch(e) { setStatus("Microphone permission unavailable: " + e.message); }
   }
   function stopAudioRecording() { audioRecorder.current?.stop(); setAudioRecording(false); }
+  function activateWorkspace(target) {
+    if (!target || target.id === workspaceState.activeId) {
+      setWorkspaceOpen(false);
+      return;
+    }
+    const current = {
+      id: workspaceState.activeId, name: project, script, scenes, videoSetup,
+      theme, captions, quality
+    };
+    const projects = workspaceState.projects.map(item => item.id === current.id ? current : item);
+    const selectedWorkspace = projects.find(item => item.id === target.id) || target;
+    const next = { activeId: selectedWorkspace.id, projects };
+    setWorkspaceState(next);
+    try { localStorage.setItem("officerlab-workspaces-v1", JSON.stringify(next)); } catch {}
+    setProject(selectedWorkspace.name);
+    setScript(selectedWorkspace.script || "");
+    setScenes(selectedWorkspace.scenes || initialScenes);
+    setVideoSetup(selectedWorkspace.videoSetup || DEFAULT_VIDEO_SETUP);
+    setTheme(selectedWorkspace.theme || "midnight");
+    setCaptions(selectedWorkspace.captions ?? true);
+    setQuality(selectedWorkspace.quality || "1080p");
+    setSelected(1);
+    setAudioClips([]);
+    setSelectedAudioClip("");
+    setVoiceUrl("");
+    setVideoUrl("");
+    setExportedVideoUrl("");
+    setActive("studio");
+    setWorkspaceOpen(false);
+    setStatus("Workspace switched");
+  }
+
+  function createWorkspace() {
+    const current = {
+      id: workspaceState.activeId, name: project, script, scenes, videoSetup,
+      theme, captions, quality
+    };
+    const id = "workspace-" + Date.now();
+    const nextWorkspace = {
+      id, name: "Untitled Workspace " + (workspaceState.projects.length + 1),
+      script: "", scenes: initialScenes.map(scene => ({ ...scene })),
+      videoSetup: { ...DEFAULT_VIDEO_SETUP }, theme: "midnight", captions: true, quality: "1080p"
+    };
+    const projects = [...workspaceState.projects.map(item => item.id === current.id ? current : item), nextWorkspace];
+    const next = { activeId: id, projects };
+    setWorkspaceState(next);
+    try { localStorage.setItem("officerlab-workspaces-v1", JSON.stringify(next)); } catch {}
+    setProject(nextWorkspace.name);
+    setScript("");
+    setScenes(nextWorkspace.scenes);
+    setVideoSetup(nextWorkspace.videoSetup);
+    setTheme("midnight");
+    setCaptions(true);
+    setQuality("1080p");
+    setSelected(1);
+    setAudioClips([]);
+    setSelectedAudioClip("");
+    setVoiceUrl("");
+    setVideoUrl("");
+    setExportedVideoUrl("");
+    setWorkspaceOpen(true);
+    setActive("create");
+    setStatus("New workspace created");
+  }
+
   function createVideo() {
     const title = videoSetup.title.trim() || videoSetup.topic.trim() || "New OfficerLab Video";
     const topic = videoSetup.topic.trim() || "Your selected topic";
@@ -443,8 +563,16 @@ function App() {
   return <div className="app-shell">
     <aside className="sidebar">
       <div className="brand"><div className="brand-mark"><Aperture size={21}/></div><div><b>OFFICERLAB</b><small>CINEMATIC STUDIO</small></div></div>
-      <div className="workspace-label">WORKSPACE</div>
-      <div className="project-pill"><span className="live-dot"/><span>{project}</span><ChevronDown size={14}/></div>
+      <div className="workspace-label">WORKSPACES</div>
+      <button className="project-pill" onClick={() => setWorkspaceOpen(value => !value)} aria-expanded={workspaceOpen}>
+        <span className="live-dot"/><span>{project}</span><ChevronDown size={14}/>
+      </button>
+      {workspaceOpen && <div className="workspace-list">
+        <div className="workspace-list-head"><span>{workspaceState.projects.length} PROJECT{workspaceState.projects.length === 1 ? "" : "S"}</span><button onClick={createWorkspace}><Plus size={12}/> New</button></div>
+        {workspaceState.projects.map(item => <button key={item.id} className={"workspace-item " + (item.id === workspaceState.activeId ? "active" : "")} onClick={() => activateWorkspace(item)}>
+          <span className="workspace-item-dot"/><span>{item.name}</span>{item.id === workspaceState.activeId && <Check size={13}/>}
+        </button>)}
+      </div>}
       <nav>{nav.map(([id,label,Icon]) => <button key={id} className={active===id?"nav-item active":"nav-item"} onClick={()=>setActive(id)}><Icon size={17}/>{label}</button>)}</nav>
       <div className="sidebar-bottom">
         <div className="status-card"><span className="live-dot"/><div><b>Local studio</b><small>{status}</small></div></div>
@@ -491,7 +619,12 @@ function App() {
           <div className="studio-grid">
             <section className="panel preview-panel">
               <div className="panel-head"><div><span className="eyebrow">LIVE CANVAS</span><h3>Scene preview</h3></div><div className="head-actions"><span className="format-tag">16:9 • {quality}</span><button className="icon-btn" title="Download preview image (PNG)" onClick={downloadPreviewFrame}><Download size={16}/></button><button className="icon-btn" title="Upload background" onClick={()=>fileRef.current?.click()}><Upload size={16}/></button></div></div>
-              <div className="canvas-wrap"><canvas ref={canvasRef} width="1280" height="720"/><div className="canvas-overlay"><span><Radio size={12}/> PREVIEW</span><span>00:00 / 00:38</span></div></div>
+              <div className="canvas-wrap"><canvas ref={canvasRef} width="1280" height="720"/><div className="canvas-overlay"><span><Radio size={12}/> PREVIEW</span><span>00:00 / 00:38</span></div>
+                {(cameraOn || videoUrl) && <div className="studio-presenter-pip">
+                  <span><i/> {cameraOn ? "LIVE PRESENTER" : "RECORDED PRESENTER"}</span>
+                  <video ref={studioPresenterVideoRef} muted playsInline autoPlay controls={!cameraOn && !!videoUrl} src={!cameraOn && videoUrl ? videoUrl : undefined}/>
+                </div>}
+              </div>
               <div className="transport"><button className="play-btn" title={isPlaying ? "Pause scene preview" : "Play scene preview"} onClick={() => { setIsPlaying(value => !value); setStatus(isPlaying ? "Preview paused" : "Playing scene preview"); }}>{isPlaying ? <Pause size={16} fill="currentColor"/> : <Play size={16} fill="currentColor"/>}</button><div className="transport-line"><div/></div><span className="timecode">00:00:00</span><button className="icon-btn" onClick={()=>setCaptions(!captions)}><Captions size={17}/></button></div>
             </section>
             <section className="panel scene-panel">
@@ -513,7 +646,7 @@ function App() {
 
         {active==="voice" && <div className="two-col"><section className="panel pad-panel"><div className="eyebrow">VOICE RECORDING / TIMELINE TRACK</div><h3>Record and attach narration</h3><p className="muted">Record narration separately here, or use Presenter → Record video + mic to capture presenter video and microphone voice-over simultaneously in one synchronized clip.</p><div className="record-orb"><div className={audioRecording?"pulse":""}><Mic size={30}/></div></div><div className="center">{audioRecording?<button className="btn danger" onClick={stopAudioRecording}><Square size={15}/> Stop recording</button>:<button className="btn primary" onClick={startAudioRecording}><Mic size={15}/> Start recording</button>}</div>{voiceUrl&&<><div className="recorded"><Check size={16}/> Voice recording ready<a href={voiceUrl} download="officerlab-voice.webm">Download audio</a></div><audio ref={voicePlayerRef} className="voice-player" controls src={voiceUrl} onLoadedMetadata={e=>{const d=Number.isFinite(e.currentTarget.duration)?e.currentTarget.duration:0;setVoiceDuration(d);setVoiceTrimEnd(prev=>prev>0?Math.min(prev,d):d);e.currentTarget.volume=voiceVolume/100;}}/><div className="voice-edit-controls"><b>Timeline audio editing</b><label>Trim start: {voiceTrimStart.toFixed(1)} sec<input type="range" min="0" max={Math.max(1,voiceDuration)} step="0.1" value={Math.min(voiceTrimStart,voiceDuration||0)} onChange={e=>{const v=Math.min(Number(e.target.value),Math.max(0,voiceTrimEnd-0.1));setVoiceTrimStart(v);setAudioClips(old=>old.map(c=>c.track==="voice"&&c.url===voiceUrl?{...c,sourceStart:v}:c));}}/></label><label>Trim end: {(voiceTrimEnd||voiceDuration).toFixed(1)} sec<input type="range" min="0" max={Math.max(1,voiceDuration)} step="0.1" value={Math.min(voiceTrimEnd||voiceDuration,voiceDuration||0)} onChange={e=>{const v=Math.max(Number(e.target.value),voiceTrimStart+0.1);setVoiceTrimEnd(v);setAudioClips(old=>old.map(c=>c.track==="voice"&&c.url===voiceUrl?{...c,sourceEnd:v}:c));}}/></label><label>Timeline offset: {voiceOffset.toFixed(1)} sec<input type="range" min="0" max="120" step="0.5" value={voiceOffset} onChange={e=>{const v=Number(e.target.value);setVoiceOffset(v);setAudioClips(old=>old.map(c=>c.track==="voice"&&c.url===voiceUrl?{...c,start:v,sceneId:""}:c));}}/></label><label>Volume: {voiceVolume}%<input type="range" min="0" max="150" step="1" value={voiceVolume} onChange={e=>{const v=Number(e.target.value);setVoiceVolume(v);setAudioClips(old=>old.map(c=>c.track==="voice"&&c.url===voiceUrl?{...c,volume:v/100}:c));if(voicePlayerRef.current)voicePlayerRef.current.volume=Math.min(1,v/100);}}/></label><button className="mini-action" onClick={()=>{if(voicePlayerRef.current){voicePlayerRef.current.currentTime=voiceTrimStart;voicePlayerRef.current.play();}setStatus("Playing narration from trim start");}}>Play from trim start</button></div><button className="btn primary full" onClick={()=>{setActive("studio");setStatus("Narration and edit settings attached to timeline");}}>Attach / view in timeline</button></>}</section><section className="panel pad-panel"><div className="eyebrow">VOICE WORKFLOW</div><h3>Voiceover options</h3><div className="option-card"><Mic/><div><b>Own voice recording</b><small>Available now in this browser</small></div><span className="tag-ready">Ready</span></div><div className="option-card"><Volume2/><div><b>AI text-to-speech</b><small>Connect a TTS provider through a secure backend</small></div><span className="tag-planned">Integration</span></div><div className="option-card"><AudioLines/><div><b>Voice timing and sync</b><small>Precise word-level timing is part of the rendering-worker integration</small></div><span className="tag-planned">Next phase</span></div></section></div>}
 
-        {active==="presenter" && <div className="two-col"><section className="panel pad-panel"><div className="panel-head"><div><div className="eyebrow">PRESENTER CAMERA</div><h3>Face-camera recording</h3></div><span className={cameraOn?"tag-ready":"tag-planned"}>{cameraOn?"Connected":"Not connected"}</span></div><div className="camera-box">{cameraOn?<video ref={videoRef} muted playsInline/>:<div className="camera-placeholder"><Webcam size={40}/><b>Camera preview</b><small>Connect your camera to begin</small></div>}{recording&&<span className="recording-label"><i/> REC</span>}</div><div className="camera-actions">{!cameraOn?<button className="btn primary" onClick={startCamera}><Webcam size={15}/> Connect camera</button>:<button className="btn subtle" onClick={stopCamera}>Disconnect</button>}{cameraOn&&!recording?<button className="btn danger" onClick={startVideoRecording}><Radio size={15}/> Record video + mic</button>:cameraOn&&<button className="btn danger" onClick={stopVideoRecording}><Square size={15}/> Stop</button>}</div>{videoUrl&&<div className="recorded"><Check size={16}/> Presenter video + microphone audio ready<a href={videoUrl} download="officerlab-presenter-with-audio.webm">Download synced clip</a></div>}</section><section className="panel pad-panel"><div className="eyebrow">COMPOSITION</div><h3>Presenter + graphics</h3><p className="muted">The planned composite workflow places your presenter footage alongside the animated explainer canvas.</p><div className="composition-preview"><div className="comp-slide">GRAPHICS<br/><small>Explainer visual</small></div><div className="comp-presenter"><Webcam size={25}/><small>Presenter</small></div></div><div className="note-box"><AudioLines size={18}/><div><b>Presenter + voice-over together</b><p>When you start presenter recording, the camera stream records its microphone audio and video in the same WebM file. Use headphones to prevent speaker echo. Separate voice-track mixing and final MP4 compositing still require the render worker.</p></div></div></section></div>}
+        {active==="presenter" && <div className="two-col"><section className="panel pad-panel"><div className="panel-head"><div><div className="eyebrow">PRESENTER CAMERA</div><h3>Face-camera recording</h3></div><span className={cameraOn?"tag-ready":"tag-planned"}>{cameraOn?"Connected":"Not connected"}</span></div><div className="camera-box">{cameraOn || videoUrl ? <video ref={videoRef} muted playsInline autoPlay controls={!cameraOn && !!videoUrl} src={!cameraOn && videoUrl ? videoUrl : undefined}/> : <div className="camera-placeholder"><Webcam size={40}/><b>Camera preview</b><small>Connect your camera to begin</small></div>}{recording&&<span className="recording-label"><i/> REC</span>}</div><div className="camera-actions">{!cameraOn?<button className="btn primary" onClick={startCamera}><Webcam size={15}/> Connect camera</button>:<button className="btn subtle" onClick={stopCamera}>Disconnect</button>}{cameraOn&&!recording?<button className="btn danger" onClick={startVideoRecording}><Radio size={15}/> Record video + mic</button>:cameraOn&&<button className="btn danger" onClick={stopVideoRecording}><Square size={15}/> Stop</button>}</div>{videoUrl&&<div className="recorded"><Check size={16}/> Presenter video + microphone audio ready<a href={videoUrl} download="officerlab-presenter-with-audio.webm">Download synced clip</a></div>}</section><section className="panel pad-panel"><div className="eyebrow">COMPOSITION</div><h3>Presenter + graphics</h3><p className="muted">The planned composite workflow places your presenter footage alongside the animated explainer canvas.</p><div className="composition-preview"><div className="comp-slide">GRAPHICS<br/><small>Explainer visual</small></div><div className="comp-presenter"><Webcam size={25}/><small>Presenter</small></div></div><div className="note-box"><AudioLines size={18}/><div><b>Presenter + voice-over together</b><p>When you start presenter recording, the camera stream records its microphone audio and video in the same WebM file. Use headphones to prevent speaker echo. Separate voice-track mixing and final MP4 compositing still require the render worker.</p></div></div></section></div>}
 
         {active==="assets" && <section className="panel pad-panel"><div className="panel-head"><div><div className="eyebrow">MEDIA LIBRARY</div><h3>Project assets</h3></div><button className="btn primary" onClick={()=>fileRef.current?.click()}><Upload size={15}/> Import media</button></div><input ref={fileRef} type="file" accept="image/*,video/*,audio/*" hidden onChange={uploadMedia}/>{mediaUrl?<div className="asset-card"><div className="asset-icon"><FolderOpen/></div><div><b>{mediaName}</b><small>Imported project asset</small></div><button className="icon-btn" onClick={()=>{URL.revokeObjectURL(mediaUrl);setMediaUrl("");setMediaName("");}}><X size={16}/></button></div>:<div className="dropzone" onClick={()=>fileRef.current?.click()}><Upload size={27}/><b>Drop your media here</b><span>or click to browse • Images, video and audio</span></div>}<div className="note-box"><FileText size={18}/><div><b>Rights and credits</b><p>Track the source and licence of every third-party photo, map and music asset before publishing. The Cinematic Skill's Wikimedia Commons workflow can be integrated for credited public-domain and openly licensed images.</p></div></div></section>}
 
