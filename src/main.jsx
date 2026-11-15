@@ -42,6 +42,11 @@ function App() {
   const [sfxUrl, setSfxUrl] = useState("");
   const [musicVolume, setMusicVolume] = useState(25);
   const [sfxVolume, setSfxVolume] = useState(70);
+  const [audioClips,setAudioClips]=useState([]);
+  const [selectedAudioClip,setSelectedAudioClip]=useState("");
+  const [audioPlaying,setAudioPlaying]=useState(false);
+  const audioVoiceInputRef=useRef(null), audioMusicInputRef=useRef(null), audioSfxInputRef=useRef(null);
+  const audioDragRef=useRef(null), audioContextRef=useRef(null), audioSourcesRef=useRef([]), audioStopTimerRef=useRef(null);
   const musicFileRef = useRef(null);
   const sfxFileRef = useRef(null);
   const voicePlayerRef = useRef(null);
@@ -162,7 +167,7 @@ function App() {
       const mr = new MediaRecorder(stream); audioRecorder.current = mr;
       mr.ondataavailable = e => { if (e.data.size) audioChunks.current.push(e.data); };
       mr.onstop = () => {
-        const voiceBlobUrl=URL.createObjectURL(new Blob(audioChunks.current, { type: "audio/webm" })); setVoiceUrl(voiceBlobUrl); makeWaveform(voiceBlobUrl);
+        const voiceBlobUrl=URL.createObjectURL(new Blob(audioChunks.current, { type: "audio/webm" })); setVoiceUrl(voiceBlobUrl); makeWaveform(voiceBlobUrl); addAudioClip("voice",null,voiceBlobUrl);
         setVoiceDuration(0); setVoiceTrimStart(0); setVoiceTrimEnd(0); setVoiceOffset(0); setVoiceVolume(100);
         stream.getTracks().forEach(t => t.stop()); setStatus("Voice recording ready");
       };
@@ -272,6 +277,109 @@ function App() {
       setBusy(false); setStatus("Export failed: " + e.message);
     }
   }
+  function sceneDurationSeconds(scene){
+    const parts=String(scene?.duration||"00:10").split(":").map(Number);
+    return Math.max(1,(parts[0]||0)*60+(parts[1]||10));
+  }
+  function sceneStartSeconds(sceneId){
+    let cursor=0;
+    for(const scene of scenes){if(scene.id===sceneId)return cursor;cursor+=sceneDurationSeconds(scene);}
+    return 0;
+  }
+  function addAudioClip(track,file,urlOverride){
+    const url=urlOverride||URL.createObjectURL(file);
+    const audio=new Audio(url);
+    const id=String(Date.now())+"-"+Math.random().toString(36).slice(2,7);
+    const name=file?.name||(track==="voice"?"Narration":track==="music"?"Background music":"Sound effect");
+    const add=duration=>{
+      const d=Number.isFinite(duration)&&duration>0?duration:0;
+      setAudioClips(old=>[...old,{id,track,name,url,start:0,sourceStart:0,sourceEnd:d,duration:d,volume:track==="voice"?1:track==="music"?.25:.7,sceneId:""}]);
+      setSelectedAudioClip(id);setStatus(name+" added to "+track.toUpperCase()+" lane");
+    };
+    audio.addEventListener("loadedmetadata",()=>add(audio.duration),{once:true});
+    audio.addEventListener("error",()=>add(0),{once:true});audio.load();
+  }
+  function uploadTimelineAudio(track,event){
+    Array.from(event.target.files||[]).forEach(file=>file.type.startsWith("audio/")?addAudioClip(track,file):setStatus("Please choose an audio file"));
+    event.target.value="";
+  }
+  function updateAudioClip(id,patch){setAudioClips(old=>old.map(c=>c.id===id?{...c,...patch}:c));}
+  function removeAudioClip(id){
+    setAudioClips(old=>{const target=old.find(c=>c.id===id),next=old.filter(c=>c.id!==id);if(target&&!next.some(c=>c.url===target.url))URL.revokeObjectURL(target.url);return next;});
+    setSelectedAudioClip(old=>old===id?"":old);
+  }
+  function splitAudioClip(id){
+    const clip=audioClips.find(c=>c.id===id);if(!clip)return;
+    const mid=(clip.sourceStart+clip.sourceEnd)/2;
+    if(mid-clip.sourceStart<.15||clip.sourceEnd-mid<.15){setStatus("Clip is too short to split");return;}
+    const second={...clip,id:String(Date.now())+"-split",start:clip.start+mid-clip.sourceStart,sourceStart:mid};
+    updateAudioClip(id,{sourceEnd:mid});setAudioClips(old=>[...old,second]);setSelectedAudioClip(second.id);
+    setStatus("Audio clip split into two editable segments");
+  }
+  function mergeAdjacentAudioClips(){
+    const clip=audioClips.find(c=>c.id===selectedAudioClip);if(!clip){setStatus("Select an audio clip first");return;}
+    const same=audioClips.filter(c=>c.track===clip.track&&c.url===clip.url).sort((a,b)=>a.start-b.start);
+    const index=same.findIndex(c=>c.id===clip.id),next=same[index+1];
+    if(!next||Math.abs(clip.start+clip.sourceEnd-clip.sourceStart-next.start)>.25||Math.abs(clip.sourceEnd-next.sourceStart)>.25){
+      setStatus("Merge requires adjacent split segments from the same source");return;
+    }
+    updateAudioClip(clip.id,{sourceEnd:next.sourceEnd});removeAudioClip(next.id);setStatus("Adjacent audio segments merged");
+  }
+  function attachAudioClipToScene(id,sceneId){
+    updateAudioClip(id,{sceneId:sceneId||"",start:sceneId?sceneStartSeconds(Number(sceneId)):0});
+    setStatus(sceneId?"Audio synced to scene start":"Manual audio timing enabled");
+  }
+  async function playAudioTimeline(){
+    try{
+      const AC=window.AudioContext||window.webkitAudioContext;
+      if(!AC||!audioClips.length){setStatus("Add audio clips to preview the mix");return;}
+      const ctx=new AC();audioContextRef.current=ctx;await ctx.resume();
+      const decoded=new Map();
+      await Promise.all([...new Set(audioClips.map(c=>c.url))].map(async url=>{
+        const response=await fetch(url);decoded.set(url,await ctx.decodeAudioData(await response.arrayBuffer()));
+      }));
+      const now=ctx.currentTime+.08;let end=0;
+      audioClips.forEach(clip=>{
+        const buffer=decoded.get(clip.url);if(!buffer)return;
+        const from=Math.max(0,clip.sourceStart||0),to=Math.min(buffer.duration,clip.sourceEnd||buffer.duration),len=to-from;
+        if(len<=0)return;
+        const source=ctx.createBufferSource(),gain=ctx.createGain();source.buffer=buffer;
+        gain.gain.value=Math.max(0,Math.min(2,Number(clip.volume??1)));
+        source.connect(gain).connect(ctx.destination);source.start(now+Math.max(0,clip.start||0),from,len);
+        audioSourcesRef.current.push(source);end=Math.max(end,(clip.start||0)+len);
+      });
+      setAudioPlaying(true);audioStopTimerRef.current=window.setTimeout(stopAudioTimeline,end*1000+250);
+      setStatus("Playing synchronized voice, music and SFX mix");
+    }catch(e){stopAudioTimeline();setStatus("Audio preview failed: "+e.message);}
+  }
+  function stopAudioTimeline(){
+    if(audioStopTimerRef.current)window.clearTimeout(audioStopTimerRef.current);audioStopTimerRef.current=null;
+    audioSourcesRef.current.forEach(source=>{try{source.stop();}catch{}});audioSourcesRef.current=[];
+    if(audioContextRef.current){audioContextRef.current.close().catch(()=>{});audioContextRef.current=null;}
+    setAudioPlaying(false);
+  }
+  async function exportFinalMp4(){
+    const endpoint=import.meta.env.VITE_RENDER_API_URL;
+    if(!endpoint){setStatus("MP4 worker is not connected. Deploy render-worker and configure VITE_RENDER_API_URL.");return;}
+    setBusy(true);setStatus("Uploading assets and rendering final MP4…");
+    try{
+      const form=new FormData(),uploads=[];
+      for(let i=0;i<audioClips.length;i++){
+        const clip=audioClips[i],assetId="audio_"+i,blob=await fetch(clip.url).then(r=>r.blob());
+        form.append("files",blob,assetId+".audio");
+        uploads.push({...clip,assetId});
+      }
+      let presenterAssetId="";
+      if(videoUrl){presenterAssetId="presenter_video";const blob=await fetch(videoUrl).then(r=>r.blob());form.append("files",blob,"presenter.webm");}
+      form.append("manifest",JSON.stringify({project,script,scenes,aspect:videoSetup.aspect,quality,theme,captions,audioClips:uploads,presenterAssetId}));
+      const token=import.meta.env.VITE_RENDER_API_TOKEN;
+      const response=await fetch(endpoint.replace(/\/$/,"")+"/render",{method:"POST",headers:token?{Authorization:"Bearer "+token}:{},body:form});
+      if(!response.ok)throw new Error((await response.text()).slice(0,400)||"Render service error");
+      const blob=await response.blob();if(!blob.size)throw new Error("Empty MP4 response");
+      downloadBlob(blob,(project.replace(/[^\w-]+/g,"-")||"officerlab-video")+".mp4");setStatus("Final MP4 rendered and downloaded");
+    }catch(e){setStatus("MP4 render failed: "+e.message);}finally{setBusy(false);}
+  }
+
   async function makeWaveform(url) {
     try {
       const response = await fetch(url);
@@ -303,7 +411,7 @@ function App() {
     if (!file) return;
     if (!file.type.startsWith("audio/")) { setStatus("Please choose an audio file"); return; }
     if (voiceUrl) URL.revokeObjectURL(voiceUrl);
-    const url=URL.createObjectURL(file); setVoiceUrl(url); makeWaveform(url);
+    const url=URL.createObjectURL(file); setVoiceUrl(url); makeWaveform(url); addAudioClip("voice",file,url);
     setVoiceDuration(0); setVoiceTrimStart(0); setVoiceTrimEnd(0); setVoiceOffset(0); setVoiceVolume(100);
     setStatus("Voice track added to timeline: " + file.name);
     e.target.value = "";
@@ -319,7 +427,7 @@ function App() {
     setMediaUrl(URL.createObjectURL(f)); setMediaName(f.name); setStatus(`Imported ${f.name}`);
   }
   function saveProject() {
-    const data = { project, script, scenes, videoSetup, voiceEditing: { trimStart: voiceTrimStart, trimEnd: voiceTrimEnd || voiceDuration, offset: voiceOffset, volume: voiceVolume }, audioTracks: { backgroundMusic: !!musicUrl, musicVolume, soundEffects: !!sfxUrl, sfxVolume }, theme, captions, quality, createdAt: new Date().toISOString() };
+    const data = { project, script, scenes, videoSetup, voiceEditing: { trimStart: voiceTrimStart, trimEnd: voiceTrimEnd || voiceDuration, offset: voiceOffset, volume: voiceVolume }, audioTracks: audioClips.map(({id,track,name,start,sourceStart,sourceEnd,volume,sceneId})=>({id,track,name,start,sourceStart,sourceEnd,volume,sceneId})), theme, captions, quality, createdAt: new Date().toISOString() };
     downloadBlob(new Blob([JSON.stringify(data,null,2)],{type:"application/json"}), "officerlab-project.json");
     setStatus("Project file saved");
   }
@@ -392,7 +500,9 @@ function App() {
             </section>
           </div>
           <div className="lower-grid">
-            <section className="panel timeline-panel"><div className="panel-head"><div><span className="eyebrow">EDITING</span><h3>Timeline</h3></div><span className="format-tag">00:38 total</span></div><div className="timeline-ruler"><span>00:00</span><span>00:10</span><span>00:20</span><span>00:30</span><span>00:40</span></div><div className="track"><span className="track-label">VIDEO</span><div className="track-items">{scenes.map((s,i)=><div key={s.id} draggable onDragStart={()=>{dragSceneId.current=s.id;}} onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();reorderScene(dragSceneId.current,s.id);dragSceneId.current=null;}} onDragEnd={()=>{dragSceneId.current=null;}} onClick={()=>setSelected(s.id)} title="Drag to reorder; click to select" className={`clip clip-${i%3} ${selected===s.id?"clip-selected":""}`} style={{width:`${Math.max(14,100/scenes.length)}%`}}>{s.title} · {s.duration}</div>)}</div></div><div className="track voice-track"><span className="track-label">VOICE</span><div className="audio-track-content">{voiceUrl?<><div className="audio-clip"><AudioLines size={15}/> Narration attached</div>{voicePeaks.length>0&&<div className="waveform" aria-label="Audio waveform">{voicePeaks.map((peak,i)=><i key={i} style={{height:(peak*100)+"%"}}/>)}</div>}<audio ref={voicePlayerRef} className="timeline-audio" controls preload="metadata" src={voiceUrl} onLoadedMetadata={e=>{const d=Number.isFinite(e.currentTarget.duration)?e.currentTarget.duration:0;setVoiceDuration(d);setVoiceTrimEnd(prev=>prev>0?Math.min(prev,d):d);e.currentTarget.volume=voiceVolume/100;}} onTimeUpdate={e=>{if(voiceTrimEnd>0&&e.currentTarget.currentTime>=voiceTrimEnd)e.currentTarget.pause();}}/><button className="mini-action" onClick={removeVoiceTrack}>Remove</button></>:<><span className="empty-track">No narration attached</span><button className="mini-action" onClick={()=>setActive("voice")}><Mic size={13}/> Open Voice Studio</button><button className="mini-action" onClick={()=>voiceFileRef.current?.click()}><Upload size={13}/> Import audio</button></>}</div></div><div className="track extra-audio-track"><span className="track-label">MUSIC</span><div className="audio-track-content">{musicUrl?<><audio className="timeline-audio" controls src={musicUrl} onVolumeChange={e=>setMusicVolume(Math.round(e.currentTarget.volume*100))}/><span className="track-hint">Background music · {musicVolume}%</span><button className="mini-action" onClick={()=>{URL.revokeObjectURL(musicUrl);setMusicUrl("");}}>Remove</button></>:<button className="mini-action" onClick={()=>musicFileRef.current?.click()}><Upload size={13}/> Add background music</button>}</div></div><div className="track extra-audio-track"><span className="track-label">SFX</span><div className="audio-track-content">{sfxUrl?<><audio className="timeline-audio" controls src={sfxUrl}/><span className="track-hint">Sound effects · {sfxVolume}%</span><button className="mini-action" onClick={()=>{URL.revokeObjectURL(sfxUrl);setSfxUrl("");}}>Remove</button></>:<button className="mini-action" onClick={()=>sfxFileRef.current?.click()}><Upload size={13}/> Add sound effect</button>}</div></div><div className="track"><span className="track-label">CAPTIONS</span><div className="caption-clip">Gujarati / English subtitles</div></div></section>
+            <section className="panel timeline-panel"><div className="panel-head"><div><span className="eyebrow">MULTITRACK EDITOR</span><h3>Timeline</h3></div><div className="head-actions"><button className="mini-action" onClick={audioPlaying?stopAudioTimeline:playAudioTimeline}>{audioPlaying?"Stop mix preview":"Play audio mix"}</button><span className="format-tag">{scenes.reduce((n,x)=>n+sceneDurationSeconds(x),0).toFixed(0)} sec</span></div></div><div className="timeline-ruler"><span>00:00</span><span>00:10</span><span>00:20</span><span>00:30</span><span>00:40</span></div><div className="track"><span className="track-label">VIDEO</span><div className="track-items">{scenes.map((s,i)=><div key={s.id} draggable onDragStart={()=>{dragSceneId.current=s.id;}} onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();reorderScene(dragSceneId.current,s.id);dragSceneId.current=null;}} onDragEnd={()=>{dragSceneId.current=null;}} onClick={()=>setSelected(s.id)} title="Drag to reorder; click to select" className={`clip clip-${i%3} ${selected===s.id?"clip-selected":""}`} style={{width:`${Math.max(14,100/scenes.length)}%`}}>{s.title} · {s.duration}</div>)}</div></div>{["voice","music","sfx"].map(track=>{const clips=audioClips.filter(c=>c.track===track);return <div className="track audio-track-row" key={track}><span className="track-label">{track.toUpperCase()}</span><div className="audio-lane" onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();const id=audioDragRef.current;if(!id)return;const rect=e.currentTarget.getBoundingClientRect(),ratio=Math.max(0,Math.min(1,(e.clientX-rect.left)/rect.width)),total=Math.max(1,scenes.reduce((n,x)=>n+sceneDurationSeconds(x),0));updateAudioClip(id,{track,start:Math.round(ratio*total*10)/10,sceneId:""});audioDragRef.current=null;setStatus("Audio clip repositioned");}}>{clips.map(clip=>{const total=Math.max(1,scenes.reduce((n,x)=>n+sceneDurationSeconds(x),0)),len=Math.max(.5,(clip.sourceEnd||clip.duration)-(clip.sourceStart||0));return <div key={clip.id} draggable onDragStart={()=>{audioDragRef.current=clip.id;setSelectedAudioClip(clip.id);}} onClick={()=>setSelectedAudioClip(clip.id)} className={"audio-timeline-clip "+(selectedAudioClip===clip.id?"clip-selected":"")} style={{left:(clip.start/total*100)+"%",width:Math.max(4,Math.min(100-clip.start/total*100,len/total*100))+"%"}} title="Drag to reposition or move to another track"><b>{clip.name}</b><small>{clip.start.toFixed(1)}s · {len.toFixed(1)}s</small></div>})}</div><button className="mini-action lane-add" onClick={()=>({voice:audioVoiceInputRef,music:audioMusicInputRef,sfx:audioSfxInputRef}[track]).current?.click()}><Plus size={12}/> Add</button></div>})}
+            <div className="audio-editor-panel">{(()=>{const clip=audioClips.find(c=>c.id===selectedAudioClip);if(!clip)return <span className="empty-track">Select a clip to trim, sync, split or merge it. Drag clips horizontally to reposition.</span>;const total=Math.max(1,scenes.reduce((n,x)=>n+sceneDurationSeconds(x),0));return <><div className="audio-editor-title"><b>{clip.name}</b><button className="mini-action" onClick={()=>removeAudioClip(clip.id)}>Remove clip</button></div><div className="audio-editor-grid"><label>Position: {clip.start.toFixed(1)} sec<input type="range" min="0" max={total} step=".1" value={Math.min(total,clip.start)} onChange={e=>updateAudioClip(clip.id,{start:Number(e.target.value),sceneId:""})}/></label><label>Trim in: {clip.sourceStart.toFixed(1)} sec<input type="range" min="0" max={Math.max(.1,clip.duration)} step=".1" value={Math.min(clip.sourceStart,clip.duration||0)} onChange={e=>updateAudioClip(clip.id,{sourceStart:Math.min(Number(e.target.value),clip.sourceEnd-.1)})}/></label><label>Trim out: {clip.sourceEnd.toFixed(1)} sec<input type="range" min="0" max={Math.max(.1,clip.duration)} step=".1" value={Math.min(clip.sourceEnd,clip.duration||0)} onChange={e=>updateAudioClip(clip.id,{sourceEnd:Math.max(Number(e.target.value),clip.sourceStart+.1)})}/></label><label>Volume: {Math.round(clip.volume*100)}%<input type="range" min="0" max="150" step="1" value={Math.round(clip.volume*100)} onChange={e=>updateAudioClip(clip.id,{volume:Number(e.target.value)/100})}/></label><label>Sync to scene<select value={clip.sceneId||""} onChange={e=>attachAudioClipToScene(clip.id,e.target.value)}><option value="">Manual position</option>{scenes.map(scene=><option key={scene.id} value={scene.id}>{scene.title}</option>)}</select></label></div><div className="audio-editor-actions"><button className="mini-action" onClick={()=>splitAudioClip(clip.id)}>Split at midpoint</button><button className="mini-action" onClick={mergeAdjacentAudioClips}>Merge adjacent split clips</button></div></>})()}</div>
+            <div className="track"><span className="track-label">CAPTIONS</span><div className="caption-clip">Gujarati / English subtitles</div></div>
             <section className="panel quick-panel"><div className="panel-head"><div><span className="eyebrow">QUICK ACTIONS</span><h3>Production tools</h3></div><Sparkles size={18} className="gold-text"/></div><button className="action-row" onClick={()=>setActive("script")}><FileText/><span><b>Write your script</b><small>Prepare narration and scene beats</small></span><ChevronDown size={15}/></button><button className="action-row" onClick={()=>setActive("voice")}><Mic/><span><b>Record voiceover</b><small>Capture clean narration</small></span><ChevronDown size={15}/></button><button className="action-row" onClick={()=>setActive("presenter")}><Webcam/><span><b>Record presenter</b><small>Camera and microphone capture</small></span><ChevronDown size={15}/></button></section>
           </div>
         </>}
@@ -403,13 +513,16 @@ function App() {
 
         {active==="presenter" && <div className="two-col"><section className="panel pad-panel"><div className="panel-head"><div><div className="eyebrow">PRESENTER CAMERA</div><h3>Face-camera recording</h3></div><span className={cameraOn?"tag-ready":"tag-planned"}>{cameraOn?"Connected":"Not connected"}</span></div><div className="camera-box">{cameraOn?<video ref={videoRef} muted playsInline/>:<div className="camera-placeholder"><Webcam size={40}/><b>Camera preview</b><small>Connect your camera to begin</small></div>}{recording&&<span className="recording-label"><i/> REC</span>}</div><div className="camera-actions">{!cameraOn?<button className="btn primary" onClick={startCamera}><Webcam size={15}/> Connect camera</button>:<button className="btn subtle" onClick={stopCamera}>Disconnect</button>}{cameraOn&&!recording?<button className="btn danger" onClick={startVideoRecording}><Radio size={15}/> Record video + mic</button>:cameraOn&&<button className="btn danger" onClick={stopVideoRecording}><Square size={15}/> Stop</button>}</div>{videoUrl&&<div className="recorded"><Check size={16}/> Presenter video + microphone audio ready<a href={videoUrl} download="officerlab-presenter-with-audio.webm">Download synced clip</a></div>}</section><section className="panel pad-panel"><div className="eyebrow">COMPOSITION</div><h3>Presenter + graphics</h3><p className="muted">The planned composite workflow places your presenter footage alongside the animated explainer canvas.</p><div className="composition-preview"><div className="comp-slide">GRAPHICS<br/><small>Explainer visual</small></div><div className="comp-presenter"><Webcam size={25}/><small>Presenter</small></div></div><div className="note-box"><AudioLines size={18}/><div><b>Presenter + voice-over together</b><p>When you start presenter recording, the camera stream records its microphone audio and video in the same WebM file. Use headphones to prevent speaker echo. Separate voice-track mixing and final MP4 compositing still require the render worker.</p></div></div></section></div>}
 
-        {active==="assets" && <section className="panel pad-panel"><div className="panel-head"><div><div className="eyebrow">MEDIA LIBRARY</div><h3>Project assets</h3></div><button className="btn primary" onClick={()=>fileRef.current?.click()}><Upload size={15}/> Import media</button></div><input ref={fileRef} type="file" accept="image/*,video/*,audio/*" hidden onChange={uploadMedia}/><input ref={voiceFileRef} type="file" accept="audio/*,.mp3,.wav,.m4a,.ogg,.webm" hidden onChange={uploadVoiceTrack}/><input ref={musicFileRef} type="file" accept="audio/*" hidden onChange={e=>uploadExtraAudio("music",e)}/><input ref={sfxFileRef} type="file" accept="audio/*" hidden onChange={e=>uploadExtraAudio("sfx",e)}/>{mediaUrl?<div className="asset-card"><div className="asset-icon"><FolderOpen/></div><div><b>{mediaName}</b><small>Imported project asset</small></div><button className="icon-btn" onClick={()=>{URL.revokeObjectURL(mediaUrl);setMediaUrl("");setMediaName("");}}><X size={16}/></button></div>:<div className="dropzone" onClick={()=>fileRef.current?.click()}><Upload size={27}/><b>Drop your media here</b><span>or click to browse • Images, video and audio</span></div>}<div className="note-box"><FileText size={18}/><div><b>Rights and credits</b><p>Track the source and licence of every third-party photo, map and music asset before publishing. The Cinematic Skill's Wikimedia Commons workflow can be integrated for credited public-domain and openly licensed images.</p></div></div></section>}
+        {active==="assets" && <section className="panel pad-panel"><div className="panel-head"><div><div className="eyebrow">MEDIA LIBRARY</div><h3>Project assets</h3></div><button className="btn primary" onClick={()=>fileRef.current?.click()}><Upload size={15}/> Import media</button></div><input ref={fileRef} type="file" accept="image/*,video/*,audio/*" hidden onChange={uploadMedia}/>{mediaUrl?<div className="asset-card"><div className="asset-icon"><FolderOpen/></div><div><b>{mediaName}</b><small>Imported project asset</small></div><button className="icon-btn" onClick={()=>{URL.revokeObjectURL(mediaUrl);setMediaUrl("");setMediaName("");}}><X size={16}/></button></div>:<div className="dropzone" onClick={()=>fileRef.current?.click()}><Upload size={27}/><b>Drop your media here</b><span>or click to browse • Images, video and audio</span></div>}<div className="note-box"><FileText size={18}/><div><b>Rights and credits</b><p>Track the source and licence of every third-party photo, map and music asset before publishing. The Cinematic Skill's Wikimedia Commons workflow can be integrated for credited public-domain and openly licensed images.</p></div></div></section>}
 
-        {active==="export" && <div className="two-col"><section className="panel pad-panel"><div className="eyebrow">DELIVERY</div><h3>Export your video</h3><p className="muted">Export a short animated canvas preview now, or save the project for the full rendering pipeline.</p><label className="field-label">Resolution<select value={quality} onChange={e=>setQuality(e.target.value)}><option>1080p</option><option>720p</option><option>4K</option></select></label><div className="toggle-row"><div><b>Gujarati captions</b><small>Include captions in preview and export SRT separately</small></div><input type="checkbox" checked={captions} onChange={e=>setCaptions(e.target.checked)}/></div><button className="btn primary full" disabled={busy} onClick={exportPreview}><Download size={16}/>{busy?"Rendering…":"Export 8-second preview (WebM)"}</button>{exportedVideoUrl&&<div className="recorded"><Check size={16}/> Video file ready <a href={exportedVideoUrl} download="officerlab-preview.webm">Download generated video</a></div>}<button className="btn subtle full" onClick={downloadPreviewFrame}><Download size={16}/> Download current preview frame (PNG)</button><button className="btn subtle full" onClick={exportCaptions}><Captions size={16}/> Download subtitle file (.srt)</button><button className="btn subtle full" onClick={saveProject}><FileText size={16}/> Download editable project (.json)</button></section><section className="panel pad-panel"><div className="eyebrow">EXPORT STATUS</div><h3>Production readiness</h3><div className="readiness"><div><span>Script</span><b className="good">Ready</b></div><div><span>Scene graphics preview</span><b className="good">Ready</b></div><div><span>Voice capture</span><b className={voiceUrl?"good":"pending"}>{voiceUrl?"Recorded":"Optional"}</b></div><div><span>Presenter capture</span><b className={videoUrl?"good":"pending"}>{videoUrl?"Recorded":"Optional"}</b></div><div><span>Full cinematic render</span><b className="pending">Worker integration</b></div><div><span>Final MP4 + audio mux</span><b className="pending">Worker integration</b></div></div><div className="note-box"><Film size={18}/><div><b>About this build</b><p>The current browser export is a WebM motion-graphics preview, not the full Skia cinematic render. See README for the Vercel + Python worker deployment architecture.</p></div></div></section></div>}
+        {active==="export" && <div className="two-col"><section className="panel pad-panel"><div className="eyebrow">DELIVERY</div><h3>Export your video</h3><p className="muted">Export a short animated canvas preview now, or save the project for the full rendering pipeline.</p><label className="field-label">Resolution<select value={quality} onChange={e=>setQuality(e.target.value)}><option>1080p</option><option>720p</option><option>4K</option></select></label><div className="toggle-row"><div><b>Gujarati captions</b><small>Include captions in preview and export SRT separately</small></div><input type="checkbox" checked={captions} onChange={e=>setCaptions(e.target.checked)}/></div><button className="btn primary full" disabled={busy} onClick={exportFinalMp4}><Film size={16}/>{busy?"Rendering…":"Render final MP4 (worker)"}</button><button className="btn subtle full" disabled={busy} onClick={exportPreview}><Download size={16}/> Export 8-second preview (WebM)</button>{exportedVideoUrl&&<div className="recorded"><Check size={16}/> Video file ready <a href={exportedVideoUrl} download="officerlab-preview.webm">Download generated video</a></div>}<button className="btn subtle full" onClick={downloadPreviewFrame}><Download size={16}/> Download current preview frame (PNG)</button><button className="btn subtle full" onClick={exportCaptions}><Captions size={16}/> Download subtitle file (.srt)</button><button className="btn subtle full" onClick={saveProject}><FileText size={16}/> Download editable project (.json)</button></section><section className="panel pad-panel"><div className="eyebrow">EXPORT STATUS</div><h3>Production readiness</h3><div className="readiness"><div><span>Script</span><b className="good">Ready</b></div><div><span>Scene graphics preview</span><b className="good">Ready</b></div><div><span>Voice capture</span><b className={voiceUrl?"good":"pending"}>{voiceUrl?"Recorded":"Optional"}</b></div><div><span>Presenter capture</span><b className={videoUrl?"good":"pending"}>{videoUrl?"Recorded":"Optional"}</b></div><div><span>Multitrack audio editing</span><b className={audioClips.length?"good":"pending"}>{audioClips.length?"Ready":"Add audio"}</b></div><div><span>Final MP4 + audio mix</span><b className="pending">{import.meta.env.VITE_RENDER_API_URL?"Worker configured":"Worker URL required"}</b></div></div><div className="note-box"><Film size={18}/><div><b>About this build</b><p>The browser creates a WebM preview. Full MP4 rendering uses the separately deployed FFmpeg worker; configure VITE_RENDER_API_URL and optional VITE_RENDER_API_TOKEN.</p></div></div></section></div>}
       </div>
     </main>
     {showSettings&&<div className="modal-backdrop" onClick={()=>setShowSettings(false)}><div className="modal" onClick={e=>e.stopPropagation()}><div className="panel-head"><h3>Studio settings</h3><button className="icon-btn" onClick={()=>setShowSettings(false)}><X/></button></div><label className="field-label">Visual theme<select value={theme} onChange={e=>setTheme(e.target.value)}><option value="midnight">Midnight cinematic</option><option value="paper">Warm paper</option></select></label><p className="muted">Your project and recordings remain in this browser unless you download or export them.</p><button className="btn primary full" onClick={()=>setShowSettings(false)}>Done</button></div></div>}
     <input ref={fileRef} type="file" accept="image/*,video/*,audio/*" hidden onChange={uploadMedia}/>
+    <input ref={audioVoiceInputRef} type="file" accept="audio/*" multiple hidden onChange={e=>uploadTimelineAudio("voice",e)}/>
+    <input ref={audioMusicInputRef} type="file" accept="audio/*" multiple hidden onChange={e=>uploadTimelineAudio("music",e)}/>
+    <input ref={audioSfxInputRef} type="file" accept="audio/*" multiple hidden onChange={e=>uploadTimelineAudio("sfx",e)}/>
   </div>;
 }
 
