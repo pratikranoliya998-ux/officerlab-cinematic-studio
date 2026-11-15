@@ -76,3 +76,30 @@ Return `{ jobId, status: "queued" }`; poll `GET /api/render-jobs/:jobId` for pro
 Original project: https://github.com/Moh4696/cinematic-skill
 
 Review its licence, usage, attribution and image licensing requirements before integrating or redistributing its code. This starter is a separate implementation and does not include upstream source files.
+
+
+## Multitrack editor and audio sync
+
+The Studio timeline now supports three audio lanes (voice, music and SFX), multiple imported clips per lane, visible clip blocks, drag/drop lane changes and horizontal repositioning. The selected clip editor supports source in/out trimming, volume, midpoint split, adjacent split-segment merge, delete/cut, and sync to the start of a selected scene. Scene duration changes and reordering recalculate scene-linked audio offsets. The audio mix preview schedules all clips together in Web Audio.
+
+These are browser-session edits. Download the project JSON to preserve the timeline edit metadata. Local audio bytes and blob URLs are not embedded in that JSON; keep the original audio files available for a later render.
+
+## Full MP4 rendering worker
+
+A separate FastAPI + FFmpeg worker is included in `render-worker/`. It renders scene motion-card frames, concatenates scenes into an H.264 MP4, mixes trimmed/positioned/volume-adjusted voice/music/SFX files, and overlays a recorded presenter WebM as picture-in-picture.
+
+### Deploy the worker
+
+1. Push the repository to GitHub.
+2. Create a Render Blueprint from the repository using the root `render.yaml`, or create a Docker web service with root directory `render-worker`.
+3. Wait for the service to deploy and test its `/health` endpoint.
+4. In Vercel → Project → Settings → Environment Variables, set `VITE_RENDER_API_URL` to the Render service origin, for example `https://YOUR-WORKER.onrender.com`.
+5. Redeploy the Vercel frontend so Vite includes the endpoint variable.
+
+Optional worker bearer-token protection is available through `RENDER_API_TOKEN`. A matching `VITE_RENDER_API_TOKEN` can be supplied to the frontend, but **VITE variables are public in browser code and are not secrets**. For a private production credential, place an authenticated server-side API proxy in front of the worker. Restrict `CORS_ORIGINS` to the actual app origin.
+
+### Worker request limits and current render scope
+
+The worker currently accepts up to 100 scenes, 60 minutes per render, 300 MB per file and 800 MB total uploaded media. It returns an MP4 directly in the HTTP response; the request stays open while FFmpeg runs. The video is composed from the editable text-based scene cards and an optional presenter PIP overlay. Audio tracks are mixed from uploaded files using each clip's timeline offset, source trim and volume.
+
+This first worker does not yet provide a persistent job queue, cloud asset library, generated stock imagery, per-word caption alignment, AI script/TTS service, or advanced transitions/chroma key. It is an actual MP4 render path, but not a substitute for a full multi-user NLE/render farm. Add authentication, rate limiting, persistent jobs, object storage and monitoring before opening it to unrestricted public traffic.
