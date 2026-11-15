@@ -89,7 +89,8 @@ function App() {
       for (let i=0;i<12;i++) ctx.fillRect((i*117 + t*.018)%w, 0, 1, h);
       ctx.fillStyle = "#d9a84f"; ctx.fillRect(68,68,6,80);
       ctx.fillStyle = theme === "paper" ? "#182238" : "#f6f3ec";
-      ctx.font = "600 17px Arial"; ctx.fillText("OFFICERLAB  /  CINEMATIC EXPLAINER", 94, 88);\n      ctx.font = "600 15px Arial"; ctx.fillStyle = "#d9a84f"; ctx.fillText(selectedScene?.title || "Untitled scene", 94, 132);
+      ctx.font = "600 17px Arial"; ctx.fillText("OFFICERLAB  /  CINEMATIC EXPLAINER", 94, 88);
+      ctx.font = "600 15px Arial"; ctx.fillStyle = "#d9a84f"; ctx.fillText(selectedScene?.title || "Untitled scene", 94, 132);
       ctx.font = "700 47px Arial";
       const lines = (selectedScene?.text || "Your cinematic scene").split("\n");
       lines.forEach((line,i) => ctx.fillText(line, 94, 220 + i*62));
