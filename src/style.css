@@ -103,3 +103,26 @@
 .studio-presenter-pip video{display:block;width:100%;height:100%;object-fit:cover;background:#05080e}
 @media(max-width:800px){.workspace-list{position:absolute;z-index:10;left:62px;top:115px;width:230px;box-shadow:0 12px 32px #000b}.studio-presenter-pip{width:31%;right:8px;bottom:8px}}
 @media(max-width:460px){.workspace-list{left:52px;top:105px;width:220px}.studio-presenter-pip{width:38%;min-width:100px}}
+
+
+/* Keep the workspace switcher reachable on collapsed mobile sidebar */
+@media(max-width:800px){
+  .sidebar{position:relative}
+  .sidebar .workspace-label{display:none!important}
+  .sidebar .project-pill{
+    display:flex!important;
+    width:42px;
+    min-height:40px;
+    margin:0 auto 12px;
+    padding:8px;
+    justify-content:center;
+    gap:0;
+  }
+  .sidebar .project-pill span:nth-child(2){display:none}
+  .sidebar .project-pill svg{flex-shrink:0}
+  .sidebar .workspace-list{left:58px;top:105px;width:230px}
+}
+@media(max-width:460px){
+  .sidebar .project-pill{width:38px;min-height:38px}
+  .sidebar .workspace-list{left:50px;top:96px;width:220px}
+}
