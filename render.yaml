@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: officerlab-render-worker
+    runtime: docker
+    rootDir: render-worker
+    plan: starter
+    healthCheckPath: /health
+    envVars:
+      - key: CORS_ORIGINS
+        value: https://officerlab-cinematic-studio.vercel.app,http://localhost:5173
+      - key: RENDER_API_TOKEN
+        sync: false
