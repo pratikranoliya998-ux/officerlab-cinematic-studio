@@ -22,7 +22,7 @@ jobs:
         with:
           python-version: "3.11"
       - name: Install worker dependencies
-        run: pip install -r render-worker/requirements.txt
+        run: pip install -r render-worker/requirements.txt PyYAML
       - name: Compile Python source
         run: python -m compileall -q render-worker
       - name: Validate Render blueprint
