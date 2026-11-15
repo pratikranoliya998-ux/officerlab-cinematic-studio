@@ -23,9 +23,14 @@ origins = [x.strip() for x in os.getenv(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
+    # Permit the stable production domain plus this project's generated Vercel
+    # preview/deployment aliases. The regex is restricted to this app's slug.
+    allow_origin_regex=r"https://officerlab-cinematic-studio(?:-[a-z0-9-]+)*\\.vercel\\.app",
     allow_credentials=False,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type"],
+    expose_headers=["Content-Disposition"],
+    max_age=600,
 )
 
 
