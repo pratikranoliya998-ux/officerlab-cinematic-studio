@@ -37,6 +37,13 @@ function App() {
   const [voiceTrimEnd, setVoiceTrimEnd] = useState(0);
   const [voiceOffset, setVoiceOffset] = useState(0);
   const [voiceVolume, setVoiceVolume] = useState(100);
+  const [voicePeaks, setVoicePeaks] = useState([]);
+  const [musicUrl, setMusicUrl] = useState("");
+  const [sfxUrl, setSfxUrl] = useState("");
+  const [musicVolume, setMusicVolume] = useState(25);
+  const [sfxVolume, setSfxVolume] = useState(70);
+  const musicFileRef = useRef(null);
+  const sfxFileRef = useRef(null);
   const voicePlayerRef = useRef(null);
   const [videoUrl, setVideoUrl] = useState("");
   const [exportedVideoUrl, setExportedVideoUrl] = useState("");
@@ -155,7 +162,7 @@ function App() {
       const mr = new MediaRecorder(stream); audioRecorder.current = mr;
       mr.ondataavailable = e => { if (e.data.size) audioChunks.current.push(e.data); };
       mr.onstop = () => {
-        setVoiceUrl(URL.createObjectURL(new Blob(audioChunks.current, { type: "audio/webm" })));
+        const voiceBlobUrl=URL.createObjectURL(new Blob(audioChunks.current, { type: "audio/webm" })); setVoiceUrl(voiceBlobUrl); makeWaveform(voiceBlobUrl);
         setVoiceDuration(0); setVoiceTrimStart(0); setVoiceTrimEnd(0); setVoiceOffset(0); setVoiceVolume(100);
         stream.getTracks().forEach(t => t.stop()); setStatus("Voice recording ready");
       };
@@ -265,19 +272,45 @@ function App() {
       setBusy(false); setStatus("Export failed: " + e.message);
     }
   }
+  async function makeWaveform(url) {
+    try {
+      const response = await fetch(url);
+      const buffer = await response.arrayBuffer();
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      const context = new AudioCtx();
+      const decoded = await context.decodeAudioData(buffer);
+      const channel = decoded.getChannelData(0);
+      const bars = 120, block = Math.max(1, Math.floor(channel.length / bars));
+      const peaks = Array.from({length:bars},(_,i)=>{
+        let peak=0; for(let j=i*block;j<Math.min(channel.length,(i+1)*block);j+=8) peak=Math.max(peak,Math.abs(channel[j]));
+        return Math.max(.06,peak);
+      });
+      setVoicePeaks(peaks);
+      setVoiceDuration(decoded.duration);
+      await context.close();
+    } catch { setVoicePeaks([]); }
+  }
+  function uploadExtraAudio(kind,e) {
+    const file=e.target.files?.[0]; if(!file) return;
+    if(!file.type.startsWith("audio/")) {setStatus("Choose a valid audio file");return;}
+    const url=URL.createObjectURL(file);
+    if(kind==="music"){if(musicUrl)URL.revokeObjectURL(musicUrl);setMusicUrl(url);setStatus("Background music added");}
+    else {if(sfxUrl)URL.revokeObjectURL(sfxUrl);setSfxUrl(url);setStatus("Sound effect added");}
+    e.target.value="";
+  }
   function uploadVoiceTrack(e) {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith("audio/")) { setStatus("Please choose an audio file"); return; }
     if (voiceUrl) URL.revokeObjectURL(voiceUrl);
-    setVoiceUrl(URL.createObjectURL(file));
+    const url=URL.createObjectURL(file); setVoiceUrl(url); makeWaveform(url);
     setVoiceDuration(0); setVoiceTrimStart(0); setVoiceTrimEnd(0); setVoiceOffset(0); setVoiceVolume(100);
     setStatus("Voice track added to timeline: " + file.name);
     e.target.value = "";
   }
   function removeVoiceTrack() {
     if (voiceUrl) URL.revokeObjectURL(voiceUrl);
-    setVoiceUrl(""); setVoiceDuration(0); setVoiceTrimStart(0); setVoiceTrimEnd(0); setVoiceOffset(0); setVoiceVolume(100);
+    setVoiceUrl(""); setVoicePeaks([]); setVoiceDuration(0); setVoiceTrimStart(0); setVoiceTrimEnd(0); setVoiceOffset(0); setVoiceVolume(100);
     setStatus("Voice track removed from timeline");
   }
   function uploadMedia(e) {
@@ -286,7 +319,7 @@ function App() {
     setMediaUrl(URL.createObjectURL(f)); setMediaName(f.name); setStatus(`Imported ${f.name}`);
   }
   function saveProject() {
-    const data = { project, script, scenes, videoSetup, voiceEditing: { trimStart: voiceTrimStart, trimEnd: voiceTrimEnd || voiceDuration, offset: voiceOffset, volume: voiceVolume }, theme, captions, quality, createdAt: new Date().toISOString() };
+    const data = { project, script, scenes, videoSetup, voiceEditing: { trimStart: voiceTrimStart, trimEnd: voiceTrimEnd || voiceDuration, offset: voiceOffset, volume: voiceVolume }, audioTracks: { backgroundMusic: !!musicUrl, musicVolume, soundEffects: !!sfxUrl, sfxVolume }, theme, captions, quality, createdAt: new Date().toISOString() };
     downloadBlob(new Blob([JSON.stringify(data,null,2)],{type:"application/json"}), "officerlab-project.json");
     setStatus("Project file saved");
   }
@@ -359,7 +392,7 @@ function App() {
             </section>
           </div>
           <div className="lower-grid">
-            <section className="panel timeline-panel"><div className="panel-head"><div><span className="eyebrow">EDITING</span><h3>Timeline</h3></div><span className="format-tag">00:38 total</span></div><div className="timeline-ruler"><span>00:00</span><span>00:10</span><span>00:20</span><span>00:30</span><span>00:40</span></div><div className="track"><span className="track-label">VIDEO</span><div className="track-items">{scenes.map((s,i)=><div key={s.id} draggable onDragStart={()=>{dragSceneId.current=s.id;}} onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();reorderScene(dragSceneId.current,s.id);dragSceneId.current=null;}} onDragEnd={()=>{dragSceneId.current=null;}} onClick={()=>setSelected(s.id)} title="Drag to reorder; click to select" className={`clip clip-${i%3} ${selected===s.id?"clip-selected":""}`} style={{width:`${Math.max(14,100/scenes.length)}%`}}>{s.title} · {s.duration}</div>)}</div></div><div className="track voice-track"><span className="track-label">VOICE</span><div className="audio-track-content">{voiceUrl?<><div className="audio-clip"><AudioLines size={15}/> Narration attached</div><audio ref={voicePlayerRef} className="timeline-audio" controls preload="metadata" src={voiceUrl} onLoadedMetadata={e=>{const d=Number.isFinite(e.currentTarget.duration)?e.currentTarget.duration:0;setVoiceDuration(d);setVoiceTrimEnd(prev=>prev>0?Math.min(prev,d):d);e.currentTarget.volume=voiceVolume/100;}} onTimeUpdate={e=>{if(voiceTrimEnd>0&&e.currentTarget.currentTime>=voiceTrimEnd)e.currentTarget.pause();}}/><button className="mini-action" onClick={removeVoiceTrack}>Remove</button></>:<><span className="empty-track">No narration attached</span><button className="mini-action" onClick={()=>setActive("voice")}><Mic size={13}/> Open Voice Studio</button><button className="mini-action" onClick={()=>voiceFileRef.current?.click()}><Upload size={13}/> Import audio</button></>}</div></div><div className="track"><span className="track-label">CAPTIONS</span><div className="caption-clip">Gujarati / English subtitles</div></div></section>
+            <section className="panel timeline-panel"><div className="panel-head"><div><span className="eyebrow">EDITING</span><h3>Timeline</h3></div><span className="format-tag">00:38 total</span></div><div className="timeline-ruler"><span>00:00</span><span>00:10</span><span>00:20</span><span>00:30</span><span>00:40</span></div><div className="track"><span className="track-label">VIDEO</span><div className="track-items">{scenes.map((s,i)=><div key={s.id} draggable onDragStart={()=>{dragSceneId.current=s.id;}} onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();reorderScene(dragSceneId.current,s.id);dragSceneId.current=null;}} onDragEnd={()=>{dragSceneId.current=null;}} onClick={()=>setSelected(s.id)} title="Drag to reorder; click to select" className={`clip clip-${i%3} ${selected===s.id?"clip-selected":""}`} style={{width:`${Math.max(14,100/scenes.length)}%`}}>{s.title} · {s.duration}</div>)}</div></div><div className="track voice-track"><span className="track-label">VOICE</span><div className="audio-track-content">{voiceUrl?<><div className="audio-clip"><AudioLines size={15}/> Narration attached</div>{voicePeaks.length>0&&<div className="waveform" aria-label="Audio waveform">{voicePeaks.map((peak,i)=><i key={i} style={{height:(peak*100)+"%"}}/>)}</div>}<audio ref={voicePlayerRef} className="timeline-audio" controls preload="metadata" src={voiceUrl} onLoadedMetadata={e=>{const d=Number.isFinite(e.currentTarget.duration)?e.currentTarget.duration:0;setVoiceDuration(d);setVoiceTrimEnd(prev=>prev>0?Math.min(prev,d):d);e.currentTarget.volume=voiceVolume/100;}} onTimeUpdate={e=>{if(voiceTrimEnd>0&&e.currentTarget.currentTime>=voiceTrimEnd)e.currentTarget.pause();}}/><button className="mini-action" onClick={removeVoiceTrack}>Remove</button></>:<><span className="empty-track">No narration attached</span><button className="mini-action" onClick={()=>setActive("voice")}><Mic size={13}/> Open Voice Studio</button><button className="mini-action" onClick={()=>voiceFileRef.current?.click()}><Upload size={13}/> Import audio</button></>}</div></div><div className="track extra-audio-track"><span className="track-label">MUSIC</span><div className="audio-track-content">{musicUrl?<><audio className="timeline-audio" controls src={musicUrl} onVolumeChange={e=>setMusicVolume(Math.round(e.currentTarget.volume*100))}/><span className="track-hint">Background music · {musicVolume}%</span><button className="mini-action" onClick={()=>{URL.revokeObjectURL(musicUrl);setMusicUrl("");}}>Remove</button></>:<button className="mini-action" onClick={()=>musicFileRef.current?.click()}><Upload size={13}/> Add background music</button>}</div></div><div className="track extra-audio-track"><span className="track-label">SFX</span><div className="audio-track-content">{sfxUrl?<><audio className="timeline-audio" controls src={sfxUrl}/><span className="track-hint">Sound effects · {sfxVolume}%</span><button className="mini-action" onClick={()=>{URL.revokeObjectURL(sfxUrl);setSfxUrl("");}}>Remove</button></>:<button className="mini-action" onClick={()=>sfxFileRef.current?.click()}><Upload size={13}/> Add sound effect</button>}</div></div><div className="track"><span className="track-label">CAPTIONS</span><div className="caption-clip">Gujarati / English subtitles</div></div></section>
             <section className="panel quick-panel"><div className="panel-head"><div><span className="eyebrow">QUICK ACTIONS</span><h3>Production tools</h3></div><Sparkles size={18} className="gold-text"/></div><button className="action-row" onClick={()=>setActive("script")}><FileText/><span><b>Write your script</b><small>Prepare narration and scene beats</small></span><ChevronDown size={15}/></button><button className="action-row" onClick={()=>setActive("voice")}><Mic/><span><b>Record voiceover</b><small>Capture clean narration</small></span><ChevronDown size={15}/></button><button className="action-row" onClick={()=>setActive("presenter")}><Webcam/><span><b>Record presenter</b><small>Camera and microphone capture</small></span><ChevronDown size={15}/></button></section>
           </div>
         </>}
@@ -370,7 +403,7 @@ function App() {
 
         {active==="presenter" && <div className="two-col"><section className="panel pad-panel"><div className="panel-head"><div><div className="eyebrow">PRESENTER CAMERA</div><h3>Face-camera recording</h3></div><span className={cameraOn?"tag-ready":"tag-planned"}>{cameraOn?"Connected":"Not connected"}</span></div><div className="camera-box">{cameraOn?<video ref={videoRef} muted playsInline/>:<div className="camera-placeholder"><Webcam size={40}/><b>Camera preview</b><small>Connect your camera to begin</small></div>}{recording&&<span className="recording-label"><i/> REC</span>}</div><div className="camera-actions">{!cameraOn?<button className="btn primary" onClick={startCamera}><Webcam size={15}/> Connect camera</button>:<button className="btn subtle" onClick={stopCamera}>Disconnect</button>}{cameraOn&&!recording?<button className="btn danger" onClick={startVideoRecording}><Radio size={15}/> Record video + mic</button>:cameraOn&&<button className="btn danger" onClick={stopVideoRecording}><Square size={15}/> Stop</button>}</div>{videoUrl&&<div className="recorded"><Check size={16}/> Presenter video + microphone audio ready<a href={videoUrl} download="officerlab-presenter-with-audio.webm">Download synced clip</a></div>}</section><section className="panel pad-panel"><div className="eyebrow">COMPOSITION</div><h3>Presenter + graphics</h3><p className="muted">The planned composite workflow places your presenter footage alongside the animated explainer canvas.</p><div className="composition-preview"><div className="comp-slide">GRAPHICS<br/><small>Explainer visual</small></div><div className="comp-presenter"><Webcam size={25}/><small>Presenter</small></div></div><div className="note-box"><AudioLines size={18}/><div><b>Presenter + voice-over together</b><p>When you start presenter recording, the camera stream records its microphone audio and video in the same WebM file. Use headphones to prevent speaker echo. Separate voice-track mixing and final MP4 compositing still require the render worker.</p></div></div></section></div>}
 
-        {active==="assets" && <section className="panel pad-panel"><div className="panel-head"><div><div className="eyebrow">MEDIA LIBRARY</div><h3>Project assets</h3></div><button className="btn primary" onClick={()=>fileRef.current?.click()}><Upload size={15}/> Import media</button></div><input ref={fileRef} type="file" accept="image/*,video/*,audio/*" hidden onChange={uploadMedia}/><input ref={voiceFileRef} type="file" accept="audio/*,.mp3,.wav,.m4a,.ogg,.webm" hidden onChange={uploadVoiceTrack}/>{mediaUrl?<div className="asset-card"><div className="asset-icon"><FolderOpen/></div><div><b>{mediaName}</b><small>Imported project asset</small></div><button className="icon-btn" onClick={()=>{URL.revokeObjectURL(mediaUrl);setMediaUrl("");setMediaName("");}}><X size={16}/></button></div>:<div className="dropzone" onClick={()=>fileRef.current?.click()}><Upload size={27}/><b>Drop your media here</b><span>or click to browse • Images, video and audio</span></div>}<div className="note-box"><FileText size={18}/><div><b>Rights and credits</b><p>Track the source and licence of every third-party photo, map and music asset before publishing. The Cinematic Skill's Wikimedia Commons workflow can be integrated for credited public-domain and openly licensed images.</p></div></div></section>}
+        {active==="assets" && <section className="panel pad-panel"><div className="panel-head"><div><div className="eyebrow">MEDIA LIBRARY</div><h3>Project assets</h3></div><button className="btn primary" onClick={()=>fileRef.current?.click()}><Upload size={15}/> Import media</button></div><input ref={fileRef} type="file" accept="image/*,video/*,audio/*" hidden onChange={uploadMedia}/><input ref={voiceFileRef} type="file" accept="audio/*,.mp3,.wav,.m4a,.ogg,.webm" hidden onChange={uploadVoiceTrack}/><input ref={musicFileRef} type="file" accept="audio/*" hidden onChange={e=>uploadExtraAudio("music",e)}/><input ref={sfxFileRef} type="file" accept="audio/*" hidden onChange={e=>uploadExtraAudio("sfx",e)}/>{mediaUrl?<div className="asset-card"><div className="asset-icon"><FolderOpen/></div><div><b>{mediaName}</b><small>Imported project asset</small></div><button className="icon-btn" onClick={()=>{URL.revokeObjectURL(mediaUrl);setMediaUrl("");setMediaName("");}}><X size={16}/></button></div>:<div className="dropzone" onClick={()=>fileRef.current?.click()}><Upload size={27}/><b>Drop your media here</b><span>or click to browse • Images, video and audio</span></div>}<div className="note-box"><FileText size={18}/><div><b>Rights and credits</b><p>Track the source and licence of every third-party photo, map and music asset before publishing. The Cinematic Skill's Wikimedia Commons workflow can be integrated for credited public-domain and openly licensed images.</p></div></div></section>}
 
         {active==="export" && <div className="two-col"><section className="panel pad-panel"><div className="eyebrow">DELIVERY</div><h3>Export your video</h3><p className="muted">Export a short animated canvas preview now, or save the project for the full rendering pipeline.</p><label className="field-label">Resolution<select value={quality} onChange={e=>setQuality(e.target.value)}><option>1080p</option><option>720p</option><option>4K</option></select></label><div className="toggle-row"><div><b>Gujarati captions</b><small>Include captions in preview and export SRT separately</small></div><input type="checkbox" checked={captions} onChange={e=>setCaptions(e.target.checked)}/></div><button className="btn primary full" disabled={busy} onClick={exportPreview}><Download size={16}/>{busy?"Rendering…":"Export 8-second preview (WebM)"}</button>{exportedVideoUrl&&<div className="recorded"><Check size={16}/> Video file ready <a href={exportedVideoUrl} download="officerlab-preview.webm">Download generated video</a></div>}<button className="btn subtle full" onClick={downloadPreviewFrame}><Download size={16}/> Download current preview frame (PNG)</button><button className="btn subtle full" onClick={exportCaptions}><Captions size={16}/> Download subtitle file (.srt)</button><button className="btn subtle full" onClick={saveProject}><FileText size={16}/> Download editable project (.json)</button></section><section className="panel pad-panel"><div className="eyebrow">EXPORT STATUS</div><h3>Production readiness</h3><div className="readiness"><div><span>Script</span><b className="good">Ready</b></div><div><span>Scene graphics preview</span><b className="good">Ready</b></div><div><span>Voice capture</span><b className={voiceUrl?"good":"pending"}>{voiceUrl?"Recorded":"Optional"}</b></div><div><span>Presenter capture</span><b className={videoUrl?"good":"pending"}>{videoUrl?"Recorded":"Optional"}</b></div><div><span>Full cinematic render</span><b className="pending">Worker integration</b></div><div><span>Final MP4 + audio mux</span><b className="pending">Worker integration</b></div></div><div className="note-box"><Film size={18}/><div><b>About this build</b><p>The current browser export is a WebM motion-graphics preview, not the full Skia cinematic render. See README for the Vercel + Python worker deployment architecture.</p></div></div></section></div>}
       </div>
