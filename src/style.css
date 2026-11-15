@@ -28,3 +28,16 @@
 
 /* Timeline editing affordances */
 .clip{user-select:none;touch-action:pan-y}.clip[draggable="true"]{cursor:grab}.clip[draggable="true"]:active{cursor:grabbing}.clip-selected{outline:2px solid #e7bc70;outline-offset:1px}.track-items{min-width:0;overflow-x:auto;padding:2px 1px}.track-items .clip{flex:0 0 auto;min-width:80px}
+
+/* New video creation workspace */
+.create-layout{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(260px,.75fr);gap:16px;align-items:start}
+.create-main h3,.create-side h3{font:650 18px Manrope;margin:8px 0;color:#edf1f7}
+.create-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 14px;margin-top:18px}
+.create-grid .field-label{margin:7px 0 10px}
+.create-grid input,.create-grid select{background:#0c131f;border:1px solid #2c3a4f;color:#e6ebf3;border-radius:6px;padding:10px;font-size:11px;outline:none;width:100%;min-height:38px}
+.create-submit{width:100%;margin-top:18px;padding:13px}
+.workflow-list{display:grid;gap:0;margin-top:18px}
+.workflow-step{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid #293448}
+.workflow-step>b{font:700 10px Manrope;color:#e2b76c;background:#302819;border-radius:5px;padding:6px}
+.workflow-step span{display:grid;gap:4px}.workflow-step strong{font-size:11px;color:#e4eaf3}.workflow-step small{font-size:9px;color:#8795aa;line-height:1.5}
+@media(max-width:900px){.create-layout{grid-template-columns:1fr}.create-grid{grid-template-columns:1fr}}
