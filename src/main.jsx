@@ -55,7 +55,7 @@ function App() {
   useEffect(() => {
     drawPreview();
     return () => cancelAnimationFrame(animationRef.current);
-  }, [selectedScene, theme, mediaUrl, captions]);
+  }, [selectedScene?.id, selectedScene?.title, selectedScene?.text, theme, mediaUrl, captions]);
 
   useEffect(() => {
     if (!isPlaying || scenes.length === 0) return;
@@ -88,7 +88,7 @@ function App() {
       for (let i=0;i<12;i++) ctx.fillRect((i*117 + t*.018)%w, 0, 1, h);
       ctx.fillStyle = "#d9a84f"; ctx.fillRect(68,68,6,80);
       ctx.fillStyle = theme === "paper" ? "#182238" : "#f6f3ec";
-      ctx.font = "600 17px Arial"; ctx.fillText("OFFICERLAB  /  CINEMATIC EXPLAINER", 94, 88);
+      ctx.font = "600 17px Arial"; ctx.fillText("OFFICERLAB  /  CINEMATIC EXPLAINER", 94, 88);\n      ctx.font = "600 15px Arial"; ctx.fillStyle = "#d9a84f"; ctx.fillText(selectedScene?.title || "Untitled scene", 94, 132);
       ctx.font = "700 47px Arial";
       const lines = (selectedScene?.text || "Your cinematic scene").split("\n");
       lines.forEach((line,i) => ctx.fillText(line, 94, 220 + i*62));
@@ -153,10 +153,10 @@ function App() {
   function addScene() {
     const id = Math.max(0, ...scenes.map(s => s.id)) + 1;
     const scene = { id, title: `Scene ${id}`, kind: "Explainer", duration: "00:10", text: "નવી દૃશ્ય રચના\nAdd your key message", accent: "blue" };
-    setScenes([...scenes, scene]); setSelected(id);
+    setScenes(currentScenes => [...currentScenes, scene]); setSelected(id); setStatus(`Added ${scene.title}`);
   }
   function updateScene(field, value) {
-    setScenes(scenes.map(s => s.id === selected ? { ...s, [field]: value } : s));
+    setScenes(currentScenes => currentScenes.map(s => s.id === selected ? { ...s, [field]: value } : s));
   }
   function downloadBlob(blob, name) {
     const url = URL.createObjectURL(blob); const a = document.createElement("a");
