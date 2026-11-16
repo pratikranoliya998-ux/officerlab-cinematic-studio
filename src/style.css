@@ -229,3 +229,11 @@
 .camera-pip-preview.shape-circle{border-radius:50%;aspect-ratio:1/1!important;object-fit:cover}
 .camera-pip-preview{right:14px;left:auto}
 @media(max-width:650px){.face-layout-controls{grid-template-columns:1fr 1fr}.face-control-heading{grid-column:1/-1}.face-size-control{grid-column:1/-1}.camera-pip-preview{right:8px;bottom:8px;max-width:45%;max-height:75%}}
+
+
+/* Drag-and-drop presenter camera placement */
+.camera-pip-preview{right:auto!important;bottom:auto!important;max-width:45%;max-height:80%;height:auto;cursor:grab;touch-action:none;user-select:none}
+.camera-pip-preview:active{cursor:grabbing}
+.face-reset-control{min-height:36px;padding:8px 12px;border:1px solid #35465d;border-radius:7px;background:#172437;color:#dce5f0;font-size:10px;font-weight:700;cursor:pointer}
+.face-reset-control:hover{border-color:#d8ad66;color:#edc982}
+@media(max-width:650px){.camera-pip-preview{max-width:45%;max-height:75%}.face-reset-control{width:100%}}
