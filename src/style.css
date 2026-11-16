@@ -272,3 +272,46 @@
 .chapter-list{display:flex;flex-wrap:wrap;gap:7px}
 .chapter-list span{padding:6px 8px;border:1px solid #34445a;border-radius:6px;background:#172437;color:#c4d0e0;font-size:9px}
 @media(max-width:650px){.tool-row{align-items:flex-start}.tool-row label{flex-wrap:wrap}.tool-row input[type=text]{max-width:100%}.lecture-tools{padding:10px}}
+
+
+/* Mobile-first lecture ergonomics: landscape, collapsible tools and persistent record controls */
+.presenter-header-actions{display:flex;align-items:center;gap:10px}
+.fullscreen-btn{min-height:38px;padding:8px 11px;font-size:10px}
+.landscape-hint{display:none;max-width:900px;margin:0 auto 12px;padding:10px 13px;border:1px solid #725c36;border-radius:9px;background:#241e14;color:#f1d49a;font-size:11px;line-height:1.5}
+.landscape-hint span{display:block;color:#c3b18e;margin-top:3px}
+.teaching-tools-fab{position:sticky;top:8px;z-index:20;display:flex;align-items:center;gap:8px;margin:12px 0 8px  auto;padding:11px 15px;border:1px solid #8a6a37;border-radius:30px;background:#d8ad66;color:#17120a;font-size:11px;font-weight:850;box-shadow:0 7px 22px #0008;cursor:pointer}
+.teaching-tools-fab.active{background:#26364b;border-color:#d8ad66;color:#f2d08e}
+.presenter-controls{position:sticky;bottom:0;z-index:30;margin:12px -10px 0;padding:12px 10px max(12px,env(safe-area-inset-bottom));background:linear-gradient(180deg,#080d15e8,#080d15 35%);border-top:1px solid #34445a;backdrop-filter:blur(12px)}
+.face-size-control input,.face-opacity-control input,.tool-row input[type=range]{min-height:32px;touch-action:pan-x}
+@media(max-width:800px) and (orientation:portrait){
+ .landscape-hint{display:block}
+ .presenter-intro{margin-bottom:15px}
+ .presenter-intro p{font-size:11px}
+ .presenter-stage{padding:8px}
+ .presentation-preview{aspect-ratio:16/9;max-height:none}
+ .presenter-main{padding-top:18px}
+}
+@media(max-width:900px) and (orientation:landscape){
+ .presenter-header{height:54px}
+ .presenter-main{width:min(1200px,calc(100% - 20px));padding:10px 0 16px}
+ .presenter-intro{margin:0 auto 10px}
+ .presenter-intro h1{font-size:21px;margin:4px 0}
+ .presenter-intro p{display:none}
+ .presenter-stage{max-width:100%;padding:8px}
+ .presenter-stage-top{padding-bottom:6px}
+ .presentation-preview{max-height:calc(100svh - 190px);aspect-ratio:16/9}
+ .presenter-tips,.presenter-footer{display:none}
+ .face-layout-controls{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(max-width:650px){
+ .presenter-header-actions{gap:5px}
+ .presenter-private{display:none}
+ .fullscreen-btn{min-height:42px}
+ .teaching-tools-fab{min-height:46px;padding:12px 16px}
+ .presenter-controls{gap:8px}
+ .presenter-controls .presenter-btn{min-height:48px;font-size:11px}
+ .face-layout-controls input[type=range]{height:34px;min-height:34px}
+ .tool-button{min-height:42px;padding:9px 12px}
+ .tool-row input[type=color]{width:38px;height:36px}
+ .slide-navigation .presenter-btn{min-height:44px}
+}
