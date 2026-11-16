@@ -16,7 +16,8 @@ function loadPdfJs() {
 }
 function PresentationStudio() {
   const cameraRef=useRef(null), slideCanvasRef=useRef(null), outputCanvasRef=useRef(null), playbackRef=useRef(null), streamRef=useRef(null), recorderRef=useRef(null), chunksRef=useRef([]), timerRef=useRef(null), rafRef=useRef(null), pdfRef=useRef(null), pageRef=useRef(1), micRef=useRef(null);
-  const [file,setFile]=useState(null), [pdfReady,setPdfReady]=useState(false), [page,setPage]=useState(1), [pages,setPages]=useState(0), [streamReady,setStreamReady]=useState(false), [recording,setRecording]=useState(false), [seconds,setSeconds]=useState(0), [videoUrl,setVideoUrl]=useState(""), [mp4Url,setMp4Url]=useState(""), [converting,setConverting]=useState(false), [loading,setLoading]=useState(false), [error,setError]=useState(""), [cameraFacing,setCameraFacing]=useState("user"), [pip,setPip]=useState("bottom-right");
+  const [file,setFile]=useState(null), [pdfReady,setPdfReady]=useState(false), [page,setPage]=useState(1), [pages,setPages]=useState(0), [streamReady,setStreamReady]=useState(false), [recording,setRecording]=useState(false), [seconds,setSeconds]=useState(0), [videoUrl,setVideoUrl]=useState(""), [mp4Url,setMp4Url]=useState(""), [converting,setConverting]=useState(false), [loading,setLoading]=useState(false), [error,setError]=useState(""), [cameraFacing,setCameraFacing]=useState("user"), [pip,setPip]=useState("bottom-right"), [faceSize,setFaceSize]=useState(25), [faceShape,setFaceShape]=useState("rounded"), [facePos,setFacePos]=useState({x:73,y:68});
+  const dragRef=useRef(null);
   useEffect(()=>{pageRef.current=page; if(pdfRef.current) drawSlide();},[page,pdfReady]);
   useEffect(()=>()=>{if(timerRef.current)clearInterval(timerRef.current); if(rafRef.current)cancelAnimationFrame(rafRef.current); if(recorderRef.current?.state==="recording")recorderRef.current.stop(); streamRef.current?.getTracks().forEach(t=>t.stop()); if(videoUrl)URL.revokeObjectURL(videoUrl); if(mp4Url)URL.revokeObjectURL(mp4Url);},[]);
   async function loadFile(selected){
@@ -59,7 +60,7 @@ function PresentationStudio() {
       const pw=Math.round(w*faceSize/100);
       const ratios={rounded:9/16,rectangle:9/16,square:1,portrait:3/4,circle:1};
       const ph=Math.round(pw/(ratios[faceShape]||9/16));
-      const margin=24, x=pip==="bottom-left"?margin:w-pw-margin, y=h-ph-margin;
+      const x=Math.max(0,Math.min(w-pw,facePos.x/100*w)), y=Math.max(0,Math.min(h-ph,facePos.y/100*h));
       ctx.save();
       ctx.shadowColor="#000";ctx.shadowBlur=18;
       ctx.beginPath();
@@ -107,17 +108,17 @@ function PresentationStudio() {
         <div className="presentation-preview">
           <canvas ref={slideCanvasRef} className="presentation-canvas"/><canvas ref={outputCanvasRef} width="1280" height="720" className="recording-canvas"/>
           {!pdfReady&&!videoUrl&&<div className="presenter-placeholder"><Upload size={40}/><b>તમારી PPT અથવા PDF અહીં upload કરો</b><small>PDF, PPT અને PPTX supported</small></div>}
-          {pdfReady&&!videoUrl&&<video ref={cameraRef} autoPlay muted playsInline className={`camera-pip-preview shape-${faceShape}`} style={{width:`${faceSize}%`,aspectRatio:faceShape==="portrait"?"3 / 4":faceShape==="square"||faceShape==="circle"?"1 / 1":"16 / 9",right:pip==="bottom-right"?14:"auto",left:pip==="bottom-left"?14:"auto"}}/>}
+          {pdfReady&&!videoUrl&&<video ref={cameraRef} autoPlay muted playsInline className={`camera-pip-preview shape-${faceShape}`} style={{width:`${faceSize}%`,aspectRatio:faceShape==="portrait"?"3 / 4":faceShape==="square"||faceShape==="circle"?"1 / 1":"16 / 9",left:`${facePos.x}%`,top:`${facePos.y}%`}} onPointerDown={e=>{const r=e.currentTarget.parentElement.getBoundingClientRect();dragRef.current={id:e.pointerId};e.currentTarget.setPointerCapture(e.pointerId);}} onPointerMove={e=>{if(!dragRef.current)return;const r=e.currentTarget.parentElement.getBoundingClientRect();const ratio=faceShape==="portrait"?4/3:faceShape==="square"||faceShape==="circle"?1:16/9;const width=r.width*faceSize/100;const height=width/ratio;const x=Math.max(0,Math.min(1-width/r.width,(e.clientX-r.left-width/2)/r.width));const y=Math.max(0,Math.min(1-height/r.height,(e.clientY-r.top-height/2)/r.height));setFacePos({x:x*100,y:y*100});}} onPointerUp={()=>{dragRef.current=null;}} onPointerCancel={()=>{dragRef.current=null;}}/>}
           {videoUrl&&<video ref={playbackRef} src={videoUrl} controls playsInline className="presenter-video"/>}
         </div>
         <div className="presentation-upload"><label className="presenter-btn secondary"><Upload size={16}/>{file?file.name:"Choose PPT / PDF"}<input type="file" accept=".pdf,.ppt,.pptx" onChange={e=>loadFile(e.target.files?.[0])} hidden/></label>{loading&&<span className="upload-state">Presentation તૈયાર થઈ રહી છે…</span>}
           {pdfReady&&<div className="slide-navigation"><button className="presenter-btn secondary" disabled={page<=1} onClick={()=>setPage(p=>p-1)}><ChevronLeft size={16}/> Previous</button><span>Slide {page} / {pages}</span><button className="presenter-btn secondary" disabled={page>=pages} onClick={()=>setPage(p=>p+1)}>Next <ChevronRight size={16}/></button></div>}
         </div>
         {pdfReady&&streamReady&&!videoUrl&&<div className="face-layout-controls">
-          <div className="face-control-heading"><b>Presenter camera layout</b><small>Face size, shape અને position બદલો — recordingમાં પણ live update થશે.</small></div>
+          <div className="face-control-heading"><b>Presenter camera layout</b><small>Face windowને mouse અથવા fingerથી drag કરીને screen પર ગમે ત્યાં મૂકો. Recordingમાં પણ live update થશે.</small></div>
           <label className="face-size-control"><span>Face size <b>{faceSize}%</b></span><input type="range" min="12" max="45" step="1" value={faceSize} onChange={e=>setFaceSize(Number(e.target.value))}/></label>
           <label className="face-select-control"><span>Camera shape</span><select value={faceShape} onChange={e=>setFaceShape(e.target.value)}><option value="rounded">Rounded rectangle</option><option value="rectangle">Rectangle</option><option value="square">Square</option><option value="portrait">Portrait (3:4)</option><option value="circle">Circle</option></select></label>
-          <label className="face-select-control"><span>Position</span><select value={pip} onChange={e=>setPip(e.target.value)}><option value="bottom-right">Bottom right</option><option value="bottom-left">Bottom left</option></select></label>
+          <button type="button" className="face-reset-control" onClick={()=>setFacePos({x:73,y:68})}>Reset position</button>
         </div>}
         <div className="presenter-controls">
           {!streamReady&&!videoUrl&&<button className="presenter-btn primary" onClick={()=>startCamera()}><Camera size={17}/> Connect camera + mic</button>}
