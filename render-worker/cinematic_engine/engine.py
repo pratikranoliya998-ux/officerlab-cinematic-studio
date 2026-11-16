@@ -46,8 +46,8 @@ FONT_ROLES = {
     "hand": [("Snell Roundhand", 400), ("Homemade Apple", 400), ("Segoe Script", 400), ("Brush Script MT", 400), ("URW Chancery L", 400)],
     "cond": [("DIN Condensed", 700), ("Oswald", 700), ("Bebas Neue", 400), ("Roboto Condensed", 700), ("Arial Narrow", 700),
              ("DejaVu Sans Condensed", 700), ("Impact", 400)],
-    "label": [("Avenir Next", 800), ("Montserrat", 800), ("Helvetica Neue", 700), ("Arial", 700), ("DejaVu Sans", 700)],
-    "labelm": [("Avenir Next", 700), ("Montserrat", 600), ("Helvetica Neue", 500), ("Arial", 400), ("DejaVu Sans", 400)],
+    "label": [("Noto Sans Gujarati", 700), ("Noto Sans", 700), ("Avenir Next", 800), ("Montserrat", 800), ("Helvetica Neue", 700), ("Arial", 700), ("DejaVu Sans", 700)],
+    "labelm": [("Noto Sans Gujarati", 400), ("Noto Sans", 400), ("Avenir Next", 700), ("Montserrat", 600), ("Helvetica Neue", 500), ("Arial", 400), ("DejaVu Sans", 400)],
 }
 
 # Looks: the board under everything plus the film finish. A scene picks one with Film(look=...).
@@ -272,17 +272,19 @@ def draw_text(c, res, text, x, y, size, font="serif", rgb=CREAM, a=1.0, track=0.
     """Draw text with letter tracking (em fraction). reveal=n draws only the first n characters."""
     f = res.font(font, size)
     widths = f.getWidths(f.textToGlyphs(text))
-    gap = track * size
-    total = sum(widths) + gap * (len(text) - 1)
+    # Indic scripts use combining marks and conjuncts: never split them into
+    # per-character draw calls or apply Latin-style letter tracking.
+    is_indic = any("\\u0900" <= ch <= "\\u0d7f" for ch in text)
+    gap = 0.0 if is_indic else track * size
+    total = sum(widths) + gap * max(0, len(text) - 1)
     x0 = x - total / 2 if align == "center" else x - total if align == "right" else x
     p = paint(rgb, a)
-    n = len(text) if reveal is None else int(reveal)
-    cx = x0
-    for i, ch in enumerate(text):
-        if i >= n:
-            break
-        c.drawString(ch, cx, y, f, p)
-        cx += widths[i] + gap
+    if reveal is None or is_indic:
+        # Keep a complete run together so combining marks can at least share
+        # the same text run; proper HarfBuzz shaping is preferred where present.
+        c.drawString(text, x0, y, f, p)
+    else:
+        c.drawString(text[:max(0, int(reveal))], x0, y, f, p)
     return total
 
 
