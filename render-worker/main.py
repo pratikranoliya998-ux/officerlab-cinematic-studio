@@ -297,7 +297,7 @@ async def render(
             "-movflags", "+faststart", str(output),
         ]
         run_ffmpeg(args, timeout=max(600, int(total_duration * 20)))
-
+        if not output.exists() or output.stat().st_size < 1024:
             raise RuntimeError("The renderer did not produce a valid MP4 file")
         return FileResponse(
             output,
