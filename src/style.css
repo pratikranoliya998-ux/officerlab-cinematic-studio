@@ -237,3 +237,14 @@
 .face-reset-control{min-height:36px;padding:8px 12px;border:1px solid #35465d;border-radius:7px;background:#172437;color:#dce5f0;font-size:10px;font-weight:700;cursor:pointer}
 .face-reset-control:hover{border-color:#d8ad66;color:#edc982}
 @media(max-width:650px){.camera-pip-preview{max-width:45%;max-height:75%}.face-reset-control{width:100%}}
+
+
+/* Presenter overlay transparency and custom channel branding controls */
+.face-opacity-control{display:grid;gap:7px;min-width:180px;color:#aebbd0;font-size:10px}
+.face-opacity-control span{display:flex;justify-content:space-between;gap:12px}
+.face-opacity-control b{color:#e9c27c}
+.face-opacity-control input{width:100%;accent-color:#d9a84f}
+.face-select-control input[type=file]{max-width:100%;font-size:10px;color:#aebbd0}
+.upload-state{font-size:10px;color:#e9c27c}
+.camera-pip-preview{touch-action:none;user-select:none}
+@media(max-width:700px){.face-layout-controls{grid-template-columns:1fr}.face-opacity-control{grid-column:1}}
