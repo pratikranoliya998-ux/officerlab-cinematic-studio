@@ -9,6 +9,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg fonts-noto-core fonts-noto-extra fonts-noto-ui-core fonts-dejavu-core \
     libharfbuzz0b libfribidi0 libjpeg62-turbo libpng16-16 \
+    libegl1 libgl1 libgles2 libglib2.0-0 \
     && fc-cache -f \
     && rm -rf /var/lib/apt/lists/*
 
