@@ -85,6 +85,9 @@ function App() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [videoSetup, setVideoSetup] = useState(initialWorkspace.videoSetup || DEFAULT_VIDEO_SETUP);
   const [showCreate, setShowCreate] = useState(false);
+  const [projectSearch, setProjectSearch] = useState("");
+  const [projectFilter, setProjectFilter] = useState("all");
+  const importProjectRef = useRef(null);
   const dragSceneId = useRef(null);
   const videoRef = useRef(null);
   const studioPresenterVideoRef = useRef(null);
@@ -358,6 +361,42 @@ function App() {
   }
   function updateScene(field, value) {
     setScenes(currentScenes => currentScenes.map(s => s.id === selected ? { ...s, [field]: value } : s));
+  }
+  function deleteScene(id) {
+    if (scenes.length <= 1) { setStatus("A project must contain at least one scene"); return; }
+    const next = scenes.filter(scene => scene.id !== id);
+    setScenes(next); setSelected(next[0].id); setStatus("Scene deleted");
+  }
+  function duplicateScene(id) {
+    const source = scenes.find(scene => scene.id === id); if (!source) return;
+    const copy = { ...source, id: Math.max(0,...scenes.map(scene=>Number(scene.id)||0))+1, title: source.title + " (Copy)" };
+    setScenes(old => [...old, copy]); setSelected(copy.id); setStatus("Scene duplicated");
+  }
+  function deleteProject(id) {
+    if (workspaceState.projects.length <= 1) { setStatus("Keep at least one project in your workspace"); return; }
+    const target = workspaceState.projects.find(item=>item.id===id); if(!target)return;
+    if (!window.confirm(`Permanently delete project \"${target.name}\" from this browser? Export a backup first if needed.`)) return;
+    const remaining = workspaceState.projects.filter(item=>item.id!==id);
+    const nextActive = id===workspaceState.activeId ? remaining[0] : remaining.find(item=>item.id===workspaceState.activeId);
+    const next = {activeId:nextActive.id,projects:remaining};
+    setWorkspaceState(next); localStorage.setItem("officerlab-workspaces-v1",JSON.stringify(next));
+    if(id===workspaceState.activeId){setProject(nextActive.name);setWorkspaceMode(nextActive.mode||"exam");setScript(nextActive.script||"");setScenes(nextActive.scenes||initialScenes);setVideoSetup(nextActive.videoSetup||DEFAULT_VIDEO_SETUP);setTheme(nextActive.theme||"midnight");setCaptions(nextActive.captions??true);setQuality(nextActive.quality||"1080p");setSelected((nextActive.scenes||initialScenes)[0].id);setActive("studio");}
+    setStatus("Project deleted from this browser");
+  }
+  function renameProject(id) {
+    const target=workspaceState.projects.find(item=>item.id===id);if(!target)return;
+    const name=window.prompt("Project name",target.name);if(!name?.trim())return;
+    const projects=workspaceState.projects.map(item=>item.id===id?{...item,name:name.trim()}:item);
+    const next={...workspaceState,projects};setWorkspaceState(next);localStorage.setItem("officerlab-workspaces-v1",JSON.stringify(next));
+    if(id===workspaceState.activeId)setProject(name.trim());setStatus("Project renamed");
+  }
+  function exportWorkspaceBackup(){
+    const data={format:"officerlab-workspace-backup-v1",exportedAt:new Date().toISOString(),workspaceState:{...workspaceState,projects:workspaceState.projects.map(item=>item.id===workspaceState.activeId?{...item,name:project,script,scenes,videoSetup,theme,captions,quality}:item)}};
+    downloadBlob(new Blob([JSON.stringify(data,null,2)],{type:"application/json"}),"officerlab-workspace-backup.json");setStatus("Workspace backup downloaded");
+  }
+  function importWorkspaceBackup(event){
+    const file=event.target.files?.[0];if(!file)return;
+    const reader=new FileReader();reader.onload=()=>{try{const parsed=JSON.parse(String(reader.result));const state=parsed.workspaceState||parsed;if(!Array.isArray(state.projects)||!state.projects.length)throw new Error("Invalid backup");const clean=state.projects.map(item=>({...item,id:item.id||`project-${Date.now()}-${Math.random()}`,mode:item.mode||"general",scenes:Array.isArray(item.scenes)&&item.scenes.length?item.scenes:initialScenes}));const activeId=clean.some(item=>item.id===state.activeId)?state.activeId:clean[0].id;const next={activeId,projects:clean};setWorkspaceState(next);localStorage.setItem("officerlab-workspaces-v1",JSON.stringify(next));const current=clean.find(item=>item.id===activeId);setProject(current.name);setWorkspaceMode(current.mode);setScript(current.script||"");setScenes(current.scenes);setVideoSetup(current.videoSetup||DEFAULT_VIDEO_SETUP);setTheme(current.theme||"midnight");setCaptions(current.captions??true);setQuality(current.quality||"1080p");setSelected(current.scenes[0].id);setActive("studio");setStatus("Backup imported successfully");}catch(error){setStatus("Backup import failed: "+error.message);}};reader.readAsText(file);event.target.value="";
   }
   function downloadBlob(blob, name) {
     const url = URL.createObjectURL(blob);
@@ -647,7 +686,7 @@ function App() {
       <div className="content">
         <div className="page-heading"><div><div className="eyebrow">{workspaceMode === "exam" ? "EXAM PREPARATION WORKSPACE" : "GENERAL VIDEO CREATION WORKSPACE"}</div><h1>{nav.find(n=>n[0]===active)?.[1] || "Studio"}</h1><p>{workspaceMode === "exam" ? "Create syllabus-focused lessons, revision videos and MCQ explainers." : "Create cinematic stories, explainers, documentaries and social videos."}</p></div><div className="heading-right"><span className="status-chip"><span className="live-dot"/> {status}</span></div></div>
 
-        {active==="home" && <section className="platform-home"><div className="platform-hero"><span className="eyebrow">OFFICERLAB CREATOR PLATFORM</span><h2>One platform. <em>Two creative studios.</em></h2><p>Choose your production workflow. General video creation and competitive-exam education stay in separate workspaces.</p></div><div className="platform-cards"><article className="platform-card general"><div className="platform-card-icon"><Clapperboard size={25}/></div><span className="eyebrow">STUDIO 01</span><h3>General Video Creation</h3><p>For YouTube videos, cinematic explainers, documentaries, storytelling, promos, interviews and Shorts.</p><ul><li>Cinematic scenes and motion graphics</li><li>Script, voice, presenter and media tools</li><li>Landscape, portrait and social formats</li></ul><button className="btn primary" onClick={()=>enterMode("general")}>Open Video Studio <ChevronDown size={15}/></button></article><article className="platform-card exam"><div className="platform-card-icon"><GraduationCap size={27}/></div><span className="eyebrow">STUDIO 02</span><h3>Competitive Exam Preparation</h3><p>For GPSC, GSSSB, UPSC and other competitive-exam courses, lessons and revision content.</p><ul><li>Syllabus and topic-wise lesson planning</li><li>Exam-focused notes, MCQs and revision</li><li>Gujarati + English technical terminology</li></ul><button className="btn primary" onClick={()=>enterMode("exam")}>Open Exam Studio <ChevronDown size={15}/></button></article></div><div className="platform-footnote"><Check size={15}/> Separate project lists and saved workspaces for each studio.</div></section>}
+        {active==="home" && <section className="platform-home"><div className="platform-hero"><span className="eyebrow">OFFICERLAB CREATOR PLATFORM</span><h2>One platform. <em>Two creative studios.</em></h2><p>Choose your production workflow. General video creation and competitive-exam education stay in separate workspaces.</p></div><div className="platform-cards"><article className="platform-card general"><div className="platform-card-icon"><Clapperboard size={25}/></div><span className="eyebrow">STUDIO 01</span><h3>General Video Creation</h3><p>For YouTube videos, cinematic explainers, documentaries, storytelling, promos, interviews and Shorts.</p><ul><li>Cinematic scenes and motion graphics</li><li>Script, voice, presenter and media tools</li><li>Landscape, portrait and social formats</li></ul><button className="btn primary" onClick={()=>enterMode("general")}>Open Video Studio <ChevronDown size={15}/></button></article><article className="platform-card exam"><div className="platform-card-icon"><GraduationCap size={27}/></div><span className="eyebrow">STUDIO 02</span><h3>Competitive Exam Preparation</h3><p>For GPSC, GSSSB, UPSC and other competitive-exam courses, lessons and revision content.</p><ul><li>Syllabus and topic-wise lesson planning</li><li>Exam-focused notes, MCQs and revision</li><li>Gujarati + English technical terminology</li></ul><button className="btn primary" onClick={()=>enterMode("exam")}>Open Exam Studio <ChevronDown size={15}/></button></article></div><div className="platform-footnote"><Check size={15}/> Separate project lists and saved workspaces for each studio.</div><section className="panel pad-panel project-library"><div className="panel-head"><div><span className="eyebrow">PROJECT LIBRARY</span><h3>Saved projects</h3></div><div className="library-actions"><button className="mini-action" onClick={exportWorkspaceBackup}>Export backup</button><button className="mini-action" onClick={()=>importProjectRef.current?.click()}>Import backup</button></div></div><input ref={importProjectRef} type="file" accept="application/json" hidden onChange={importWorkspaceBackup}/><div className="library-filters"><input placeholder="Search projects, subjects, topics…" value={projectSearch} onChange={e=>setProjectSearch(e.target.value)}/><select value={projectFilter} onChange={e=>setProjectFilter(e.target.value)}><option value="all">All categories</option><option value="general">General videos</option><option value="exam">Exam preparation</option></select></div><div className="project-library-list">{workspaceState.projects.filter(item=>(projectFilter==="all"||(item.mode||"exam")===(projectFilter))).filter(item=>(item.name+" "+(item.videoSetup?.topic||"")+" "+(item.videoSetup?.category||"")+" "+(item.videoSetup?.exam||"")).toLowerCase().includes(projectSearch.toLowerCase())).map(item=><div className="project-library-item" key={item.id}><div><b>{item.name}</b><small>{item.mode==="exam"?"Exam Preparation":"General Video"} · {item.videoSetup?.exam||item.videoSetup?.category||"Unclassified"} · {(item.scenes||[]).length} scenes</small></div><button className="mini-action" onClick={()=>activateWorkspace(item)}>Open</button><button className="mini-action" onClick={()=>renameProject(item.id)}>Rename</button><button className="mini-action danger" onClick={()=>deleteProject(item.id)}>Delete</button></div>)}</div><p className="muted">Current storage: this browser only. Use Export backup to keep a portable copy. Cloud sync across devices requires a database and account service and is not enabled in this build.</p></section></section>}
         {active==="create" && <div className="create-layout">
           <section className="panel pad-panel create-main">
             <div className="eyebrow">{workspaceMode === "exam" ? "NEW EXAM LESSON" : "NEW GENERAL VIDEO"}</div><h3>{workspaceMode === "exam" ? "Build a syllabus-focused lesson" : "Create a cinematic video project"}</h3>
@@ -687,9 +726,9 @@ function App() {
             </section>
             <section className="panel scene-panel">
               <div className="panel-head"><div><span className="eyebrow">SEQUENCE</span><h3>Scenes <span className="count">{scenes.length}</span></h3></div><button className="icon-btn gold" onClick={addScene}><Plus size={17}/></button></div>
-              <div className="scene-list">{scenes.map((s,i)=><button key={s.id} className={`scene-row ${selected===s.id?"selected":""}`} onClick={()=>setSelected(s.id)}><span className={`scene-thumb ${s.accent}`}>{String(i+1).padStart(2,"0")}</span><span className="scene-info"><b>{s.title}</b><small>{s.kind}</small></span><span className="scene-time">{s.duration}</span></button>)}</div>
+              <div className="scene-list">{scenes.map((s,i)=><div key={s.id} className={`scene-row-wrap ${selected===s.id?"selected":""}`}><button className="scene-row" onClick={()=>setSelected(s.id)}><span className={`scene-thumb ${s.accent}`}>{String(i+1).padStart(2,"0")}</span><span className="scene-info"><b>{s.title}</b><small>{s.kind}</small></span><span className="scene-time">{s.duration}</span></button><button className="scene-mini-action" title="Duplicate scene" onClick={()=>duplicateScene(s.id)}>⧉</button><button className="scene-mini-action danger" title="Delete scene" onClick={()=>deleteScene(s.id)}>×</button></div>)}</div>
               <button className="add-scene" onClick={addScene}><Plus size={15}/> Add scene</button>
-              <div className="scene-editor"><div className="eyebrow">SELECTED SCENE</div><label>Scene title<input value={selectedScene?.title||""} onChange={e=>updateScene("title",e.target.value)}/></label><label>Scene duration (MM:SS)<input value={selectedScene?.duration||"00:10"} onChange={e=>updateScene("duration",e.target.value)} placeholder="00:10"/></label><label>On-screen text<textarea rows="2" value={selectedScene?.text||""} onChange={e=>updateScene("text",e.target.value)}/></label></div>
+              <div className="scene-editor"><div className="eyebrow">SELECTED SCENE</div><label>Scene title<input value={selectedScene?.title||""} onChange={e=>updateScene("title",e.target.value)}/></label><label>Scene duration (MM:SS)<input value={selectedScene?.duration||"00:10"} onChange={e=>updateScene("duration",e.target.value)} placeholder="00:10"/></label><label>On-screen text<textarea rows="2" value={selectedScene?.text||""} onChange={e=>updateScene("text",e.target.value)}/></label><button className="mini-action danger" onClick={()=>deleteScene(selectedScene.id)}>Delete selected scene</button></div>
             </section>
           </div>
           <div className="lower-grid">
