@@ -48,7 +48,13 @@ def render_cinematic(manifest: dict, output: Path, temp_dir: Path) -> None:
     durations = []
     for scene in scenes:
         try:
-            durations.append(max(2.0, min(45.0, float(scene.get("durationSeconds") or scene.get("duration") or 6))))
+            raw_duration = scene.get("durationSeconds") or scene.get("duration") or 6
+            if isinstance(raw_duration, str) and ":" in raw_duration:
+                parts = [float(x) for x in raw_duration.split(":")]
+                seconds = parts[-1] + (parts[-2] * 60 if len(parts) > 1 else 0)
+            else:
+                seconds = float(raw_duration)
+            durations.append(max(2.0, min(45.0, seconds)))
         except (TypeError, ValueError):
             durations.append(6.0)
     total = sum(durations)
@@ -99,7 +105,6 @@ def render_cinematic(manifest: dict, output: Path, temp_dir: Path) -> None:
                 pass
         film.shot(start, x, 100, 0.48, rot=(-0.35 if i % 2 else 0.35))
         film.shot(start + duration, x, 0, 0.44)
-    film.shot(0, mid, -1200, 0.34)
     film.shot(total, mid, 0, 0.28)
     film.fade_in, film.fade_out = 0.7, min(1.5, total/4)
 
