@@ -63,6 +63,27 @@ Suggested future API contract:
 
 Return `{ jobId, status: "queued" }`; poll `GET /api/render-jobs/:jobId` for progress and final URLs. Add authentication, upload limits, signed URLs, rate limits and per-user storage before public deployment.
 
+## AI script generation integration
+
+The Script Editor includes OpenAI and Google Gemini provider selection, provider connection testing, and lecture-script generation. Browser requests go to the same-origin Vercel function at `/api/ai/*`; that function proxies only the allowlisted AI routes to the Render FastAPI gateway. Provider credentials and the gateway access key are never placed in browser JavaScript.
+
+Configure these **server-side** environment variables:
+
+**Render service (officerlab-render-worker):**
+- `OFFICERLAB_API_ACCESS_KEY`: a long random access key shared only with the Vercel server function.
+- `OPENAI_API_KEY`: optional OpenAI API key.
+- `OPENAI_MODEL`: optional model override; use a model available to your OpenAI API account.
+- `GEMINI_API_KEY`: optional Google AI Studio API key.
+- `GEMINI_MODEL`: optional model override; use a model available to your Google project.
+
+**Vercel project (Production and Preview):**
+- `RENDER_API_URL`: Render worker origin only, e.g. `https://YOUR-WORKER.onrender.com` (no trailing slash required).
+- `OFFICERLAB_API_ACCESS_KEY`: exactly the same value as the Render setting above.
+
+Do **not** create `VITE_*` variables for API keys. Vite variables are public and can be read by every visitor. After adding or changing environment variables, redeploy the Render service and Vercel project. Then open Script Editor → AI Script Studio → choose OpenAI or Gemini → Test API Connection → Generate Full Lecture Script.
+
+The existing `/api/providers` status endpoint exposes whether a provider key is configured, not the key itself. API requests are rate-limited by the Render gateway. Provider usage is billed separately by the provider and requires an active API account with billing/credits.
+
 ## Current limitations
 
 - The canvas exporter produces an 8-second **WebM preview**, not a full MP4 film.
