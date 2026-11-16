@@ -76,8 +76,8 @@ function PresentationStudio() {
       else{const scale=Math.max(pw/video.videoWidth,ph/video.videoHeight);const sw=video.videoWidth*scale,sh=video.videoHeight*scale;ctx.drawImage(video,(pw-sw)/2,(ph-sh)/2,sw,sh);}
       ctx.restore();
       ctx.save();ctx.strokeStyle="#d8ad66";ctx.lineWidth=5;ctx.beginPath();
-      if(faceShape==="circle")ctx.ellipse(x+pw/2,y+ph/2,pw/2-2,ph/2-2,0,0,Math.PI*2);
-      else if(faceShape==="rounded")ctx.roundRect(x+2,y+2,pw-4,ph-4,Math.min(24,pw*.09));
+      if(currentFaceShape==="circle")ctx.ellipse(x+pw/2,y+ph/2,pw/2-2,ph/2-2,0,0,Math.PI*2);
+      else if(currentFaceShape==="rounded")ctx.roundRect(x+2,y+2,pw-4,ph-4,Math.min(24,pw*.09));
       else ctx.rect(x+2,y+2,pw-4,ph-4);
       ctx.stroke();ctx.restore();
     }
@@ -111,7 +111,7 @@ function PresentationStudio() {
         <div className="presentation-preview">
           <canvas ref={slideCanvasRef} className="presentation-canvas"/><canvas ref={outputCanvasRef} width="1280" height="720" className="recording-canvas"/>
           {!pdfReady&&!videoUrl&&<div className="presenter-placeholder"><Upload size={40}/><b>તમારી PPT અથવા PDF અહીં upload કરો</b><small>PDF, PPT અને PPTX supported</small></div>}
-          {pdfReady&&!videoUrl&&<video ref={cameraRef} autoPlay muted playsInline className={`camera-pip-preview shape-${faceShape}`} style={{width:`${faceSize}%`,aspectRatio:faceShape==="portrait"?"3 / 4":faceShape==="square"||faceShape==="circle"?"1 / 1":"16 / 9",left:`${facePos.x}%`,top:`${facePos.y}%`}} onPointerDown={e=>{const r=e.currentTarget.parentElement.getBoundingClientRect();dragRef.current={id:e.pointerId};e.currentTarget.setPointerCapture(e.pointerId);}} onPointerMove={e=>{if(!dragRef.current)return;const r=e.currentTarget.parentElement.getBoundingClientRect();const ratio=faceShape==="portrait"?4/3:faceShape==="square"||faceShape==="circle"?1:16/9;const width=r.width*faceSize/100;const height=width/ratio;const x=Math.max(0,Math.min(1-width/r.width,(e.clientX-r.left-width/2)/r.width));const y=Math.max(0,Math.min(1-height/r.height,(e.clientY-r.top-height/2)/r.height));setFacePos({x:x*100,y:y*100});}} onPointerUp={()=>{dragRef.current=null;}} onPointerCancel={()=>{dragRef.current=null;}}/>}
+          {pdfReady&&!videoUrl&&<video ref={cameraRef} autoPlay muted playsInline className={`camera-pip-preview shape-${faceShape}`} style={{width:`${faceSize}%`,aspectRatio:faceShape==="portrait"?"3 / 4":faceShape==="square"||faceShape==="circle"?"1 / 1":"16 / 9",left:`${facePos.x}%`,top:`${facePos.y}%`}} onPointerDown={e=>{const r=e.currentTarget.parentElement.getBoundingClientRect();dragRef.current={id:e.pointerId};e.currentTarget.setPointerCapture(e.pointerId);}} onPointerMove={e=>{if(!dragRef.current)return;const r=e.currentTarget.parentElement.getBoundingClientRect();const ratio=faceShape==="portrait"?3/4:faceShape==="square"||faceShape==="circle"?1:16/9;const width=r.width*faceSize/100;const height=width/ratio;const x=Math.max(0,Math.min(1-width/r.width,(e.clientX-r.left-width/2)/r.width));const y=Math.max(0,Math.min(1-height/r.height,(e.clientY-r.top-height/2)/r.height));setFacePos({x:x*100,y:y*100});}} onPointerUp={()=>{dragRef.current=null;}} onPointerCancel={()=>{dragRef.current=null;}}/>}
           {videoUrl&&<video ref={playbackRef} src={videoUrl} controls playsInline className="presenter-video"/>}
         </div>
         <div className="presentation-upload"><label className="presenter-btn secondary"><Upload size={16}/>{file?file.name:"Choose PPT / PDF"}<input type="file" accept=".pdf,.ppt,.pptx" onChange={e=>loadFile(e.target.files?.[0])} hidden/></label>{loading&&<span className="upload-state">Presentation તૈયાર થઈ રહી છે…</span>}
