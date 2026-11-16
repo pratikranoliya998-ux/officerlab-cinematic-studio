@@ -152,6 +152,50 @@ def health():
     return {"ok": True, "service": "officerlab-render-worker", "ffmpeg": shutil.which("ffmpeg") is not None}
 
 
+
+@app.post("/presentation-to-pdf")
+async def presentation_to_pdf(
+    file: UploadFile = File(...),
+    authorization: str = Header(default=""),
+):
+    """Convert an uploaded PPT/PPTX to PDF for browser slide display."""
+    expected_token = os.getenv("RENDER_API_TOKEN", "").strip()
+    if expected_token and authorization != "Bearer " + expected_token:
+        raise HTTPException(status_code=401, detail="Invalid render token")
+    if not shutil.which("libreoffice"):
+        raise HTTPException(status_code=503, detail="PowerPoint conversion is unavailable on this worker")
+    filename = Path(file.filename or "presentation.pptx").name
+    if not filename.lower().endswith((".ppt", ".pptx")):
+        raise HTTPException(status_code=415, detail="Upload a PPT or PPTX file")
+    work = Path(tempfile.mkdtemp(prefix="officerlab-presentation-"))
+    try:
+        source = work / filename
+        size = 0
+        with source.open("wb") as handle:
+            while True:
+                chunk = await file.read(1024 * 1024)
+                if not chunk: break
+                size += len(chunk)
+                if size > 100 * 1024 * 1024:
+                    raise HTTPException(status_code=413, detail="Presentation exceeds 100 MB")
+                handle.write(chunk)
+        completed = subprocess.run(
+            ["libreoffice", "-env:UserInstallation=file://" + str(work / "lo-profile"),
+             "--headless", "--convert-to", "pdf", "--outdir", str(work), str(source)],
+            capture_output=True, text=True, timeout=180
+        )
+        output = work / (source.stem + ".pdf")
+        if completed.returncode != 0 or not output.exists():
+            raise RuntimeError((completed.stderr or completed.stdout or "PowerPoint to PDF conversion failed")[-1500:])
+        return FileResponse(output, media_type="application/pdf", filename="officerlab-slides.pdf",
+                            background=BackgroundTask(shutil.rmtree, work, ignore_errors=True))
+    except HTTPException:
+        shutil.rmtree(work, ignore_errors=True); raise
+    except subprocess.TimeoutExpired:
+        shutil.rmtree(work, ignore_errors=True); raise HTTPException(status_code=504, detail="Presentation conversion timed out")
+    except Exception as exc:
+        shutil.rmtree(work, ignore_errors=True); raise HTTPException(status_code=500, detail=str(exc)[-1500:])
+
 @app.post("/convert-presenter")
 async def convert_presenter(
     file: UploadFile = File(...),
