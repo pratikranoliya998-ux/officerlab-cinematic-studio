@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
-  Aperture, AudioLines, Captions, Check, ChevronDown, Clapperboard, Download,
+  Aperture, AudioLines, Captions, Check, ChevronDown, Clapperboard, Download, Home, GraduationCap,
   FileText, Film, FolderOpen, LayoutDashboard, Mic, MonitorPlay, Play, Plus,
   Radio, Settings, Sparkles, Square, Upload, Video, Volume2, WandSparkles, Pause,
   Webcam, X
@@ -26,7 +26,7 @@ const DEFAULT_VIDEO_SETUP = {
 
 function loadWorkspaceState() {
   const fallback = {
-    id: "workspace-default", name: "Untitled OfficerLab Project", script: starter,
+    id: "workspace-default", name: "Untitled Exam Lesson", mode: "exam", script: starter,
     scenes: initialScenes, videoSetup: DEFAULT_VIDEO_SETUP, theme: "midnight",
     captions: true, quality: "1080p"
   };
@@ -34,7 +34,7 @@ function loadWorkspaceState() {
     const saved = JSON.parse(localStorage.getItem("officerlab-workspaces-v1") || "null");
     if (saved && Array.isArray(saved.projects) && saved.projects.length) {
       const activeId = saved.projects.some(item => item.id === saved.activeId) ? saved.activeId : saved.projects[0].id;
-      return { ...saved, activeId, projects: saved.projects.map(item => ({ ...fallback, ...item })) };
+      return { ...saved, activeId, projects: saved.projects.map(item => ({ ...fallback, ...item, mode: item.mode || "exam" })) };
     }
   } catch {}
   return { activeId: fallback.id, projects: [fallback] };
@@ -44,7 +44,8 @@ function App() {
   const [workspaceState, setWorkspaceState] = useState(loadWorkspaceState);
   const initialWorkspace = workspaceState.projects.find(item => item.id === workspaceState.activeId) || workspaceState.projects[0];
   const [workspaceOpen, setWorkspaceOpen] = useState(true);
-  const [active, setActive] = useState("studio");
+  const [workspaceMode, setWorkspaceMode] = useState(initialWorkspace.mode || "exam");
+  const [active, setActive] = useState("home");
   const [project, setProject] = useState(initialWorkspace.name);
   const [script, setScript] = useState(initialWorkspace.script || "");
   const [scenes, setScenes] = useState(initialWorkspace.scenes || initialScenes);
@@ -237,7 +238,7 @@ function App() {
       return;
     }
     const current = {
-      id: workspaceState.activeId, name: project, script, scenes, videoSetup,
+      id: workspaceState.activeId, name: project, mode: workspaceMode, script, scenes, videoSetup,
       theme, captions, quality
     };
     const projects = workspaceState.projects.map(item => item.id === current.id ? current : item);
@@ -246,6 +247,7 @@ function App() {
     setWorkspaceState(next);
     try { localStorage.setItem("officerlab-workspaces-v1", JSON.stringify(next)); } catch {}
     setProject(selectedWorkspace.name);
+    setWorkspaceMode(selectedWorkspace.mode || "exam");
     setScript(selectedWorkspace.script || "");
     setScenes(selectedWorkspace.scenes || initialScenes);
     setVideoSetup(selectedWorkspace.videoSetup || DEFAULT_VIDEO_SETUP);
@@ -270,7 +272,7 @@ function App() {
     };
     const id = "workspace-" + Date.now();
     const nextWorkspace = {
-      id, name: "Untitled Workspace " + (workspaceState.projects.length + 1),
+      id, name: workspaceMode === "exam" ? "Untitled Exam Lesson" : "Untitled General Video", mode: workspaceMode,
       script: "", scenes: initialScenes.map(scene => ({ ...scene })),
       videoSetup: { ...DEFAULT_VIDEO_SETUP }, theme: "midnight", captions: true, quality: "1080p"
     };
@@ -296,10 +298,34 @@ function App() {
     setStatus("New workspace created");
   }
 
+  function enterMode(mode) {
+    const current = { id: workspaceState.activeId, name: project, mode: workspaceMode, script, scenes, videoSetup, theme, captions, quality };
+    const savedProjects = workspaceState.projects.map(item => item.id === current.id ? current : item);
+    let target = savedProjects.find(item => (item.mode || "exam") === mode);
+    if (!target) {
+      const id = "workspace-" + mode + "-" + Date.now();
+      target = { id, name: mode === "exam" ? "New Exam Preparation Project" : "New General Video Project", mode,
+        script: "", scenes: initialScenes.map(scene => ({ ...scene })),
+        videoSetup: { ...DEFAULT_VIDEO_SETUP, exam: mode === "exam" ? "GPSC Class 1-2" : "General learners",
+          category: mode === "exam" ? "GPSC / GSSSB" : "Other educational content",
+          template: mode === "exam" ? "Complete lesson" : "Cinematic story" },
+        theme: "midnight", captions: true, quality: "1080p" };
+      savedProjects.push(target);
+    }
+    const next = { activeId: target.id, projects: savedProjects };
+    setWorkspaceState(next);
+    try { localStorage.setItem("officerlab-workspaces-v1", JSON.stringify(next)); } catch {}
+    setWorkspaceMode(mode); setProject(target.name); setScript(target.script || "");
+    setScenes(target.scenes || initialScenes); setVideoSetup(target.videoSetup || DEFAULT_VIDEO_SETUP);
+    setTheme(target.theme || "midnight"); setCaptions(target.captions ?? true); setQuality(target.quality || "1080p");
+    setSelected(1); setAudioClips([]); setSelectedAudioClip(""); setVoiceUrl(""); setVideoUrl(""); setExportedVideoUrl("");
+    setActive("studio"); setWorkspaceOpen(false); setStatus(mode === "exam" ? "Exam Preparation Studio opened" : "General Video Studio opened");
+  }
+
   function createVideo() {
     const title = videoSetup.title.trim() || videoSetup.topic.trim() || "New OfficerLab Video";
     const topic = videoSetup.topic.trim() || "Your selected topic";
-    const base = [
+    const base = workspaceMode === "exam" ? [
       ["Opening Hook","Title card", "આજનો મહત્વપૂર્ણ વિષય\n"+topic,"gold"],
       ["Learning Objectives","Objectives","આજે આપણે શું શીખીશું?\nમુખ્ય મુદ્દાઓ અને પરીક્ષા ઉપયોગિતા","blue"],
       ["Concept Foundation","Explainer",topic+"\nમૂળભૂત પરિચય અને વ્યાખ્યા","purple"],
@@ -308,8 +334,17 @@ function App() {
       ["Quick Revision","Recap","ઝડપી પુનરાવર્તન\nમુખ્ય મુદ્દાઓ યાદ રાખો","purple"],
       ["Practice MCQs","Quiz","તમારી સમજ ચકાસો\nMCQ અને સમજૂતી","blue"],
       ["Final Takeaway","Outro","આજના પાઠનો સાર\nOfficerLab સાથે તૈયારી ચાલુ રાખો","gold"]
+    ] : [
+      ["Opening Hook","Title card","આ વાર્તા / વિચાર તમને શું શીખવશે?\n"+topic,"gold"],
+      ["Context","Introduction","વિષયનો પરિચય અને પૃષ્ઠભૂમિ","blue"],
+      ["Main Story","Story / Explainer","મુખ્ય ઘટના, વિચાર અથવા સંકલ્પના","purple"],
+      ["Visual Sequence","Cinematic sequence","મુખ્ય દૃશ્યો, ઉદાહરણો અને visual moments","blue"],
+      ["Key Message","Takeaway","દર્શકો માટે યાદગાર સંદેશ","gold"],
+      ["Call to Action","Outro","Like, share, subscribe અથવા આગળનું પગલું","purple"]
     ];
-    const chosen = videoSetup.template === "Shorts / Reels" ? [base[0],base[2],base[4],base[7]] : videoSetup.template === "MCQ Practice" ? [base[0],base[4],base[6],base[7]] : videoSetup.template === "Concept Explainer" ? [base[0],base[2],base[3],base[5],base[7]] : base;
+    const chosen = workspaceMode === "general"
+      ? (videoSetup.template === "Shorts / Reels" ? [base[0],base[2],base[4],base[5]] : base)
+      : (videoSetup.template === "Shorts / Reels" ? [base[0],base[2],base[4],base[7]] : videoSetup.template === "MCQ Practice" ? [base[0],base[4],base[6],base[7]] : videoSetup.template === "Concept Explainer" ? [base[0],base[2],base[3],base[5],base[7]] : base);
     const total = Math.max(1, Number(videoSetup.duration)||10) * 60;
     const each = Math.max(5, Math.floor(total/chosen.length));
     const nextScenes = chosen.map((s,i)=>({id:i+1,title:s[0],kind:s[1],duration:String(Math.floor(each/60)).padStart(2,"0")+":"+String(each%60).padStart(2,"0"),text:s[2],accent:s[3]}));
@@ -607,7 +642,7 @@ function App() {
   }
 
   const nav = [
-    ["create","New Video",Plus], ["studio","Studio",LayoutDashboard], ["script","Script & Story",FileText],
+    ["home","Home",Home], ["create",workspaceMode === "exam" ? "New Lesson" : "New Video",Plus], ["studio",workspaceMode === "exam" ? "Lesson Studio" : "Video Studio",LayoutDashboard], ["script",workspaceMode === "exam" ? "Lesson Script" : "Script & Story",FileText],
     ["voice","Voice Studio",Mic], ["presenter","Presenter",Webcam],
     ["assets","Media Library",FolderOpen], ["export","Export",Film]
   ];
@@ -615,13 +650,13 @@ function App() {
   return <div className="app-shell">
     <aside className="sidebar">
       <div className="brand"><div className="brand-mark"><Aperture size={21}/></div><div><b>OFFICERLAB</b><small>CINEMATIC STUDIO</small></div></div>
-      <div className="workspace-label">WORKSPACES</div>
+      <div className="workspace-label">{workspaceMode === "exam" ? "EXAM PROJECTS" : "VIDEO PROJECTS"}</div>
       <button className="project-pill" onClick={() => setWorkspaceOpen(value => !value)} aria-expanded={workspaceOpen}>
         <span className="live-dot"/><span>{project}</span><ChevronDown size={14}/>
       </button>
       {workspaceOpen && <div className="workspace-list">
-        <div className="workspace-list-head"><span>{workspaceState.projects.length} PROJECT{workspaceState.projects.length === 1 ? "" : "S"}</span><button onClick={createWorkspace}><Plus size={12}/> New</button></div>
-        {workspaceState.projects.map(item => <button key={item.id} className={"workspace-item " + (item.id === workspaceState.activeId ? "active" : "")} onClick={() => activateWorkspace(item)}>
+        <div className="workspace-list-head"><span>{workspaceState.projects.filter(item => (item.mode || "exam") === workspaceMode).length} PROJECT{workspaceState.projects.filter(item => (item.mode || "exam") === workspaceMode).length === 1 ? "" : "S"}</span><button onClick={createWorkspace}><Plus size={12}/> New</button></div>
+        {workspaceState.projects.filter(item => (item.mode || "exam") === workspaceMode).map(item => <button key={item.id} className={"workspace-item " + (item.id === workspaceState.activeId ? "active" : "")} onClick={() => activateWorkspace(item)}>
           <span className="workspace-item-dot"/><span>{item.name}</span>{item.id === workspaceState.activeId && <Check size={13}/>}
         </button>)}
       </div>}
@@ -640,8 +675,9 @@ function App() {
       </header>
 
       <div className="content">
-        <div className="page-heading"><div><div className="eyebrow">CREATIVE WORKSPACE / 01</div><h1>{nav.find(n=>n[0]===active)?.[1] || "Studio"}</h1><p>Build cinematic educational videos in Gujarati and English.</p></div><div className="heading-right"><span className="status-chip"><span className="live-dot"/> {status}</span></div></div>
+        <div className="page-heading"><div><div className="eyebrow">{workspaceMode === "exam" ? "EXAM PREPARATION WORKSPACE" : "GENERAL VIDEO CREATION WORKSPACE"}</div><h1>{nav.find(n=>n[0]===active)?.[1] || "Studio"}</h1><p>{workspaceMode === "exam" ? "Create syllabus-focused lessons, revision videos and MCQ explainers." : "Create cinematic stories, explainers, documentaries and social videos."}</p></div><div className="heading-right"><span className="status-chip"><span className="live-dot"/> {status}</span></div></div>
 
+        {active==="home" && <section className="platform-home"><div className="platform-hero"><span className="eyebrow">OFFICERLAB CREATOR PLATFORM</span><h2>One platform. <em>Two creative studios.</em></h2><p>Choose your production workflow. General video creation and competitive-exam education stay in separate workspaces.</p></div><div className="platform-cards"><article className="platform-card general"><div className="platform-card-icon"><Clapperboard size={25}/></div><span className="eyebrow">STUDIO 01</span><h3>General Video Creation</h3><p>For YouTube videos, cinematic explainers, documentaries, storytelling, promos, interviews and Shorts.</p><ul><li>Cinematic scenes and motion graphics</li><li>Script, voice, presenter and media tools</li><li>Landscape, portrait and social formats</li></ul><button className="btn primary" onClick={()=>enterMode("general")}>Open Video Studio <ChevronDown size={15}/></button></article><article className="platform-card exam"><div className="platform-card-icon"><GraduationCap size={27}/></div><span className="eyebrow">STUDIO 02</span><h3>Competitive Exam Preparation</h3><p>For GPSC, GSSSB, UPSC and other competitive-exam courses, lessons and revision content.</p><ul><li>Syllabus and topic-wise lesson planning</li><li>Exam-focused notes, MCQs and revision</li><li>Gujarati + English technical terminology</li></ul><button className="btn primary" onClick={()=>enterMode("exam")}>Open Exam Studio <ChevronDown size={15}/></button></article></div><div className="platform-footnote"><Check size={15}/> Separate project lists and saved workspaces for each studio.</div></section>}
         {active==="create" && <div className="create-layout">
           <section className="panel pad-panel create-main">
             <div className="eyebrow">NEW PROJECT / VIDEO BUILDER</div><h3>Start a fresh educational video</h3>
