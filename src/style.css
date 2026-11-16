@@ -315,3 +315,11 @@
  .tool-row input[type=color]{width:38px;height:36px}
  .slide-navigation .presenter-btn{min-height:44px}
 }
+
+
+/* Fullscreen fallback: immersive studio canvas when browser Fullscreen API is unavailable */
+.presenter-app.immersive-mode{position:fixed;inset:0;z-index:999999;overflow:auto;width:100%;height:100%;background:#080d15}
+.presenter-app.immersive-mode .presenter-header{position:sticky;top:0;z-index:50}
+.presenter-app.immersive-mode .presenter-main{padding-top:12px}
+.presenter-app:fullscreen,.presenter-app:-webkit-full-screen{width:100%;height:100%;overflow:auto;background:#080d15}
+.presenter-app:fullscreen .presenter-main,.presenter-app:-webkit-full-screen .presenter-main{max-width:1400px}
