@@ -21,14 +21,14 @@ from api.routes import router as ai_api_router
 app.include_router(ai_api_router)
 origins = [x.strip() for x in os.getenv(
     "CORS_ORIGINS",
-    "https://officerlab-cinematic-studio.vercel.app,http://localhost:5173"
+    "https://officerlab-cinematic-studio.vercel.app,http://localhost:5173,https://localhost,capacitor://localhost,http://localhost"
 ).split(",") if x.strip()]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     # Permit the stable production domain plus this project's generated Vercel
     # preview/deployment aliases. The regex is restricted to this app's slug.
-    allow_origin_regex=r"https://officerlab-cinematic-studio(?:-[a-z0-9-]+)*\.vercel\.app",
+    allow_origin_regex=r"(https://officerlab-cinematic-studio(?:-[a-z0-9-]+)*\.vercel\.app|https://localhost|capacitor://localhost)",
     allow_credentials=False,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type"],
