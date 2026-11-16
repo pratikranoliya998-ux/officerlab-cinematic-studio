@@ -90,7 +90,10 @@ function PresentationStudio() {
       ctx.stroke();ctx.restore();
     }
     if(logoImage?.complete && logoImage.naturalWidth){ctx.save();ctx.globalAlpha=.88;ctx.drawImage(logoImage, w-150, 24, 112, 64);ctx.restore();}else if(symbol && symbol!=="none"){ctx.save();ctx.globalAlpha=.82;ctx.fillStyle="#f2c879";ctx.font="bold 24px sans-serif";const marks={officerlab:"OFFICERLAB",youtube:"▶",book:"▤",gavel:"⚖",education:"✦"};ctx.fillText(marks[symbol]||"OFFICERLAB",w-170,48);ctx.restore();}
-    if(lowerThird){ctx.save();ctx.fillStyle="#07111ddd";ctx.fillRect(55, h-112, 520, 68);ctx.fillStyle="#f0c36f";ctx.font="bold 27px sans-serif";ctx.fillText(lowerThird,75,h-68);ctx.restore();}\n    if(chapterTitle){ctx.save();ctx.fillStyle="#f2c879";ctx.font="bold 22px sans-serif";ctx.fillText(chapterTitle,58,90);ctx.restore();}\n    if(cursorSpotlight){ctx.save();ctx.globalAlpha=.85;ctx.strokeStyle="#ffe28a";ctx.lineWidth=5;ctx.shadowColor="#ffe28a";ctx.shadowBlur=18;ctx.beginPath();ctx.arc(cursorPos.x/100*w,cursorPos.y/100*h,42,0,Math.PI*2);ctx.stroke();ctx.restore();}\n    if(isRecording){ctx.fillStyle="#d93040";ctx.beginPath();ctx.arc(34,34,8,0,Math.PI*2);ctx.fill();ctx.fillStyle="#fff";ctx.font="bold 18px sans-serif";ctx.fillText("REC",52,40);}
+    if(lowerThird){ctx.save();ctx.fillStyle="#07111ddd";ctx.fillRect(55, h-112, 520, 68);ctx.fillStyle="#f0c36f";ctx.font="bold 27px sans-serif";ctx.fillText(lowerThird,75,h-68);ctx.restore();}
+    if(chapterTitle){ctx.save();ctx.fillStyle="#f2c879";ctx.font="bold 22px sans-serif";ctx.fillText(chapterTitle,58,90);ctx.restore();}
+    if(cursorSpotlight){ctx.save();ctx.globalAlpha=.85;ctx.strokeStyle="#ffe28a";ctx.lineWidth=5;ctx.shadowColor="#ffe28a";ctx.shadowBlur=18;ctx.beginPath();ctx.arc(cursorPos.x/100*w,cursorPos.y/100*h,42,0,Math.PI*2);ctx.stroke();ctx.restore();}
+    if(isRecording){ctx.fillStyle="#d93040";ctx.beginPath();ctx.arc(34,34,8,0,Math.PI*2);ctx.fill();ctx.fillStyle="#fff";ctx.font="bold 18px sans-serif";ctx.fillText("REC",52,40);}
     rafRef.current=requestAnimationFrame(drawComposite);
   }
   async function startRecording(){
