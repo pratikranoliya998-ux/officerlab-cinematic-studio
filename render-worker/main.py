@@ -147,6 +147,36 @@ def run_ffmpeg(args: list[str], timeout: int = 3600) -> None:
         raise RuntimeError(detail)
 
 
+@app.post("/render/cinematic")
+async def render_cinematic_endpoint(
+    manifest: str = Form(...),
+    authorization: str = Header(default=""),
+):
+    expected_token = os.getenv("RENDER_API_TOKEN", "").strip()
+    if expected_token and authorization != "Bearer " + expected_token:
+        raise HTTPException(status_code=401, detail="Invalid render token")
+    try:
+        data = json.loads(manifest)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="The cinematic project manifest is not valid JSON")
+    work = Path(tempfile.mkdtemp(prefix="officerlab-cinematic-"))
+    try:
+        from cinematic_engine.adapter import render_cinematic
+        output = work / "officerlab-cinematic.mp4"
+        render_cinematic(data, output, work)
+        if not output.exists() or output.stat().st_size < 1024:
+            raise RuntimeError("Cinematic engine did not produce a valid MP4")
+        return FileResponse(
+            output, media_type="video/mp4", filename="officerlab-cinematic.mp4",
+            background=BackgroundTask(shutil.rmtree, work, ignore_errors=True),
+        )
+    except HTTPException:
+        shutil.rmtree(work, ignore_errors=True)
+        raise
+    except Exception as exc:
+        shutil.rmtree(work, ignore_errors=True)
+        raise HTTPException(status_code=500, detail=f"Cinematic render failed: {str(exc)[-1800:]}")
+
 @app.get("/health")
 def health():
     return {"ok": True, "service": "officerlab-render-worker", "ffmpeg": shutil.which("ffmpeg") is not None}
