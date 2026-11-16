@@ -60,7 +60,7 @@ ipcMain.handle("officerlab:models", async event => {
   senderOnly(event);
   const session = await chatgpt.getSession();
   if (!session.sharing) throw new Error("ChatGPT plan usage permission was not granted. Identity sign-in alone is insufficient.");
-  return (await chatgpt.listModels()).map(model => ({ slug: model.slug, name: model.name || model.slug }));
+  return (await chatgpt.listModels()).map(model => ({ slug: model.slug, name: model.displayName || model.slug }));
 });
 ipcMain.handle("officerlab:ask", async (event, { prompt, model }) => {
   senderOnly(event);
@@ -69,7 +69,7 @@ ipcMain.handle("officerlab:ask", async (event, { prompt, model }) => {
   if (!session.sharing) throw new Error("ChatGPT plan usage is not enabled for this connection.");
   const models = await chatgpt.listModels();
   if (!models.some(item => item.slug === model)) throw new Error("Select a model available to this ChatGPT account.");
-  const result = await chatgpt.streamResponse({ model, input: prompt, store: false, stream: true });
+  const result = await chatgpt.streamResponse({ model, input: prompt });
   return { text: result.text };
 });
 async function createWindow() {
