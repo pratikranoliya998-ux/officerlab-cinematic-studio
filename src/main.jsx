@@ -107,7 +107,7 @@ function PresentationStudio() {
         <div className="presentation-preview">
           <canvas ref={slideCanvasRef} className="presentation-canvas"/><canvas ref={outputCanvasRef} width="1280" height="720" className="recording-canvas"/>
           {!pdfReady&&!videoUrl&&<div className="presenter-placeholder"><Upload size={40}/><b>તમારી PPT અથવા PDF અહીં upload કરો</b><small>PDF, PPT અને PPTX supported</small></div>}
-          {pdfReady&&!videoUrl&&<video ref={cameraRef} autoPlay muted playsInline className={`camera-pip-preview shape-${faceShape}`} style={{width:`${faceSize}%`,aspectRatio:faceShape==="portrait"?"3 / 4":faceShape==="square"||faceShape==="circle"?"1 / 1":"16 / 9"}}/>}
+          {pdfReady&&!videoUrl&&<video ref={cameraRef} autoPlay muted playsInline className={`camera-pip-preview shape-${faceShape}`} style={{width:`${faceSize}%`,aspectRatio:faceShape==="portrait"?"3 / 4":faceShape==="square"||faceShape==="circle"?"1 / 1":"16 / 9",right:pip==="bottom-right"?14:"auto",left:pip==="bottom-left"?14:"auto"}}/>}
           {videoUrl&&<video ref={playbackRef} src={videoUrl} controls playsInline className="presenter-video"/>}
         </div>
         <div className="presentation-upload"><label className="presenter-btn secondary"><Upload size={16}/>{file?file.name:"Choose PPT / PDF"}<input type="file" accept=".pdf,.ppt,.pptx" onChange={e=>loadFile(e.target.files?.[0])} hidden/></label>{loading&&<span className="upload-state">Presentation તૈયાર થઈ રહી છે…</span>}
