@@ -1,0 +1,25 @@
+{
+  "name": "officerlab-chatgpt-companion",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "electron/main.mjs",
+  "scripts": {
+    "start": "electron .",
+    "dist:win": "electron-builder --win nsis"
+  },
+  "dependencies": {
+    "@siwc/local": "file:../vendor/sign-in-with-chatgpt-devkit/packages/local"
+  },
+  "devDependencies": {
+    "electron": "^42.0.0",
+    "electron-builder": "^26.0.0"
+  },
+  "build": {
+    "appId": "com.officerlab.chatgpt",
+    "productName": "OfficerLab AI Companion",
+    "files": ["electron/**/*", "ui/**/*", "node_modules/**/*", "package.json"],
+    "win": { "target": "nsis" },
+    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true }
+  }
+}
