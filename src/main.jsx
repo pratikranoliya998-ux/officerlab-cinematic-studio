@@ -115,12 +115,18 @@ function App() {
   const [aiBusy, setAiBusy] = useState(false);
   const [aiNotice, setAiNotice] = useState("");
   const [ttsText, setTtsText] = useState(initialWorkspace.script || "");
-  const [ttsVoiceId, setTtsVoiceId] = useState("");
-  const [ttsLanguage, setTtsLanguage] = useState("gu");
+  const [ttsLanguage, setTtsLanguage] = useState("gu-IN");
   const [ttsSpeed, setTtsSpeed] = useState(1);
-  const [ttsBusy, setTtsBusy] = useState(false);
-  const [ttsAudioUrl, setTtsAudioUrl] = useState("");
+  const [ttsPitch, setTtsPitch] = useState(1);
+  const [ttsVolume, setTtsVolume] = useState(1);
+  const [ttsVoices, setTtsVoices] = useState([]);
+  const [ttsVoiceName, setTtsVoiceName] = useState("");
+  const [ttsSpeaking, setTtsSpeaking] = useState(false);
+  const [ttsPaused, setTtsPaused] = useState(false);
+  const [ttsProgress, setTtsProgress] = useState(0);
+  const [ttsTotalChunks, setTtsTotalChunks] = useState(0);
   const [ttsNotice, setTtsNotice] = useState("");
+  const ttsRunRef = useRef(0);
   useEffect(() => {
     if (active !== "script") return;
     let cancelled = false;
@@ -140,34 +146,100 @@ function App() {
     } catch (error) { setAiNotice(error.message); }
     finally { setAiBusy(false); }
   }
-  async function generateHeyGenVoice() {
-    if (!ttsText.trim()) { setTtsNotice("Enter narration text first."); return; }
-    if (!ttsVoiceId.trim()) { setTtsNotice("Enter your HeyGen voice ID."); return; }
-    if (ttsText.length > 5000) { setTtsNotice("Please keep each generation to 5,000 characters or fewer."); return; }
-    setTtsBusy(true); setTtsNotice("Generating Gujarati narration with HeyGen Turbo…");
-    try {
-      const response = await fetch("/api/tts/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: ttsText, voice_id: ttsVoiceId.trim(), language: ttsLanguage, speed: Number(ttsSpeed) })
-      });
-      if (!response.ok) {
-        const raw = await response.text();
-        let data = {};
-        try { data = JSON.parse(raw); } catch {}
-        throw new Error(data.detail || ("HeyGen TTS failed (HTTP " + response.status + ")"));
+  function splitGujaratiSpeech(text, maxLength = 220) {
+    const paragraphs = text.replace(/\r/g, "").split(/\n+/).map(part => part.trim()).filter(Boolean);
+    const chunks = [];
+    for (const paragraph of paragraphs) {
+      const sentences = paragraph.match(/[^.!?।]+[.!?।]?/g) || [paragraph];
+      let current = "";
+      for (const sentence of sentences) {
+        const piece = sentence.trim();
+        if (!piece) continue;
+        if ((current + " " + piece).trim().length <= maxLength) {
+          current = (current + " " + piece).trim();
+          continue;
+        }
+        if (current) chunks.push(current);
+        if (piece.length <= maxLength) { current = piece; continue; }
+        const words = piece.split(/\s+/);
+        current = "";
+        for (const word of words) {
+          if ((current + " " + word).trim().length > maxLength && current) {
+            chunks.push(current); current = word;
+          } else current = (current + " " + word).trim();
+        }
       }
-      const blob = await response.blob();
-      if (!blob.size) throw new Error("HeyGen returned an empty audio file.");
-      if (ttsAudioUrl) URL.revokeObjectURL(ttsAudioUrl);
-      const url = URL.createObjectURL(blob);
-      setTtsAudioUrl(url);
-      const file = new File([blob], "officerlab-heygen-voice.wav", { type: blob.type || "audio/wav" });
-      addAudioClip("voice", file, url);
-      setTtsNotice("Audio generated and added to the Voice timeline. Preview it below.");
-      setStatus("HeyGen Turbo narration generated");
-    } catch (error) { setTtsNotice(error.message); }
-    finally { setTtsBusy(false); }
+      if (current) chunks.push(current);
+    }
+    return chunks;
+  }
+
+  useEffect(() => {
+    if (active !== "ai-voice" || !("speechSynthesis" in window)) return;
+    const loadVoices = () => {
+      const voices = window.speechSynthesis.getVoices();
+      setTtsVoices(voices);
+      const guVoice = voices.find(v => /^gu([-_]|$)/i.test(v.lang) || /gujarati/i.test(v.name));
+      if (guVoice && !ttsVoiceName) setTtsVoiceName(guVoice.name);
+    };
+    loadVoices();
+    window.speechSynthesis.addEventListener?.("voiceschanged", loadVoices);
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+    return () => window.speechSynthesis.removeEventListener?.("voiceschanged", loadVoices);
+  }, [active]);
+
+  function stopGujaratiSpeech() {
+    ttsRunRef.current += 1;
+    if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+    setTtsSpeaking(false); setTtsPaused(false); setTtsProgress(0);
+    setTtsNotice("વાંચન બંધ કર્યું.");
+  }
+
+  function playGujaratiSpeech() {
+    if (!("speechSynthesis" in window)) {
+      setTtsNotice("આ browserમાં Text-to-Speech ઉપલબ્ધ નથી. Chrome અથવા Edgeનો ઉપયોગ કરો.");
+      return;
+    }
+    if (!ttsText.trim()) { setTtsNotice("વાંચવા માટે ગુજરાતી લખાણ ઉમેરો."); return; }
+    window.speechSynthesis.cancel();
+    const chunks = splitGujaratiSpeech(ttsText);
+    if (!chunks.length) return;
+    const runId = ++ttsRunRef.current;
+    setTtsTotalChunks(chunks.length); setTtsProgress(0);
+    setTtsSpeaking(true); setTtsPaused(false);
+    setTtsNotice("ગુજરાતી લખાણ વાંચી રહ્યું છે…");
+    const selectedVoice = ttsVoices.find(v => v.name === ttsVoiceName) || ttsVoices.find(v => /^gu([-_]|$)/i.test(v.lang)) || null;
+    chunks.forEach((chunk, index) => {
+      const utterance = new SpeechSynthesisUtterance(chunk);
+      utterance.lang = ttsLanguage;
+      if (selectedVoice) utterance.voice = selectedVoice;
+      utterance.rate = Number(ttsSpeed);
+      utterance.pitch = Number(ttsPitch);
+      utterance.volume = Number(ttsVolume);
+      utterance.onend = () => {
+        if (ttsRunRef.current !== runId) return;
+        setTtsProgress(index + 1);
+        if (index === chunks.length - 1) {
+          setTtsSpeaking(false); setTtsPaused(false);
+          setTtsNotice("વાંચન પૂર્ણ થયું.");
+        }
+      };
+      utterance.onerror = event => {
+        if (ttsRunRef.current !== runId || event.error === "canceled" || event.error === "interrupted") return;
+        setTtsSpeaking(false); setTtsPaused(false);
+        setTtsNotice("Voice playback error: " + event.error + ". Gujarati voice તમારા deviceમાં ઉપલબ્ધ ન હોઈ શકે.");
+      };
+      window.speechSynthesis.speak(utterance);
+    });
+  }
+
+  function pauseGujaratiSpeech() {
+    if (!("speechSynthesis" in window)) return;
+    if (window.speechSynthesis.paused) {
+      window.speechSynthesis.resume(); setTtsPaused(false); setTtsNotice("વાંચન ફરી શરૂ થયું.");
+    } else {
+      window.speechSynthesis.pause(); setTtsPaused(true); setTtsNotice("વાંચન Pause કર્યું.");
+    }
   }
 
   async function generateAiScript() {
@@ -739,7 +811,7 @@ function App() {
 
   const nav = [
     ["home","Home",Home], ["create",workspaceMode === "exam" ? "New Lesson" : "New Video",Plus], ["studio",workspaceMode === "exam" ? "Lesson Studio" : "Video Studio",LayoutDashboard], ["script",workspaceMode === "exam" ? "Lesson Script" : "Script & Story",FileText],
-    ["voice","Voice Studio",Mic], ["ai-voice","AI Voice Studio",AudioLines], ["presenter","Presenter",Webcam],
+    ["voice","Voice Studio",Mic], ["ai-voice","Free Gujarati TTS",Volume2], ["presenter","Presenter",Webcam],
     ["assets","Media Library",FolderOpen], ["export","Export",Film]
   ];
 
@@ -839,28 +911,42 @@ function App() {
 
         {active==="ai-voice" && <div className="two-col">
           <section className="panel pad-panel">
-            <div className="eyebrow">HEYGEN VOICE TURBO · TEXT TO SPEECH</div>
-            <h3>AI Voice Studio</h3>
-            <p className="muted">Generate natural narration from your Gujarati or multilingual script. Your HeyGen API key stays securely on the Render backend.</p>
-            <label className="field-label">Narration text
-              <textarea className="script-area" value={ttsText} onChange={e=>setTtsText(e.target.value)} placeholder="Paste or write your Gujarati narration here…" maxLength={5000}/>
+            <div className="eyebrow">FREE GUJARATI TEXT TO SPEECH · BROWSER VOICE</div>
+            <h3>Gujarati Voice Studio</h3>
+            <p className="muted">તમારું લખાણ browserના built-in speech engineથી બોલાવો. કોઈ API key, HeyGen account કે paid subscription જરૂરી નથી. લાંબા લખાણને આપમેળે નાના ભાગોમાં વાંચવામાં આવે છે.</p>
+            <label className="field-label">ગુજરાતી લખાણ / Narration text
+              <textarea className="script-area" value={ttsText} onChange={e=>setTtsText(e.target.value)} placeholder="અહીં તમારું ગુજરાતી narration લખો અથવા paste કરો…" />
             </label>
-            <div className="editor-foot"><span>{ttsText.length.toLocaleString()} / 5,000 characters</span><button className="mini-action" onClick={()=>{setTtsText(script);setTtsNotice("Current project script copied into the TTS editor.");}}>Use current project script</button></div>
-            <label className="field-label">HeyGen Voice ID<input value={ttsVoiceId} onChange={e=>setTtsVoiceId(e.target.value)} placeholder="Paste voice_id from your HeyGen voice library"/></label>
+            <div className="editor-foot"><span>{ttsText.length.toLocaleString()} characters · {ttsText.trim()?ttsText.trim().split(/\s+/).length:0} words</span><button className="mini-action" onClick={()=>{setTtsText(script);setTtsNotice("Current project script loaded.");}}>Use current project script</button></div>
             <div className="create-grid">
-              <label className="field-label">Language<select value={ttsLanguage} onChange={e=>setTtsLanguage(e.target.value)}><option value="gu">Gujarati (gu)</option><option value="hi">Hindi (hi)</option><option value="en">English (en)</option><option value="auto">Auto / other (auto)</option></select></label>
-              <label className="field-label">Speaking speed · {Number(ttsSpeed).toFixed(1)}x<input type="range" min="0.5" max="2" step="0.1" value={ttsSpeed} onChange={e=>setTtsSpeed(Number(e.target.value))}/></label>
+              <label className="field-label">Available voice<select value={ttsVoiceName} onChange={e=>setTtsVoiceName(e.target.value)}><option value="">Automatic Gujarati voice</option>{ttsVoices.map(v=><option key={v.name+"-"+v.lang} value={v.name}>{v.name} · {v.lang}</option>)}</select></label>
+              <label className="field-label">Language<select value={ttsLanguage} onChange={e=>setTtsLanguage(e.target.value)}><option value="gu-IN">Gujarati (India)</option><option value="hi-IN">Hindi (India)</option><option value="en-IN">English (India)</option></select></label>
+              <label className="field-label">Speaking speed · {Number(ttsSpeed).toFixed(1)}x<input type="range" min="0.6" max="1.5" step="0.1" value={ttsSpeed} onChange={e=>setTtsSpeed(Number(e.target.value))}/></label>
+              <label className="field-label">Pitch · {Number(ttsPitch).toFixed(1)}<input type="range" min="0.5" max="1.8" step="0.1" value={ttsPitch} onChange={e=>setTtsPitch(Number(e.target.value))}/></label>
+              <label className="field-label">Volume · {Math.round(ttsVolume*100)}%<input type="range" min="0" max="1" step="0.05" value={ttsVolume} onChange={e=>setTtsVolume(Number(e.target.value))}/></label>
             </div>
-            <button className="btn primary full" disabled={ttsBusy} onClick={generateHeyGenVoice}><AudioLines size={16}/>{ttsBusy?"Generating audio…":"Generate HeyGen Turbo Voice"}</button>
+            <div className="audio-editor-actions">
+              <button className="btn primary" disabled={ttsSpeaking&&!ttsPaused} onClick={playGujaratiSpeech}><Play size={15}/> {ttsProgress>0&&ttsProgress<ttsTotalChunks?"Restart reading":"Speak text"}</button>
+              <button className="btn subtle" disabled={!ttsSpeaking} onClick={pauseGujaratiSpeech}>{ttsPaused?<Play size={15}/>:<Pause size={15}/>} {ttsPaused?"Resume":"Pause"}</button>
+              <button className="btn subtle" disabled={!ttsSpeaking} onClick={stopGujaratiSpeech}><Square size={14}/> Stop</button>
+              <button className="mini-action" onClick={()=>{setTtsText("");stopGujaratiSpeech();}}>Clear text</button>
+            </div>
+            {ttsTotalChunks>0 && <div className="ai-provider-state"><span>Chunk {Math.min(ttsProgress+1,ttsTotalChunks)} of {ttsTotalChunks}</span><b>{Math.round(ttsProgress/ttsTotalChunks*100)}%</b></div>}
+            {ttsTotalChunks>0 && <div style={{height:6,background:"#283448",borderRadius:8,overflow:"hidden"}}><div style={{height:6,width:(ttsProgress/ttsTotalChunks*100)+"%",background:"#d9a84f",transition:"width .2s"}}/></div>}
             {ttsNotice && <p className="ai-api-notice" role="status">{ttsNotice}</p>}
-            {ttsAudioUrl && <div className="ai-assistant-box"><b>Generated narration preview</b><audio className="voice-player" controls src={ttsAudioUrl}/><a className="btn subtle full" href={ttsAudioUrl} download="officerlab-heygen-voice.wav"><Download size={15}/> Download audio</a><button className="btn subtle full" onClick={()=>{setActive("studio");setStatus("HeyGen narration is available in the Voice timeline");}}>View in video timeline</button></div>}
+            <div className="note-box"><Volume2 size={18}/><div><b>Long text support</b><p>લખાણ પર કોઈ 5,000-character limit નથી. લાંબું લખાણ આપમેળે લગભગ 220-character chunksમાં વહેંચાય છે. Playback તમારા browser/deviceની Gujarati voice availability અને performance પર આધારિત છે.</p></div></div>
           </section>
           <section className="panel pad-panel">
-            <div className="eyebrow">SETUP REQUIRED</div><h3>Connect your HeyGen account</h3>
-            <div className="option-card"><AudioLines/><div><b>HeyGen Voice Turbo</b><small>Fast TTS model using your selected voice ID</small></div><span className="tag-ready">API</span></div>
-            <ol className="tts-steps"><li>Open your HeyGen account and create an API key.</li><li>In Render → your OfficerLab worker → Environment, add <code>HEYGEN_API_KEY</code>.</li><li>Paste a compatible public or instant voice ID into the field on the left.</li><li>Redeploy the Render service, then generate a short test.</li></ol>
-            <div className="note-box"><Sparkles size={18}/><div><b>Free Turbo preview</b><p>HeyGen advertises its Turbo free preview through 30 November 2026. Availability and limits can change. Check your HeyGen dashboard before large narration jobs.</p></div></div>
-            <p className="muted">Do not paste your API key into this page or into chat. Only the voice ID and narration text are sent from the browser.</p>
+            <div className="eyebrow">FREE · NO API KEY</div><h3>Voice features</h3>
+            <div className="option-card"><Volume2/><div><b>Browser Gujarati TTS</b><small>Uses installed system/browser voices</small></div><span className="tag-ready">{ttsVoices.some(v=>/^gu([-_]|$)/i.test(v.lang)||/gujarati/i.test(v.name))?"Gujarati found":"Check voices"}</span></div>
+            <div className="readiness">
+              <div><span>Available voices</span><b>{ttsVoices.length}</b></div>
+              <div><span>Gujarati voice detected</span><b className={ttsVoices.some(v=>/^gu([-_]|$)/i.test(v.lang)||/gujarati/i.test(v.name))?"good":"pending"}>{ttsVoices.some(v=>/^gu([-_]|$)/i.test(v.lang)||/gujarati/i.test(v.name))?"Yes":"Not detected"}</b></div>
+              <div><span>Text size</span><b>No app limit</b></div>
+              <div><span>Chunk size</span><b>~220 characters</b></div>
+            </div>
+            <div className="note-box"><Sparkles size={18}/><div><b>Audio file export limitation</b><p>Browser speech synthesis plays audio directly but does not provide a downloadable MP3/WAV file. Use system audio recording if you need a file; generated speech is not automatically attached to the video timeline.</p></div></div>
+            <p className="muted">Tip: Google Chrome or Microsoft Edge may expose more installed voices. If Gujarati is not listed, install a Gujarati speech voice in your device's language/accessibility settings, then refresh this page.</p>
           </section>
         </div>}
         {active==="voice" && <div className="two-col"><section className="panel pad-panel"><div className="eyebrow">VOICE RECORDING / TIMELINE TRACK</div><h3>Record and attach narration</h3><p className="muted">Record narration separately here, or use Presenter → Record video + mic to capture presenter video and microphone voice-over simultaneously in one synchronized clip.</p><div className="record-orb"><div className={audioRecording?"pulse":""}><Mic size={30}/></div></div><div className="center">{audioRecording?<button className="btn danger" onClick={stopAudioRecording}><Square size={15}/> Stop recording</button>:<button className="btn primary" onClick={startAudioRecording}><Mic size={15}/> Start recording</button>}</div>{voiceUrl&&<><div className="recorded"><Check size={16}/> Voice recording ready<a href={voiceUrl} download="officerlab-voice.webm">Download audio</a></div><audio ref={voicePlayerRef} className="voice-player" controls src={voiceUrl} onLoadedMetadata={e=>{const d=Number.isFinite(e.currentTarget.duration)?e.currentTarget.duration:0;setVoiceDuration(d);setVoiceTrimEnd(prev=>prev>0?Math.min(prev,d):d);e.currentTarget.volume=voiceVolume/100;}}/><div className="voice-edit-controls"><b>Timeline audio editing</b><label>Trim start: {voiceTrimStart.toFixed(1)} sec<input type="range" min="0" max={Math.max(1,voiceDuration)} step="0.1" value={Math.min(voiceTrimStart,voiceDuration||0)} onChange={e=>{const v=Math.min(Number(e.target.value),Math.max(0,voiceTrimEnd-0.1));setVoiceTrimStart(v);setAudioClips(old=>old.map(c=>c.track==="voice"&&c.url===voiceUrl?{...c,sourceStart:v}:c));}}/></label><label>Trim end: {(voiceTrimEnd||voiceDuration).toFixed(1)} sec<input type="range" min="0" max={Math.max(1,voiceDuration)} step="0.1" value={Math.min(voiceTrimEnd||voiceDuration,voiceDuration||0)} onChange={e=>{const v=Math.max(Number(e.target.value),voiceTrimStart+0.1);setVoiceTrimEnd(v);setAudioClips(old=>old.map(c=>c.track==="voice"&&c.url===voiceUrl?{...c,sourceEnd:v}:c));}}/></label><label>Timeline offset: {voiceOffset.toFixed(1)} sec<input type="range" min="0" max="120" step="0.5" value={voiceOffset} onChange={e=>{const v=Number(e.target.value);setVoiceOffset(v);setAudioClips(old=>old.map(c=>c.track==="voice"&&c.url===voiceUrl?{...c,start:v,sceneId:""}:c));}}/></label><label>Volume: {voiceVolume}%<input type="range" min="0" max="150" step="1" value={voiceVolume} onChange={e=>{const v=Number(e.target.value);setVoiceVolume(v);setAudioClips(old=>old.map(c=>c.track==="voice"&&c.url===voiceUrl?{...c,volume:v/100}:c));if(voicePlayerRef.current)voicePlayerRef.current.volume=Math.min(1,v/100);}}/></label><button className="mini-action" onClick={()=>{if(voicePlayerRef.current){voicePlayerRef.current.currentTime=voiceTrimStart;voicePlayerRef.current.play();}setStatus("Playing narration from trim start");}}>Play from trim start</button></div><button className="btn primary full" onClick={()=>{setActive("studio");setStatus("Narration and edit settings attached to timeline");}}>Attach / view in timeline</button></>}</section><section className="panel pad-panel"><div className="eyebrow">VOICE WORKFLOW</div><h3>Voiceover options</h3><div className="option-card"><Mic/><div><b>Own voice recording</b><small>Available now in this browser</small></div><span className="tag-ready">Ready</span></div><div className="option-card"><Volume2/><div><b>AI text-to-speech</b><small>Connect a TTS provider through a secure backend</small></div><span className="tag-planned">Integration</span></div><div className="option-card"><AudioLines/><div><b>Voice timing and sync</b><small>Precise word-level timing is part of the rendering-worker integration</small></div><span className="tag-planned">Next phase</span></div></section></div>}
