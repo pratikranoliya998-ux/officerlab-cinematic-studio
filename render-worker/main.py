@@ -215,7 +215,7 @@ async def render(
 
         concat_file = work / "scenes.txt"
         concat_file.write_text(
-            "".join(f"file '{path.as_posix()}'\\n" for path in segment_paths),
+            "".join(f"file '{path.as_posix()}'\n" for path in segment_paths),
             encoding="utf-8",
         )
         base_video = work / "scenes-concat.mp4"
