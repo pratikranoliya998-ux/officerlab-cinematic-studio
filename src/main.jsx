@@ -274,7 +274,7 @@ function App() {
     const nextWorkspace = {
       id, name: workspaceMode === "exam" ? "Untitled Exam Lesson" : "Untitled General Video", mode: workspaceMode,
       script: "", scenes: initialScenes.map(scene => ({ ...scene })),
-      videoSetup: { ...DEFAULT_VIDEO_SETUP }, theme: "midnight", captions: true, quality: "1080p"
+      videoSetup: { ...DEFAULT_VIDEO_SETUP, template: workspaceMode === "exam" ? "Complete lesson" : "Cinematic story" }, theme: "midnight", captions: true, quality: "1080p"
     };
     const projects = [...workspaceState.projects.map(item => item.id === current.id ? current : item), nextWorkspace];
     const next = { activeId: id, projects };
@@ -619,7 +619,7 @@ function App() {
 
   return <div className="app-shell">
     <aside className="sidebar">
-      <div className="brand"><div className="brand-mark"><Aperture size={21}/></div><div><b>OFFICERLAB</b><small>CINEMATIC STUDIO</small></div></div>
+      <div className="brand"><div className="brand-mark"><Aperture size={21}/></div><div><b>OFFICERLAB</b><small>CREATOR PLATFORM</small></div></div>
       <div className="workspace-label">{workspaceMode === "exam" ? "EXAM PROJECTS" : "VIDEO PROJECTS"}</div>
       <button className="project-pill" onClick={() => setWorkspaceOpen(value => !value)} aria-expanded={workspaceOpen}>
         <span className="live-dot"/><span>{project}</span><ChevronDown size={14}/>
@@ -641,7 +641,7 @@ function App() {
     <main className="main">
       <header className="topbar">
         <div className="breadcrumb">Projects <span>/</span> <b>{project}</b></div>
-        <div className="top-actions"><button className="btn primary" onClick={()=>setActive("create")}><Plus size={15}/> New video</button><span className="autosave"><Check size={14}/> Saved locally</span><button className="btn subtle" onClick={saveProject}><Download size={15}/> Save project</button><button className="btn primary" onClick={()=>setActive("export")}><Film size={15}/> Export video</button></div>
+        <div className="top-actions"><button className="btn primary" onClick={()=>setActive("create")}><Plus size={15}/> {workspaceMode === "exam" ? "New lesson" : "New video"}</button><span className="autosave"><Check size={14}/> Saved locally</span><button className="btn subtle" onClick={saveProject}><Download size={15}/> Save project</button><button className="btn primary" onClick={()=>setActive("export")}><Film size={15}/> Export video</button></div>
       </header>
 
       <div className="content">
