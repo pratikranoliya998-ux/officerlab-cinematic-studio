@@ -152,6 +152,63 @@ def health():
     return {"ok": True, "service": "officerlab-render-worker", "ffmpeg": shutil.which("ffmpeg") is not None}
 
 
+@app.post("/convert-presenter")
+async def convert_presenter(
+    file: UploadFile = File(...),
+    authorization: str = Header(default=""),
+):
+    """Convert one recorded presenter WebM (camera + mic) into a downloadable MP4."""
+    expected_token = os.getenv("RENDER_API_TOKEN", "").strip()
+    if expected_token and authorization != "Bearer " + expected_token:
+        raise HTTPException(status_code=401, detail="Invalid render token")
+    if not shutil.which("ffmpeg"):
+        raise HTTPException(status_code=503, detail="FFmpeg is not installed on this worker")
+    filename = Path(file.filename or "presenter.webm").name.lower()
+    if not filename.endswith((".webm", ".mkv", ".mp4")):
+        raise HTTPException(status_code=415, detail="Upload a WebM presenter recording")
+    work = Path(tempfile.mkdtemp(prefix="officerlab-presenter-"))
+    try:
+        source = work / "presenter-input.webm"
+        size = 0
+        with source.open("wb") as handle:
+            while True:
+                chunk = await file.read(1024 * 1024)
+                if not chunk:
+                    break
+                size += len(chunk)
+                if size > 300 * 1024 * 1024:
+                    raise HTTPException(status_code=413, detail="Presenter recording exceeds 300 MB")
+                handle.write(chunk)
+        if size < 1024:
+            raise HTTPException(status_code=400, detail="Presenter recording is empty or too small")
+        output = work / "officerlab-presenter.mp4"
+        run_ffmpeg([
+            "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
+            "-threads", "2", "-i", str(source),
+            "-map", "0:v:0", "-map", "0:a:0?",
+            "-c:v", "libx264", "-preset", "veryfast", "-crf", "22",
+            "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k",
+            "-ar", "48000", "-movflags", "+faststart", str(output),
+        ], timeout=3600)
+        if not output.exists() or output.stat().st_size < 1024:
+            raise RuntimeError("FFmpeg did not produce a valid MP4 file")
+        return FileResponse(
+            output,
+            media_type="video/mp4",
+            filename="officerlab-presenter.mp4",
+            background=BackgroundTask(shutil.rmtree, work, ignore_errors=True),
+        )
+    except HTTPException:
+        shutil.rmtree(work, ignore_errors=True)
+        raise
+    except subprocess.TimeoutExpired:
+        shutil.rmtree(work, ignore_errors=True)
+        raise HTTPException(status_code=504, detail="MP4 conversion timed out. Try a shorter recording.")
+    except Exception as exc:
+        shutil.rmtree(work, ignore_errors=True)
+        raise HTTPException(status_code=500, detail=f"MP4 conversion failed: {str(exc)[-1200:]}")
+
+
 @app.post("/render")
 async def render(
     manifest: str = Form(...),
