@@ -168,3 +168,10 @@
 .project-library-item>div{flex:1;min-width:180px;display:grid;gap:4px}
 .project-library-item small{color:var(--muted,#9aa4b5)}
 @media(max-width:650px){.project-library-item{align-items:flex-start}.library-actions{width:100%}.project-library-item .mini-action{font-size:12px;padding:7px}}
+
+
+/* AI script assistant */
+.ai-assistant-box{display:grid;gap:11px;padding:14px;border:1px solid var(--line,rgba(255,255,255,.14));border-radius:14px;background:rgba(255,255,255,.025);margin:12px 0 20px}
+.ai-provider-state{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:12px;color:var(--muted,#9aa4b5)}
+.ai-provider-state b{font-size:11px}
+.ai-api-notice{font-size:12px;line-height:1.5;padding:10px;border-radius:9px;background:rgba(217,168,79,.09);color:var(--text,#f4f1e9);overflow-wrap:anywhere}
