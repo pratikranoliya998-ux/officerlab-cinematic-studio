@@ -56,8 +56,26 @@ function PresentationStudio() {
     const source=slideCanvasRef.current;
     if(source?.width){const scale=Math.min(w/source.width,h/source.height);const sw=source.width*scale,sh=source.height*scale;ctx.drawImage(source,(w-sw)/2,(h-sh)/2,sw,sh);} 
     if(video&&video.readyState>=2){
-      const pw=320,ph=180, x=pip==="bottom-left"?24:w-pw-24, y=h-ph-24;
-      ctx.save();ctx.shadowColor="#000";ctx.shadowBlur=18;ctx.fillStyle="#d8ad66";ctx.fillRect(x-3,y-3,pw+6,ph+6);ctx.translate(x+pw,y);ctx.scale(-1,1);ctx.drawImage(video,0,0,pw,ph);ctx.restore();
+      const pw=Math.round(w*faceSize/100);
+      const ratios={rounded:9/16,rectangle:9/16,square:1,portrait:3/4,circle:1};
+      const ph=Math.round(pw/(ratios[faceShape]||9/16));
+      const margin=24, x=pip==="bottom-left"?margin:w-pw-margin, y=h-ph-margin;
+      ctx.save();
+      ctx.shadowColor="#000";ctx.shadowBlur=18;
+      ctx.beginPath();
+      if(faceShape==="circle"){ctx.ellipse(x+pw/2,y+ph/2,pw/2,ph/2,0,0,Math.PI*2);}
+      else if(faceShape==="rounded"){ctx.roundRect(x,y,pw,ph,Math.min(24,pw*.09));}
+      else{ctx.rect(x,y,pw,ph);}
+      ctx.clip();
+      ctx.translate(x+pw,y);ctx.scale(-1,1);
+      if(faceShape==="portrait"){const scale=Math.max(pw/video.videoWidth,ph/video.videoHeight);const sw=video.videoWidth*scale,sh=video.videoHeight*scale;ctx.drawImage(video,(pw-sw)/2,(ph-sh)/2,sw,sh);}
+      else{const scale=Math.max(pw/video.videoWidth,ph/video.videoHeight);const sw=video.videoWidth*scale,sh=video.videoHeight*scale;ctx.drawImage(video,(pw-sw)/2,(ph-sh)/2,sw,sh);}
+      ctx.restore();
+      ctx.save();ctx.strokeStyle="#d8ad66";ctx.lineWidth=5;ctx.beginPath();
+      if(faceShape==="circle")ctx.ellipse(x+pw/2,y+ph/2,pw/2-2,ph/2-2,0,0,Math.PI*2);
+      else if(faceShape==="rounded")ctx.roundRect(x+2,y+2,pw-4,ph-4,Math.min(24,pw*.09));
+      else ctx.rect(x+2,y+2,pw-4,ph-4);
+      ctx.stroke();ctx.restore();
     }
     if(recording){ctx.fillStyle="#d93040";ctx.beginPath();ctx.arc(34,34,8,0,Math.PI*2);ctx.fill();ctx.fillStyle="#fff";ctx.font="bold 18px sans-serif";ctx.fillText("REC",52,40);}
     rafRef.current=requestAnimationFrame(drawComposite);
@@ -89,12 +107,18 @@ function PresentationStudio() {
         <div className="presentation-preview">
           <canvas ref={slideCanvasRef} className="presentation-canvas"/><canvas ref={outputCanvasRef} width="1280" height="720" className="recording-canvas"/>
           {!pdfReady&&!videoUrl&&<div className="presenter-placeholder"><Upload size={40}/><b>તમારી PPT અથવા PDF અહીં upload કરો</b><small>PDF, PPT અને PPTX supported</small></div>}
-          {pdfReady&&!videoUrl&&<video ref={cameraRef} autoPlay muted playsInline className="camera-pip-preview"/>}
+          {pdfReady&&!videoUrl&&<video ref={cameraRef} autoPlay muted playsInline className={`camera-pip-preview shape-${faceShape}`} style={{width:`${faceSize}%`,aspectRatio:faceShape==="portrait"?"3 / 4":faceShape==="square"||faceShape==="circle"?"1 / 1":"16 / 9"}}/>}
           {videoUrl&&<video ref={playbackRef} src={videoUrl} controls playsInline className="presenter-video"/>}
         </div>
         <div className="presentation-upload"><label className="presenter-btn secondary"><Upload size={16}/>{file?file.name:"Choose PPT / PDF"}<input type="file" accept=".pdf,.ppt,.pptx" onChange={e=>loadFile(e.target.files?.[0])} hidden/></label>{loading&&<span className="upload-state">Presentation તૈયાર થઈ રહી છે…</span>}
           {pdfReady&&<div className="slide-navigation"><button className="presenter-btn secondary" disabled={page<=1} onClick={()=>setPage(p=>p-1)}><ChevronLeft size={16}/> Previous</button><span>Slide {page} / {pages}</span><button className="presenter-btn secondary" disabled={page>=pages} onClick={()=>setPage(p=>p+1)}>Next <ChevronRight size={16}/></button></div>}
         </div>
+        {pdfReady&&streamReady&&!videoUrl&&<div className="face-layout-controls">
+          <div className="face-control-heading"><b>Presenter camera layout</b><small>Face size, shape અને position બદલો — recordingમાં પણ live update થશે.</small></div>
+          <label className="face-size-control"><span>Face size <b>{faceSize}%</b></span><input type="range" min="12" max="45" step="1" value={faceSize} onChange={e=>setFaceSize(Number(e.target.value))}/></label>
+          <label className="face-select-control"><span>Camera shape</span><select value={faceShape} onChange={e=>setFaceShape(e.target.value)}><option value="rounded">Rounded rectangle</option><option value="rectangle">Rectangle</option><option value="square">Square</option><option value="portrait">Portrait (3:4)</option><option value="circle">Circle</option></select></label>
+          <label className="face-select-control"><span>Position</span><select value={pip} onChange={e=>setPip(e.target.value)}><option value="bottom-right">Bottom right</option><option value="bottom-left">Bottom left</option></select></label>
+        </div>}
         <div className="presenter-controls">
           {!streamReady&&!videoUrl&&<button className="presenter-btn primary" onClick={()=>startCamera()}><Camera size={17}/> Connect camera + mic</button>}
           {streamReady&&!recording&&!videoUrl&&<><button className="presenter-btn secondary" onClick={()=>startCamera(cameraFacing==="user"?"environment":"user")}>Switch camera</button><button className="presenter-btn secondary" onClick={stopCamera}><CameraOff size={16}/> Disconnect</button><button className="presenter-btn primary record" onClick={startRecording} disabled={!pdfReady}><Circle size={16} fill="currentColor"/> Start recording</button></>}
