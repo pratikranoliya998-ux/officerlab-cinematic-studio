@@ -62,7 +62,7 @@ async def heygen_tts_generate(body: HeyGenTTSRequest, request: Request):
         "text": body.text,
         "speed": body.speed,
     }
-    if body.language:
+    if body.language and body.language != "auto":
         payload["language"] = body.language
     try:
         async with httpx.AsyncClient(timeout=httpx.Timeout(120.0, connect=15.0), follow_redirects=False) as client:
@@ -83,7 +83,7 @@ async def heygen_tts_generate(body: HeyGenTTSRequest, request: Request):
             if not audio_url:
                 raise HTTPException(status_code=502, detail="HeyGen returned no audio URL.")
             parsed = urlparse(audio_url)
-            if parsed.scheme != "https" or not (parsed.hostname or "").endswith("heygen.ai"):
+            if parsed.scheme != "https" or not ((parsed.hostname or "") == "heygen.ai" or (parsed.hostname or "").endswith(".heygen.ai")):
                 raise HTTPException(status_code=502, detail="HeyGen returned an unexpected audio host.")
             audio_response = await client.get(audio_url)
             if audio_response.status_code >= 400:
