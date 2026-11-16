@@ -47,7 +47,13 @@ def font_file(bold: bool = False) -> str:
 
 def load_font(size: int, bold: bool = False):
     path = font_file(bold)
-    return ImageFont.truetype(path, size) if path else ImageFont.load_default()
+    if not path:
+        raise RuntimeError("Noto Sans Gujarati font is missing; install fonts-noto-core in the render image")
+    # Layout the Gujarati text with RAQM/HarfBuzz so conjuncts and vowel marks are shaped correctly.
+    try:
+        return ImageFont.truetype(path, size, layout_engine=ImageFont.Layout.RAQM)
+    except Exception:
+        return ImageFont.truetype(path, size)
 
 
 def wrap_text(draw: ImageDraw.ImageDraw, text: str, font, max_width: int) -> list[str]:
@@ -60,7 +66,7 @@ def wrap_text(draw: ImageDraw.ImageDraw, text: str, font, max_width: int) -> lis
         line = words[0]
         for word in words[1:]:
             candidate = line + " " + word
-            if draw.textbbox((0, 0), candidate, font=font)[2] <= max_width:
+            if draw.textbbox((0, 0), candidate, font=font, direction="ltr")[2] <= max_width:
                 line = candidate
             else:
                 lines.append(line)
@@ -113,8 +119,9 @@ def make_scene_image(scene: dict, number: int, width: int, height: int, theme: s
     foreground = (247, 245, 239, 255) if dark else (25, 35, 53, 255)
     muted = (177, 190, 208, 255) if dark else (76, 83, 96, 255)
 
-    draw.text((margin, int(height * .105)), "OFFICERLAB  /  CINEMATIC EXPLAINER", font=small_font, fill=accent)
-    draw.text((margin, int(height * .19)), str(scene.get("title") or f"Scene {number}"), font=small_font, fill=accent)
+    # Pillow + RAQM is used for Indic shaping. Anchor="lt" avoids baseline ambiguity.
+    draw.text((margin, int(height * .105)), "OFFICERLAB  /  CINEMATIC EXPLAINER", font=small_font, fill=accent, anchor="lt")
+    draw.text((margin, int(height * .19)), str(scene.get("title") or f"Scene {number}"), font=small_font, fill=accent, anchor="lt")
 
     text = str(scene.get("text") or "")
     max_width = int(width * .82)
@@ -122,13 +129,13 @@ def make_scene_image(scene: dict, number: int, width: int, height: int, theme: s
     y = int(height * .30)
     line_gap = int(height * .068)
     for line in lines[:9]:
-        draw.text((margin, y), line, font=body_font, fill=foreground, stroke_width=0)
+        draw.text((margin, y), line, font=body_font, fill=foreground, stroke_width=0, anchor="lt")
         y += line_gap
 
     bar_y = int(height * .77)
     draw.rounded_rectangle((margin, bar_y, margin + int(width * .12), bar_y + max(4, int(height * .006))), radius=8, fill=accent)
-    draw.text((margin, int(height * .81)), "Gujarati learning  •  GPSC / GSSSB", font=small_font, fill=muted)
-    draw.text((margin, int(height * .94)), f"SCENE {number:02d}", font=small_font, fill=(255, 255, 255, 145))
+    draw.text((margin, int(height * .81)), "Gujarati learning  •  GPSC / GSSSB", font=small_font, fill=muted, anchor="lt")
+    draw.text((margin, int(height * .94)), f"SCENE {number:02d}", font=small_font, fill=(255, 255, 255, 145), anchor="lt")
     image.save(path, format="PNG", optimize=True)
 
 
