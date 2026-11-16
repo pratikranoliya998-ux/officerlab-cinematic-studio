@@ -102,6 +102,14 @@ function App() {
   const voiceFileRef = useRef(null);
   const selectedScene = scenes.find(s => s.id === selected) || scenes[0];
   const wordCount = useMemo(() => script.trim() ? script.trim().split(/\s+/).length : 0, [script]);
+  async function readAiResponse(response) {
+    const raw = await response.text();
+    if (!raw.trim()) throw new Error("AI gateway returned an empty response (HTTP " + response.status + "). Check Vercel RENDER_API_URL and Render logs.");
+    let data;
+    try { data = JSON.parse(raw); } catch { throw new Error("AI gateway returned a non-JSON response (HTTP " + response.status + "): " + raw.slice(0,180)); }
+    if (!response.ok) throw new Error(data.detail || data.message || ("AI request failed (HTTP " + response.status + ")"));
+    return data;
+  }
   const [aiProvider, setAiProvider] = useState("openai");
   const [aiProviders, setAiProviders] = useState({});
   const [aiBusy, setAiBusy] = useState(false);
@@ -110,8 +118,7 @@ function App() {
     if (active !== "script") return;
     let cancelled = false;
     fetch("/api/ai/providers").then(async response => {
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.detail || "Could not load provider status");
+      const data = await readAiResponse(response);
       if (!cancelled) setAiProviders(data.providers || {});
     }).catch(error => { if (!cancelled) setAiNotice(error.message); });
     return () => { cancelled = true; };
@@ -120,8 +127,7 @@ function App() {
     setAiBusy(true); setAiNotice("Testing " + aiProvider + " connection…");
     try {
       const response = await fetch("/api/ai/providers/test", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ provider: aiProvider }) });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.detail || "Provider test failed");
+      const data = await readAiResponse(response);
       setAiNotice(data.message || (aiProvider + " connection successful"));
       setAiProviders(current => ({ ...current, [aiProvider]: { ...(current[aiProvider] || {}), configured: true, model: data.model } }));
     } catch (error) { setAiNotice(error.message); }
@@ -139,8 +145,7 @@ function App() {
         subject_context: script, provider: aiProvider,
         style: workspaceMode === "exam" ? "Gujarati classroom lecture, exam-oriented, concept-first" : "engaging cinematic explainer with storytelling"
       }) });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.detail || "Script generation failed");
+      const data = await readAiResponse(response);
       setScript(data.text || "");
       setAiNotice("Generated with " + (data.provider || aiProvider) + " · " + (data.model || "AI"));
       setStatus("AI script generated and saved in this project");
