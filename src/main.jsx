@@ -26,7 +26,14 @@ function PresentationStudio() {
     if(!selected)return; if(selected.size>500*1024*1024){setError("500 MBથી મોટી ફાઇલ હાલમાં supported નથી. PPTને compress કરીને ફરી upload કરો.");return;} setError(""); setLoading(true); setUploadProgress(5); setPdfReady(false); setFile(selected); setVideoUrl(""); setMp4Url("");
     try{
       let pdfBlob=selected;
-      if(/\.pptx?$/i.test(selected.name)){
+      if(/^image\\//i.test(selected.type)){
+        const img=new Image(),url=URL.createObjectURL(selected);
+        await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=reject;img.src=url;});
+        const c=slideCanvasRef.current;c.width=img.naturalWidth;c.height=img.naturalHeight;c.getContext("2d").drawImage(img,0,0);URL.revokeObjectURL(url);
+        const a=annotationCanvasRef.current;if(a){a.width=c.width;a.height=c.height;}
+        pdfRef.current=null;setImageMode(true);setPages(1);setPage(1);setPdfReady(true);setUploadProgress(100);return;
+      } else setImageMode(false);
+      if(/\\.pptx?$/i.test(selected.name)){
         if(!WORKER)throw new Error("PPT/PPTX માટે Render worker URL configure હોવું જરૂરી છે.");
         const form=new FormData(); form.append("file",selected,selected.name);
         const response=await fetch(WORKER+"/presentation-to-pdf",{method:"POST",body:form}); setUploadProgress(75);
