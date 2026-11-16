@@ -4,4 +4,4 @@ python-multipart==0.0.20
 Pillow==11.0.0
 httpx==0.28.1
 numpy>=1.26,<3
-skia-python>=124,<125
+skia-python==144.1
