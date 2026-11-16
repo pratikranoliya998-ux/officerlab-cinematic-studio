@@ -40,6 +40,23 @@ def _make_board(path: Path, look: str) -> None:
     im.save(path, "PNG")
 
 
+def _wrap_words(text: str, limit: int = 34, max_lines: int = 4) -> list[str]:
+    """Wrap Gujarati/English text by words so cards stay inside their safe area."""
+    words = str(text or "").split()
+    lines: list[str] = []
+    current = ""
+    for word in words:
+        candidate = f"{current} {word}".strip()
+        if current and len(candidate) > limit:
+            lines.append(current)
+            current = word
+        else:
+            current = candidate
+    if current:
+        lines.append(current)
+    return lines[:max_lines]
+
+
 def render_cinematic(manifest: dict, output: Path, temp_dir: Path) -> None:
     scenes = manifest.get("scenes") or []
     if not scenes or len(scenes) > 60:
@@ -82,30 +99,31 @@ def render_cinematic(manifest: dict, output: Path, temp_dir: Path) -> None:
     doc = Doc(temp_dir)
     film = Film(total, fps=fps, look={**__import__("cinematic_engine.engine", fromlist=["LOOKS"]).LOOKS[look], "board": board_name})
     accent = (218, 166, 68)
-    card_w, card_h, gap = 3000, 1500, 3900
+    # A single-card-at-a-time camera path keeps every title and line inside a
+    # 16:9 safe frame instead of showing several tiny cards at once.
+    card_w, card_h, gap = 3200, 1650, 2800
     xs = [(i - (len(scenes)-1)/2) * gap for i in range(len(scenes))]
-    mid = 0.0
-    film.add(BigText(str(manifest.get("title") or "OFFICERLAB"), 0, -1900, 560, 0.0,
+    film.add(BigText(str(manifest.get("title") or "OFFICERLAB")[:24], 0, -1350, 390, 0.0,
                      rgb=(246,243,236), type_on=0.8, grunge=False, shadow=True))
     for i, (scene, duration, x) in enumerate(zip(scenes, durations, xs), 1):
         start = sum(durations[:i-1])
-        title = str(scene.get("title") or f"SCENE {i:02d}")[:80]
-        body = str(scene.get("text") or scene.get("narration") or "")[:220]
-        lines = [body[j:j+54] for j in range(0, len(body), 54)][:4]
-        film.add(Card(x, 0, card_w, card_h, start + 0.1, title=title, lines=lines,
-                      accent=accent, title_size=220, body_size=120))
+        title = str(scene.get("title") or f"SCENE {i:02d}")[:42]
+        body = str(scene.get("text") or scene.get("narration") or "")
+        lines = _wrap_words(body, limit=36, max_lines=4)
+        film.add(Card(x, 350, card_w, card_h, start + 0.08, title=title, lines=lines,
+                      accent=accent, title_size=150, body_size=96))
         if i > 1:
-            film.add(Route((xs[i-2] + card_w/2 + 100, 0), (x-card_w/2-100, 0),
-                           t_in=start-0.25, dur=0.65, bend=-0.12, width=22, rgb=accent))
+            film.add(Route((xs[i-2] + card_w/2 + 80, 350), (x-card_w/2-80, 350),
+                           t_in=start-0.3, dur=0.8, bend=-0.10, width=18, rgb=accent))
         if scene.get("counterValue") is not None:
             try:
-                film.add(Counter(x, 1150, 280, int(scene["counterValue"]), start+0.5,
-                                 suffix=str(scene.get("counterSuffix") or ""), caption="KEY FACT", rgb=accent))
+                film.add(Counter(x, 1120, 220, int(scene["counterValue"]), start+0.5,
+                                 suffix=str(scene.get("counterSuffix") or ""), caption="મુખ્ય મુદ્દો", rgb=accent))
             except (TypeError, ValueError):
                 pass
-        film.shot(start, x, 100, 0.48, rot=(-0.35 if i % 2 else 0.35))
-        film.shot(start + duration, x, 0, 0.44)
-    film.shot(total, mid, 0, 0.28)
+        # One camera key per scene start; a single final key avoids duplicate timestamps.
+        film.shot(start, x, 350, 0.43, rot=0.0)
+    film.shot(total, xs[-1], 350, 0.43, rot=0.0)
     film.fade_in, film.fade_out = 0.7, min(1.5, total/4)
 
     aspect = str(manifest.get("aspect") or "16:9")
