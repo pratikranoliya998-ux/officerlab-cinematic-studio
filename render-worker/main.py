@@ -279,12 +279,16 @@ async def render(
             filter_parts.append("[0:v]null[vout]")
 
         if audio_labels:
+            # Mix clips on the same timeline; use amix with normalization disabled,
+            # then apply a limiter so voice peaks do not clip.
             filter_parts.append(
                 "".join(audio_labels)
-                + f"amix=inputs={len(audio_labels)}:duration=longest:dropout_transition=0,"
+                + f"amix=inputs={len(audio_labels)}:duration=longest:dropout_transition=0:normalize=0,"
+                + "alimiter=limit=0.92:level=disabled,"
                 + f"atrim=duration={total_duration},asetpts=PTS-STARTPTS[aout]"
             )
         else:
+            # Do not silently render a silent movie when voice/audio clips were expected.
             args += [
                 "-f", "lavfi", "-t", str(total_duration),
                 "-i", "anullsrc=channel_layout=stereo:sample_rate=48000",
