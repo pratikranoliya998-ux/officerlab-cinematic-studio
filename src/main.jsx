@@ -15,7 +15,7 @@ function loadPdfJs() {
   });
 }
 function PresentationStudio() {
-  const cameraRef=useRef(null), canvasRef=useRef(null), playbackRef=useRef(null), streamRef=useRef(null), recorderRef=useRef(null), chunksRef=useRef([]), timerRef=useRef(null), rafRef=useRef(null), pdfRef=useRef(null), pageRef=useRef(1), micRef=useRef(null);
+  const cameraRef=useRef(null), slideCanvasRef=useRef(null), outputCanvasRef=useRef(null), playbackRef=useRef(null), streamRef=useRef(null), recorderRef=useRef(null), chunksRef=useRef([]), timerRef=useRef(null), rafRef=useRef(null), pdfRef=useRef(null), pageRef=useRef(1), micRef=useRef(null);
   const [file,setFile]=useState(null), [pdfReady,setPdfReady]=useState(false), [page,setPage]=useState(1), [pages,setPages]=useState(0), [streamReady,setStreamReady]=useState(false), [recording,setRecording]=useState(false), [seconds,setSeconds]=useState(0), [videoUrl,setVideoUrl]=useState(""), [mp4Url,setMp4Url]=useState(""), [converting,setConverting]=useState(false), [loading,setLoading]=useState(false), [error,setError]=useState(""), [cameraFacing,setCameraFacing]=useState("user"), [pip,setPip]=useState("bottom-right");
   useEffect(()=>{pageRef.current=page; if(pdfRef.current) drawSlide();},[page,pdfReady]);
   useEffect(()=>()=>{if(timerRef.current)clearInterval(timerRef.current); if(rafRef.current)cancelAnimationFrame(rafRef.current); if(recorderRef.current?.state==="recording")recorderRef.current.stop(); streamRef.current?.getTracks().forEach(t=>t.stop()); if(videoUrl)URL.revokeObjectURL(videoUrl); if(mp4Url)URL.revokeObjectURL(mp4Url);},[]);
@@ -35,7 +35,7 @@ function PresentationStudio() {
     }catch(e){setError(e.message||"Presentation ખોલી શકાતી નથી.");}finally{setLoading(false);}
   }
   async function drawSlide(){
-    const canvas=canvasRef.current, doc=pdfRef.current; if(!canvas||!doc)return;
+    const canvas=slideCanvasRef.current, doc=pdfRef.current; if(!canvas||!doc)return;
     try{const p=await doc.getPage(pageRef.current); const viewport=p.getViewport({scale:1.5}); canvas.width=viewport.width; canvas.height=viewport.height; await p.render({canvasContext:canvas.getContext("2d"),viewport}).promise;}catch(e){setError("Slide render error: "+e.message);}
   }
   async function startCamera(facing=cameraFacing){
@@ -49,7 +49,7 @@ function PresentationStudio() {
   }
   function stopCamera(){if(recording)stopRecording();streamRef.current?.getTracks().forEach(t=>t.stop());streamRef.current=null;setStreamReady(false);}
   function drawComposite(){
-    const canvas=canvasRef.current, video=cameraRef.current, ctx=canvas?.getContext("2d");
+    const canvas=outputCanvasRef.current, video=cameraRef.current, ctx=canvas?.getContext("2d");
     if(!canvas||!ctx)return;
     const w=1280,h=720; if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;}
     ctx.fillStyle="#101827";ctx.fillRect(0,0,w,h);
@@ -65,7 +65,7 @@ function PresentationStudio() {
   }
   async function startRecording(){
     if(!pdfReady||!streamReady){setError("Presentation load કરો અને camera + microphone connect કરો.");return;}
-    const canvas=canvasRef.current; const videoStream=canvas.captureStream(30); const audioTracks=streamRef.current?.getAudioTracks()||[];
+    const canvas=outputCanvasRef.current; const videoStream=canvas.captureStream(30); const audioTracks=streamRef.current?.getAudioTracks()||[];
     const combined=new MediaStream([...videoStream.getVideoTracks(),...audioTracks]);
     chunksRef.current=[];const mime=["video/webm;codecs=vp9,opus","video/webm;codecs=vp8,opus","video/webm"].find(t=>MediaRecorder.isTypeSupported(t));
     try{const rec=new MediaRecorder(combined,mime?{mimeType:mime,videoBitsPerSecond:6000000}:undefined);recorderRef.current=rec;
@@ -88,7 +88,7 @@ function PresentationStudio() {
       <section className="presenter-stage">
         <div className="presenter-stage-top"><span><i className={recording?"live-dot active":"live-dot"}/>{recording?"RECORDING":pdfReady?"PRESENTATION READY":"UPLOAD PRESENTATION"}</span><span className="presenter-time">{time}</span></div>
         <div className="presentation-preview">
-          <canvas ref={canvasRef} className="presentation-canvas"/>
+          <canvas ref={slideCanvasRef} className="presentation-canvas"/><canvas ref={outputCanvasRef} width="1280" height="720" className="recording-canvas"/>
           {!pdfReady&&!videoUrl&&<div className="presenter-placeholder"><Upload size={40}/><b>તમારી PPT અથવા PDF અહીં upload કરો</b><small>PDF, PPT અને PPTX supported</small></div>}
           {pdfReady&&!videoUrl&&<video ref={cameraRef} autoPlay muted playsInline className="camera-pip-preview"/>}
           {videoUrl&&<video ref={playbackRef} src={videoUrl} controls playsInline className="presenter-video"/>}
