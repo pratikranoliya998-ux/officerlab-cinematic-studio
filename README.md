@@ -124,3 +124,12 @@ Optional worker bearer-token protection is available through `RENDER_API_TOKEN`.
 The worker currently accepts up to 100 scenes, 60 minutes per render, 300 MB per file and 800 MB total uploaded media. It returns an MP4 directly in the HTTP response; the request stays open while FFmpeg runs. The video is composed from the editable text-based scene cards and an optional presenter PIP overlay. Audio tracks are mixed from uploaded files using each clip's timeline offset, source trim and volume.
 
 This first worker does not yet provide a persistent job queue, cloud asset library, generated stock imagery, per-word caption alignment, AI script/TTS service, or advanced transitions/chroma key. It is an actual MP4 render path, but not a substitute for a full multi-user NLE/render farm. Add authentication, rate limiting, persistent jobs, object storage and monitoring before opening it to unrestricted public traffic.
+
+
+## Presenter-only MP4 export
+
+The focused Presenter Studio records the user's webcam video and microphone audio together in one WebM capture. The **Convert to MP4** action uploads that recording directly to the Render worker's `/convert-presenter` endpoint, where FFmpeg converts it to H.264/AAC MP4. The browser then offers the MP4 download; a WebM backup is also available.
+
+Configure `VITE_RENDER_API_URL` in the Vercel project to the Render worker origin (for example, `https://YOUR-WORKER.onrender.com`) and redeploy the frontend. If the Render worker has `RENDER_API_TOKEN` enabled, configure the matching `VITE_RENDER_API_TOKEN` for the frontend. **A VITE_ token is public to browser visitors**, so do not treat it as a secret or enable a shared public deployment with a private token embedded in client code. For a private production service, put an authenticated server-side upload proxy in front of the worker.
+
+The worker accepts presenter recordings up to 300 MB. Conversion requires the Render worker to be deployed with FFmpeg. The original capture remains in the browser until the user downloads it or leaves the page; recordings are not cloud-saved.

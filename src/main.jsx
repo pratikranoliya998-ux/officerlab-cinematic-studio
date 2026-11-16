@@ -14,6 +14,8 @@ function PresenterStudio() {
   const [recording, setRecording] = useState(false);
   const [seconds, setSeconds] = useState(0);
   const [videoUrl, setVideoUrl] = useState("");
+  const [mp4Url, setMp4Url] = useState("");
+  const [converting, setConverting] = useState(false);
   const [error, setError] = useState("");
   const [script, setScript] = useState("");
   const [showScript, setShowScript] = useState(false);
@@ -28,6 +30,7 @@ function PresenterStudio() {
     if (recorderRef.current?.state === "recording") recorderRef.current.stop();
     streamRef.current?.getTracks().forEach(track => track.stop());
     if (videoUrl) URL.revokeObjectURL(videoUrl);
+    if (mp4Url) URL.revokeObjectURL(mp4Url);
   }, []);
 
   async function startCamera(facing = cameraFacing) {
@@ -82,6 +85,7 @@ function PresenterStudio() {
         const blob = new Blob(chunksRef.current, { type: recorder.mimeType || "video/webm" });
         if (blob.size) {
           setVideoUrl(old => { if (old) URL.revokeObjectURL(old); return URL.createObjectURL(blob); });
+          setMp4Url(old => { if (old) URL.revokeObjectURL(old); return ""; });
           setError("");
         } else setError("Recordingમાં data મળ્યો નથી. ફરી પ્રયાસ કરો.");
       };
@@ -101,8 +105,36 @@ function PresenterStudio() {
     if (recorderRef.current?.state === "recording") recorderRef.current.stop();
   }
 
+  async function convertToMp4() {
+    const worker = (import.meta.env.VITE_RENDER_API_URL || "").replace(/\\/+$/, "");
+    if (!worker) { setError("MP4 export માટે VITE_RENDER_API_URL configure કરેલું હોવું જોઈએ."); return; }
+    if (!videoUrl) return;
+    setConverting(true); setError("");
+    try {
+      const response = await fetch(videoUrl);
+      const webmBlob = await response.blob();
+      const form = new FormData();
+      form.append("file", webmBlob, "presenter.webm");
+      const headers = {};
+      const token = import.meta.env.VITE_RENDER_API_TOKEN || "";
+      if (token) headers.Authorization = "Bearer " + token;
+      const converted = await fetch(worker + "/convert-presenter", { method: "POST", headers, body: form });
+      if (!converted.ok) {
+        let message = "MP4 conversion failed (HTTP " + converted.status + ").";
+        try { const data = await converted.json(); message = data.detail || message; } catch {}
+        throw new Error(message);
+      }
+      const mp4 = await converted.blob();
+      if (!mp4.size || !mp4.type.includes("video")) throw new Error("Workerએ valid MP4 file પરત આપી નથી.");
+      setMp4Url(old => { if (old) URL.revokeObjectURL(old); return URL.createObjectURL(mp4); });
+    } catch (e) { setError("MP4 export: " + e.message); }
+    finally { setConverting(false); }
+  }
+
   function retake() {
     if (videoUrl) URL.revokeObjectURL(videoUrl);
+    if (mp4Url) URL.revokeObjectURL(mp4Url);
+    setMp4Url("");
     setVideoUrl("");
     setError("");
     if (streamReady && liveRef.current && streamRef.current) liveRef.current.srcObject = streamRef.current;
@@ -129,7 +161,7 @@ function PresenterStudio() {
           {!streamReady && !videoUrl && <button className="presenter-btn primary" onClick={() => startCamera()}><Camera size={17}/> Connect camera + mic</button>}
           {streamReady && !videoUrl && !recording && <><button className="presenter-btn primary record" onClick={startRecording}><Circle size={16} fill="currentColor"/> Start recording</button><button className="presenter-btn secondary" onClick={() => startCamera(cameraFacing === "user" ? "environment" : "user")}>Switch camera</button><button className="presenter-btn secondary" onClick={stopCamera}><CameraOff size={16}/> Disconnect</button></>}
           {recording && <button className="presenter-btn stop" onClick={stopRecording}><Square size={16} fill="currentColor"/> Stop recording</button>}
-          {videoUrl && <><a className="presenter-btn primary download" href={videoUrl} download="officerlab-presenter-video.webm"><Download size={17}/> Download video</a><button className="presenter-btn secondary" onClick={retake}><RotateCcw size={16}/> Record again</button></>}
+          {videoUrl && <><button className="presenter-btn primary" onClick={convertToMp4} disabled={converting || !!mp4Url}>{converting ? "Converting to MP4…" : mp4Url ? "MP4 ready" : "Convert to MP4"}</button>{mp4Url && <a className="presenter-btn primary download" href={mp4Url} download="officerlab-presenter.mp4"><Download size={17}/> Download MP4</a>}<a className="presenter-btn secondary download" href={videoUrl} download="officerlab-presenter-backup.webm"><Download size={15}/> WebM backup</a><button className="presenter-btn secondary" onClick={retake}><RotateCcw size={16}/> Record again</button></>}
         </div>
         {error && <p className="presenter-error" role="alert">{error}</p>}
         {videoUrl && <p className="presenter-success">તમારું presenter video અને microphone audio એક સાથે record થયું છે.</p>}
@@ -143,7 +175,7 @@ function PresenterStudio() {
         <button className="presenter-script-toggle" onClick={() => setShowScript(value => !value)}>{showScript ? "−" : "+"} Optional teleprompter</button>
         {showScript && <><p>તમારી lecture script અહીં paste કરો. આ લખાણ recordમાં ઉમેરાતું નથી; ફક્ત વાંચવા માટે છે.</p><textarea value={script} onChange={e => setScript(e.target.value)} placeholder="નમસ્કાર મિત્રો, OfficerLab માં આપનું સ્વાગત છે..." /><div className="presenter-script-preview">{script || "તમારી script અહીં દેખાશે."}</div></>}
       </section>
-      <footer className="presenter-footer">Recording તમારા browserમાં local રહે છે. Download કરીને સાચવો. Camera/microphone permission જરૂરી છે.</footer>
+      <footer className="presenter-footer">Recording તમારા browserમાં local રહે છે. MP4 export માટે internet connection અને configured render worker જરૂરી છે. Camera/microphone permission જરૂરી છે.</footer>
     </main>
   </div>;
 }
