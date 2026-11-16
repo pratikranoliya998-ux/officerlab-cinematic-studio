@@ -176,13 +176,13 @@ async def presentation_to_pdf(
                 chunk = await file.read(1024 * 1024)
                 if not chunk: break
                 size += len(chunk)
-                if size > 100 * 1024 * 1024:
-                    raise HTTPException(status_code=413, detail="Presentation exceeds 100 MB")
+                if size > 500 * 1024 * 1024:
+                    raise HTTPException(status_code=413, detail="Presentation exceeds 500 MB")
                 handle.write(chunk)
         completed = subprocess.run(
             ["libreoffice", "-env:UserInstallation=file://" + str(work / "lo-profile"),
              "--headless", "--convert-to", "pdf", "--outdir", str(work), str(source)],
-            capture_output=True, text=True, timeout=180
+            capture_output=True, text=True, timeout=600
         )
         output = work / (source.stem + ".pdf")
         if completed.returncode != 0 or not output.exists():
@@ -192,7 +192,7 @@ async def presentation_to_pdf(
     except HTTPException:
         shutil.rmtree(work, ignore_errors=True); raise
     except subprocess.TimeoutExpired:
-        shutil.rmtree(work, ignore_errors=True); raise HTTPException(status_code=504, detail="Presentation conversion timed out")
+        shutil.rmtree(work, ignore_errors=True); raise HTTPException(status_code=504, detail="Presentation conversion timed out. Try compressing the PPT or splitting it into smaller files.")
     except Exception as exc:
         shutil.rmtree(work, ignore_errors=True); raise HTTPException(status_code=500, detail=str(exc)[-1500:])
 
