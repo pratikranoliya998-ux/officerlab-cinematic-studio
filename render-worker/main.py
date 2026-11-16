@@ -81,21 +81,15 @@ def parse_duration(value: str) -> float:
 
 def dimensions(aspect: str, quality: str) -> tuple[int, int]:
     q = str(quality).lower()
-    if "4k" in q:
-        wide, high = 3840, 2160
-    elif "720" in q:
-        wide, high = 1280, 720
-    else:
-        wide, high = 1920, 1080
-    a = str(aspect).lower()
-    if "9:16" in a:
-        return (high, wide)
-    if "1:1" in a:
-        side = high
-        return (side, side)
-    if "4:5" in a:
-        return (int(high * 0.8), high)
-    return wide, high
+    # Keep the longest edge at 1280px on the 512 MB Render instance.
+    # The UI may still request 1080p/4K, but the worker safely downsamples.
+    if "9:16" in str(aspect).lower():
+        return (720, 1280)
+    if "1:1" in str(aspect).lower():
+        return (960, 960)
+    if "4:5" in str(aspect).lower():
+        return (768, 960)
+    return (1280, 720)
 
 
 def make_scene_image(scene: dict, number: int, width: int, height: int, theme: str, path: Path) -> None:
@@ -197,39 +191,62 @@ async def render(
             file_paths[safe_name] = target
 
         width, height = dimensions(data.get("aspect", "16:9"), data.get("quality", "1080p"))
-        scene_images = []
-        for index, scene in enumerate(scenes, start=1):
+        # Render each scene in its own short FFmpeg process. The previous pipeline
+        # opened every still-image input simultaneously, which could exceed Render's
+        # 512 MB free-instance memory limit on larger projects.
+        segment_paths: list[Path] = []
+        for index, (scene, duration) in enumerate(zip(scenes, durations), start=1):
             image_path = work / f"scene_{index:03d}.png"
+            segment_path = work / f"segment_{index:03d}.mp4"
             make_scene_image(scene, index, width, height, data.get("theme", "midnight"), image_path)
-            scene_images.append(image_path)
+            run_ffmpeg([
+                "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
+                "-threads", "1", "-filter_threads", "1",
+                "-loop", "1", "-framerate", "30", "-t", str(duration), "-i", str(image_path),
+                "-vf", "format=yuv420p",
+                "-an", "-c:v", "libx264", "-preset", "ultrafast", "-tune", "stillimage",
+                "-threads", "1", "-pix_fmt", "yuv420p", "-r", "30",
+                "-movflags", "+faststart", str(segment_path),
+            ], timeout=max(120, int(duration * 8)))
+            image_path.unlink(missing_ok=True)
+            if not segment_path.exists() or segment_path.stat().st_size < 512:
+                raise RuntimeError(f"FFmpeg failed to create scene segment {index}")
+            segment_paths.append(segment_path)
 
-        args = ["ffmpeg", "-y", "-hide_banner", "-loglevel", "error"]
+        concat_file = work / "scenes.txt"
+        concat_file.write_text(
+            "".join(f"file '{path.as_posix()}'\\n" for path in segment_paths),
+            encoding="utf-8",
+        )
+        base_video = work / "scenes-concat.mp4"
+        run_ffmpeg([
+            "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
+            "-threads", "1", "-f", "concat", "-safe", "0", "-i", str(concat_file),
+            "-c", "copy", "-movflags", "+faststart", str(base_video),
+        ])
+
+        # The final pass handles only the concatenated video plus actual audio/PIP
+        # inputs, with filter and codec threading constrained for low-memory hosts.
+        args = [
+            "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
+            "-threads", "1", "-filter_threads", "1", "-filter_complex_threads", "1",
+            "-i", str(base_video),
+        ]
         filter_parts: list[str] = []
-        video_labels: list[str] = []
-        for index, (image_path, duration) in enumerate(zip(scene_images, durations)):
-            args += ["-loop", "1", "-framerate", "30", "-t", str(duration), "-i", str(image_path)]
-            label = f"v{index}"
-            filter_parts.append(
-                f"[{index}:v]scale={width}:{height}:force_original_aspect_ratio=decrease,"
-                f"pad={width}:{height}:(ow-iw)/2:(oh-ih)/2,setsar=1,fps=30,setpts=PTS-STARTPTS[{label}]"
-            )
-            video_labels.append(f"[{label}]")
-        filter_parts.append("".join(video_labels) + f"concat=n={len(video_labels)}:v=1:a=0[vbase]")
-
-        input_index = len(scene_images)
+        input_index = 1
         audio_labels: list[str] = []
         for index, clip in enumerate(data.get("audioClips") or []):
             asset_id = str(clip.get("assetId") or "")
             path = next((p for name, p in file_paths.items() if name.startswith(asset_id + ".")), None)
             if not path:
                 continue
-            args += ["-i", str(path)]
-            audio_input_index = input_index
-            input_index += 1
             source_start = max(0.0, float(clip.get("sourceStart") or 0))
             source_end = float(clip.get("sourceEnd") or 0)
             if source_end <= source_start:
                 continue
+            args += ["-i", str(path)]
+            audio_input_index = input_index
+            input_index += 1
             offset_ms = max(0, int(float(clip.get("start") or 0) * 1000))
             volume = max(0.0, min(2.0, float(clip.get("volume", 1))))
             label = f"a{index}"
@@ -240,43 +257,47 @@ async def render(
             audio_labels.append(f"[{label}]")
 
         presenter_path = file_paths.get("presenter.webm")
-        presenter_label_added = False
         if presenter_path:
             args += ["-i", str(presenter_path)]
-            p_index = input_index
-            pip_width = max(220, int(width * 0.27))
-            filter_parts.append(
-                f"[{p_index}:v]scale={pip_width}:-2,setsar=1[presenter]"
-            )
-            filter_parts.append(
-                f"[vbase][presenter]overlay=W-w-40:H-h-40:eof_action=pass:shortest=0[vout]"
-            )
-            presenter_label_added = True
+            presenter_index = input_index
             input_index += 1
-        if not presenter_label_added:
-            filter_parts.append("[vbase]null[vout]")
+            pip_width = max(180, int(width * 0.27))
+            filter_parts.append(
+                f"[{presenter_index}:v]scale={pip_width}:-2,setsar=1[presenter]"
+            )
+            filter_parts.append(
+                f"[0:v][presenter]overlay=W-w-24:H-h-24:eof_action=pass:shortest=0[vout]"
+            )
+        else:
+            filter_parts.append("[0:v]null[vout]")
 
         if audio_labels:
             filter_parts.append(
-                "".join(audio_labels) + f"amix=inputs={len(audio_labels)}:duration=longest:dropout_transition=0,"
-                f"atrim=duration={total_duration},asetpts=PTS-STARTPTS[aout]"
+                "".join(audio_labels)
+                + f"amix=inputs={len(audio_labels)}:duration=longest:dropout_transition=0,"
+                + f"atrim=duration={total_duration},asetpts=PTS-STARTPTS[aout]"
             )
         else:
-            args += ["-f", "lavfi", "-t", str(total_duration), "-i", "anullsrc=channel_layout=stereo:sample_rate=48000"]
-            filter_parts.append(f"[{input_index}:a]atrim=duration={total_duration},asetpts=PTS-STARTPTS[aout]")
+            args += [
+                "-f", "lavfi", "-t", str(total_duration),
+                "-i", "anullsrc=channel_layout=stereo:sample_rate=48000",
+            ]
+            filter_parts.append(
+                f"[{input_index}:a]atrim=duration={total_duration},asetpts=PTS-STARTPTS[aout]"
+            )
 
         output = work / "officerlab-final.mp4"
         args += [
             "-filter_complex", ";".join(filter_parts),
             "-map", "[vout]", "-map", "[aout]",
             "-t", str(total_duration),
-            "-c:v", "libx264", "-preset", "veryfast", "-crf", "21",
-            "-pix_fmt", "yuv420p", "-r", "30",
-            "-c:a", "aac", "-b:a", "192k",
+            "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
+            "-threads", "1", "-pix_fmt", "yuv420p", "-r", "30",
+            "-c:a", "aac", "-b:a", "128k",
             "-movflags", "+faststart", str(output),
         ]
-        run_ffmpeg(args)
-        if not output.exists() or output.stat().st_size < 1024:
+        run_ffmpeg(args, timeout=max(600, int(total_duration * 20)))
+
             raise RuntimeError("The renderer did not produce a valid MP4 file")
         return FileResponse(
             output,
