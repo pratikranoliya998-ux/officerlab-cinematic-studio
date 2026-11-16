@@ -990,18 +990,25 @@ function App() {
             </label>
             <div className="editor-foot"><span>{ttsText.length.toLocaleString()} characters · {ttsText.trim()?ttsText.trim().split(/\s+/).length:0} words</span><button className="mini-action" onClick={()=>{setTtsText(script);setTtsNotice("Current project script loaded.");}}>Use current project script</button></div>
             <div className="create-grid">
-              <label className="field-label">Available voice<select value={ttsVoiceName} onChange={e=>setTtsVoiceName(e.target.value)}><option value="">Automatic Gujarati voice</option>{ttsVoices.map(v=><option key={v.name+"-"+v.lang} value={v.name}>{v.name} · {v.lang}</option>)}</select></label>
-              <label className="field-label">Language<select value={ttsLanguage} onChange={e=>setTtsLanguage(e.target.value)}><option value="gu-IN">Gujarati (India)</option><option value="hi-IN">Hindi (India)</option><option value="en-IN">English (India)</option></select></label>
+              <label className="field-label">Available voice<select value={ttsVoiceName} onChange={e=>setTtsVoiceName(e.target.value)}><option value="">Automatic voice for selected language</option>{ttsVoices.map(v=><option key={v.name+"-"+v.lang} value={v.name}>{v.name} · {v.lang}{v.default?" · Default":""}</option>)}</select></label>
+              <label className="field-label">Language<select value={ttsLanguage} onChange={e=>setTtsLanguage(e.target.value)}><option value="gu-IN">Gujarati (India)</option><option value="hi-IN">Hindi (India)</option><option value="en-IN">English (India)</option><option value="en-GB">English (UK)</option><option value="en-US">English (US)</option></select></label>
               <label className="field-label">Speaking speed · {Number(ttsSpeed).toFixed(1)}x<input type="range" min="0.6" max="1.5" step="0.1" value={ttsSpeed} onChange={e=>setTtsSpeed(Number(e.target.value))}/></label>
               <label className="field-label">Pitch · {Number(ttsPitch).toFixed(1)}<input type="range" min="0.5" max="1.8" step="0.1" value={ttsPitch} onChange={e=>setTtsPitch(Number(e.target.value))}/></label>
               <label className="field-label">Volume · {Math.round(ttsVolume*100)}%<input type="range" min="0" max="1" step="0.05" value={ttsVolume} onChange={e=>setTtsVolume(Number(e.target.value))}/></label>
             </div>
             <div className="audio-editor-actions">
               <button className="btn primary" disabled={ttsSpeaking&&!ttsPaused} onClick={playGujaratiSpeech}><Play size={15}/> {ttsProgress>0&&ttsProgress<ttsTotalChunks?"Restart reading":"Speak text"}</button>
+              <button className="btn subtle" onClick={previewGujaratiVoice}><Volume2 size={14}/> Preview selected voice</button>
               <button className="btn subtle" disabled={!ttsSpeaking} onClick={pauseGujaratiSpeech}>{ttsPaused?<Play size={15}/>:<Pause size={15}/>} {ttsPaused?"Resume":"Pause"}</button>
               <button className="btn subtle" disabled={!ttsSpeaking} onClick={stopGujaratiSpeech}><Square size={14}/> Stop</button>
               <button className="mini-action" onClick={()=>{setTtsText("");stopGujaratiSpeech();}}>Clear text</button>
             </div>
+            <div className="audio-editor-actions">
+              <button className="btn primary" disabled={ttsRecording} onClick={recordGujaratiSpeechToProject}><AudioLines size={15}/>{ttsRecording?"Recording to project…":"Record voice to active project"}</button>
+              <button className="btn danger" disabled={!ttsRecording} onClick={cancelGujaratiRecording}><Square size={14}/> Cancel capture</button>
+              <button className="mini-action danger" onClick={deleteGeneratedVoiceClips}><X size={13}/> Delete generated TTS clips</button>
+            </div>
+            <p className="muted">To attach a playable audio file: choose Share this tab and turn on Share tab audio. The recording will be added to the current project's Voice Timeline.</p>
             {ttsTotalChunks>0 && <div className="ai-provider-state"><span>Chunk {Math.min(ttsProgress+1,ttsTotalChunks)} of {ttsTotalChunks}</span><b>{Math.round(ttsProgress/ttsTotalChunks*100)}%</b></div>}
             {ttsTotalChunks>0 && <div style={{height:6,background:"#283448",borderRadius:8,overflow:"hidden"}}><div style={{height:6,width:(ttsProgress/ttsTotalChunks*100)+"%",background:"#d9a84f",transition:"width .2s"}}/></div>}
             {ttsNotice && <p className="ai-api-notice" role="status">{ttsNotice}</p>}
@@ -1016,7 +1023,7 @@ function App() {
               <div><span>Text size</span><b>No app limit</b></div>
               <div><span>Chunk size</span><b>~220 characters</b></div>
             </div>
-            <div className="note-box"><Sparkles size={18}/><div><b>Audio file export limitation</b><p>Browser speech synthesis plays audio directly but does not provide a downloadable MP3/WAV file. Use system audio recording if you need a file; generated speech is not automatically attached to the video timeline.</p></div></div>
+            <div className="note-box"><Sparkles size={18}/><div><b>Audio file export limitation</b><p>Use “Record voice to active project” to capture browser tab audio and add it to this project's Voice Timeline. Chrome/Edge desktop tab-audio sharing is required. Individual clips can be deleted from the timeline or all generated TTS clips can be removed here.</p></div></div>
             <p className="muted">Tip: Google Chrome or Microsoft Edge may expose more installed voices. If Gujarati is not listed, install a Gujarati speech voice in your device's language/accessibility settings, then refresh this page.</p>
           </section>
         </div>}
