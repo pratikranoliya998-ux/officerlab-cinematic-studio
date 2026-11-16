@@ -348,8 +348,8 @@ function App() {
     const total = Math.max(1, Number(videoSetup.duration)||10) * 60;
     const each = Math.max(5, Math.floor(total/chosen.length));
     const nextScenes = chosen.map((s,i)=>({id:i+1,title:s[0],kind:s[1],duration:String(Math.floor(each/60)).padStart(2,"0")+":"+String(each%60).padStart(2,"0"),text:s[2],accent:s[3]}));
-    const intro = "નમસ્કાર મિત્રો! OfficerLab માં આપનું સ્વાગત છે.\\nઆજે આપણે "+topic+" વિષયને સરળ ગુજરાતી અને જરૂરી English technical terms સાથે સમજવાના છીએ.\\nઆ પાઠમાં મૂળભૂત સંકલ્પનાઓ, અગત્યના મુદ્દાઓ, પરીક્ષાલક્ષી વિશ્લેષણ અને MCQ દ્વારા પુનરાવર્તન કરીશું.";
-    setProject(title); setScript(intro); setScenes(nextScenes); setSelected(1); setIsPlaying(false); setActive("studio"); setShowCreate(false); setStatus("New video workspace created — customize your storyboard");
+    const intro = workspaceMode === "exam" ? "નમસ્કાર મિત્રો! OfficerLab માં આપનું સ્વાગત છે.\\nઆજે આપણે "+topic+" વિષયને સરળ ગુજરાતી અને જરૂરી English technical terms સાથે સમજવાના છીએ.\\nઆ પાઠમાં મૂળભૂત સંકલ્પનાઓ, અગત્યના મુદ્દાઓ, પરીક્ષાલક્ષી વિશ્લેષણ અને MCQ દ્વારા પુનરાવર્તન કરીશું." : "Welcome to OfficerLab.\\nઆ વિડિયોમાં આપણે "+topic+" ને storytelling, cinematic visuals અને narration દ્વારા રજૂ કરીશું.\\nચાલો શરૂઆત કરીએ.";
+    setProject(title); setScript(intro); setScenes(nextScenes); setSelected(1); setIsPlaying(false); setActive("studio"); setShowCreate(false); setStatus(workspaceMode === "exam" ? "Exam lesson workspace created" : "General video workspace created");
   }
   function addScene() {
     const id = Math.max(0, ...scenes.map(s => s.id)) + 1;
