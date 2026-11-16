@@ -53,8 +53,7 @@ function PresentationStudio() {
     if(!canvas||!ctx)return;
     const w=1280,h=720; if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;}
     ctx.fillStyle="#101827";ctx.fillRect(0,0,w,h);
-    const slide=document.createElement("canvas"); // slide pixels are drawn from the PDF render canvas below
-    const source=window.__officerlabSlideCanvas;
+    const source=slideCanvasRef.current;
     if(source?.width){const scale=Math.min(w/source.width,h/source.height);const sw=source.width*scale,sh=source.height*scale;ctx.drawImage(source,(w-sw)/2,(h-sh)/2,sw,sh);} 
     if(video&&video.readyState>=2){
       const pw=320,ph=180, x=pip==="bottom-left"?24:w-pw-24, y=h-ph-24;
@@ -94,7 +93,7 @@ function PresentationStudio() {
           {videoUrl&&<video ref={playbackRef} src={videoUrl} controls playsInline className="presenter-video"/>}
         </div>
         <div className="presentation-upload"><label className="presenter-btn secondary"><Upload size={16}/>{file?file.name:"Choose PPT / PDF"}<input type="file" accept=".pdf,.ppt,.pptx" onChange={e=>loadFile(e.target.files?.[0])} hidden/></label>{loading&&<span className="upload-state">Presentation તૈયાર થઈ રહી છે…</span>}
-          {pdfReady&&<div className="slide-navigation"><button className="presenter-btn secondary" disabled={page<=1||recording} onClick={()=>setPage(p=>p-1)}><ChevronLeft size={16}/> Previous</button><span>Slide {page} / {pages}</span><button className="presenter-btn secondary" disabled={page>=pages||recording} onClick={()=>setPage(p=>p+1)}>Next <ChevronRight size={16}/></button></div>}
+          {pdfReady&&<div className="slide-navigation"><button className="presenter-btn secondary" disabled={page<=1} onClick={()=>setPage(p=>p-1)}><ChevronLeft size={16}/> Previous</button><span>Slide {page} / {pages}</span><button className="presenter-btn secondary" disabled={page>=pages} onClick={()=>setPage(p=>p+1)}>Next <ChevronRight size={16}/></button></div>}
         </div>
         <div className="presenter-controls">
           {!streamReady&&!videoUrl&&<button className="presenter-btn primary" onClick={()=>startCamera()}><Camera size={17}/> Connect camera + mic</button>}
