@@ -18,6 +18,8 @@ function PresentationStudio() {
   const cameraRef=useRef(null), slideCanvasRef=useRef(null), outputCanvasRef=useRef(null), playbackRef=useRef(null), streamRef=useRef(null), recorderRef=useRef(null), chunksRef=useRef([]), timerRef=useRef(null), rafRef=useRef(null), pdfRef=useRef(null), pageRef=useRef(1), micRef=useRef(null);
   const [file,setFile]=useState(null), [pdfReady,setPdfReady]=useState(false), [page,setPage]=useState(1), [pages,setPages]=useState(0), [streamReady,setStreamReady]=useState(false), [recording,setRecording]=useState(false), [seconds,setSeconds]=useState(0), [videoUrl,setVideoUrl]=useState(""), [mp4Url,setMp4Url]=useState(""), [converting,setConverting]=useState(false), [loading,setLoading]=useState(false), [error,setError]=useState(""), [cameraFacing,setCameraFacing]=useState("user"), [pip,setPip]=useState("bottom-right"), [faceSize,setFaceSize]=useState(25), [faceShape,setFaceShape]=useState("rounded"), [facePos,setFacePos]=useState({x:73,y:68});
   const dragRef=useRef(null);
+  const layoutRef=useRef({});
+  layoutRef.current={faceSize,faceShape,facePos,recording};
   useEffect(()=>{pageRef.current=page; if(pdfRef.current) drawSlide();},[page,pdfReady]);
   useEffect(()=>()=>{if(timerRef.current)clearInterval(timerRef.current); if(rafRef.current)cancelAnimationFrame(rafRef.current); if(recorderRef.current?.state==="recording")recorderRef.current.stop(); streamRef.current?.getTracks().forEach(t=>t.stop()); if(videoUrl)URL.revokeObjectURL(videoUrl); if(mp4Url)URL.revokeObjectURL(mp4Url);},[]);
   async function loadFile(selected){
@@ -52,24 +54,25 @@ function PresentationStudio() {
   function drawComposite(){
     const canvas=outputCanvasRef.current, video=cameraRef.current, ctx=canvas?.getContext("2d");
     if(!canvas||!ctx)return;
+    const {faceSize:currentFaceSize,faceShape:currentFaceShape,facePos:currentFacePos,recording:isRecording}=layoutRef.current;
     const w=1280,h=720; if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;}
     ctx.fillStyle="#101827";ctx.fillRect(0,0,w,h);
     const source=slideCanvasRef.current;
     if(source?.width){const scale=Math.min(w/source.width,h/source.height);const sw=source.width*scale,sh=source.height*scale;ctx.drawImage(source,(w-sw)/2,(h-sh)/2,sw,sh);} 
     if(video&&video.readyState>=2){
-      const pw=Math.round(w*faceSize/100);
+      const pw=Math.round(w*currentFaceSize/100);
       const ratios={rounded:9/16,rectangle:9/16,square:1,portrait:3/4,circle:1};
-      const ph=Math.round(pw/(ratios[faceShape]||9/16));
-      const x=Math.max(0,Math.min(w-pw,facePos.x/100*w)), y=Math.max(0,Math.min(h-ph,facePos.y/100*h));
+      const ph=Math.round(pw/(ratios[currentFaceShape]||9/16));
+      const x=Math.max(0,Math.min(w-pw,currentFacePos.x/100*w)), y=Math.max(0,Math.min(h-ph,currentFacePos.y/100*h));
       ctx.save();
       ctx.shadowColor="#000";ctx.shadowBlur=18;
       ctx.beginPath();
-      if(faceShape==="circle"){ctx.ellipse(x+pw/2,y+ph/2,pw/2,ph/2,0,0,Math.PI*2);}
-      else if(faceShape==="rounded"){ctx.roundRect(x,y,pw,ph,Math.min(24,pw*.09));}
+      if(currentFaceShape==="circle"){ctx.ellipse(x+pw/2,y+ph/2,pw/2,ph/2,0,0,Math.PI*2);}
+      else if(currentFaceShape==="rounded"){ctx.roundRect(x,y,pw,ph,Math.min(24,pw*.09));}
       else{ctx.rect(x,y,pw,ph);}
       ctx.clip();
       ctx.translate(x+pw,y);ctx.scale(-1,1);
-      if(faceShape==="portrait"){const scale=Math.max(pw/video.videoWidth,ph/video.videoHeight);const sw=video.videoWidth*scale,sh=video.videoHeight*scale;ctx.drawImage(video,(pw-sw)/2,(ph-sh)/2,sw,sh);}
+      if(currentFaceShape==="portrait"){const scale=Math.max(pw/video.videoWidth,ph/video.videoHeight);const sw=video.videoWidth*scale,sh=video.videoHeight*scale;ctx.drawImage(video,(pw-sw)/2,(ph-sh)/2,sw,sh);}
       else{const scale=Math.max(pw/video.videoWidth,ph/video.videoHeight);const sw=video.videoWidth*scale,sh=video.videoHeight*scale;ctx.drawImage(video,(pw-sw)/2,(ph-sh)/2,sw,sh);}
       ctx.restore();
       ctx.save();ctx.strokeStyle="#d8ad66";ctx.lineWidth=5;ctx.beginPath();
@@ -78,7 +81,7 @@ function PresentationStudio() {
       else ctx.rect(x+2,y+2,pw-4,ph-4);
       ctx.stroke();ctx.restore();
     }
-    if(recording){ctx.fillStyle="#d93040";ctx.beginPath();ctx.arc(34,34,8,0,Math.PI*2);ctx.fill();ctx.fillStyle="#fff";ctx.font="bold 18px sans-serif";ctx.fillText("REC",52,40);}
+    if(isRecording){ctx.fillStyle="#d93040";ctx.beginPath();ctx.arc(34,34,8,0,Math.PI*2);ctx.fill();ctx.fillStyle="#fff";ctx.font="bold 18px sans-serif";ctx.fillText("REC",52,40);}
     rafRef.current=requestAnimationFrame(drawComposite);
   }
   async function startRecording(){
