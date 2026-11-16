@@ -40,6 +40,7 @@ app.add_middleware(
 def font_file(bold: bool = False) -> str:
     candidates = [
         "/usr/share/fonts/truetype/noto/NotoSansGujarati-Bold.ttf" if bold else "/usr/share/fonts/truetype/noto/NotoSansGujarati-Regular.ttf",
+        "/usr/share/fonts/truetype/noto/NotoSansGujaratiUI-Bold.ttf" if bold else "/usr/share/fonts/truetype/noto/NotoSansGujaratiUI-Regular.ttf",
         "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf" if bold else "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
     ]
     return next((p for p in candidates if Path(p).exists()), "")
