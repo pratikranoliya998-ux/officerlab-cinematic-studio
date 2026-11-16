@@ -4,7 +4,7 @@ export default async function handler(req, res) {
     res.setHeader("Allow", "POST");
     return res.status(405).json({ detail: "Method not allowed" });
   }
-  const base = (process.env.RENDER_API_URL || "").replace(/\\/+$/, "");
+  const base = (process.env.RENDER_API_URL || "").replace(/\/+$/, "");
   const accessKey = process.env.OFFICERLAB_API_ACCESS_KEY || "";
   if (!base || !accessKey) {
     return res.status(503).json({ detail: "AI gateway is not configured. Check Vercel server-side environment variables." });
