@@ -256,12 +256,21 @@ async def render(
             audio_input_index = input_index
             input_index += 1
             offset_ms = max(0, int(float(clip.get("start") or 0) * 1000))
-            volume = max(0.0, min(2.0, float(clip.get("volume", 1))))
+            volume = max(0.0, min(4.0, float(clip.get("volume", 1))))
             label = f"a{index}"
-            filter_parts.append(
-                f"[{audio_input_index}:a]atrim=start={source_start}:end={source_end},"
-                f"asetpts=PTS-STARTPTS,volume={volume},adelay={offset_ms}|{offset_ms}[{label}]"
-            )
+            filters = [
+                f"atrim=start={source_start}:end={source_end}",
+                "asetpts=PTS-STARTPTS",
+            ]
+            fade_in = max(0.0, float(clip.get("fadeIn") or 0))
+            fade_out = max(0.0, float(clip.get("fadeOut") or 0))
+            clip_duration = max(0.01, source_end - source_start)
+            if fade_in > 0 and fade_in < clip_duration:
+                filters.append(f"afade=t=in:st=0:d={fade_in}")
+            if fade_out > 0 and fade_out < clip_duration:
+                filters.append(f"afade=t=out:st={max(0.0, clip_duration-fade_out)}:d={fade_out}")
+            filters.extend([f"volume={volume}", f"adelay={offset_ms}|{offset_ms}"])
+            filter_parts.append(f"[{audio_input_index}:a]" + ",".join(filters) + f"[{label}]")
             audio_labels.append(f"[{label}]")
 
         presenter_path = file_paths.get("presenter.webm")
