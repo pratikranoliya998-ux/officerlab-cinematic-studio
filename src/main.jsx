@@ -114,6 +114,13 @@ function App() {
   const [aiProviders, setAiProviders] = useState({});
   const [aiBusy, setAiBusy] = useState(false);
   const [aiNotice, setAiNotice] = useState("");
+  const [ttsText, setTtsText] = useState(initialWorkspace.script || "");
+  const [ttsVoiceId, setTtsVoiceId] = useState("");
+  const [ttsLanguage, setTtsLanguage] = useState("gu");
+  const [ttsSpeed, setTtsSpeed] = useState(1);
+  const [ttsBusy, setTtsBusy] = useState(false);
+  const [ttsAudioUrl, setTtsAudioUrl] = useState("");
+  const [ttsNotice, setTtsNotice] = useState("");
   useEffect(() => {
     if (active !== "script") return;
     let cancelled = false;
@@ -133,6 +140,36 @@ function App() {
     } catch (error) { setAiNotice(error.message); }
     finally { setAiBusy(false); }
   }
+  async function generateHeyGenVoice() {
+    if (!ttsText.trim()) { setTtsNotice("Enter narration text first."); return; }
+    if (!ttsVoiceId.trim()) { setTtsNotice("Enter your HeyGen voice ID."); return; }
+    if (ttsText.length > 5000) { setTtsNotice("Please keep each generation to 5,000 characters or fewer."); return; }
+    setTtsBusy(true); setTtsNotice("Generating Gujarati narration with HeyGen Turbo…");
+    try {
+      const response = await fetch("/api/tts/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: ttsText, voice_id: ttsVoiceId.trim(), language: ttsLanguage, speed: Number(ttsSpeed) })
+      });
+      if (!response.ok) {
+        const raw = await response.text();
+        let data = {};
+        try { data = JSON.parse(raw); } catch {}
+        throw new Error(data.detail || ("HeyGen TTS failed (HTTP " + response.status + ")"));
+      }
+      const blob = await response.blob();
+      if (!blob.size) throw new Error("HeyGen returned an empty audio file.");
+      if (ttsAudioUrl) URL.revokeObjectURL(ttsAudioUrl);
+      const url = URL.createObjectURL(blob);
+      setTtsAudioUrl(url);
+      const file = new File([blob], "officerlab-heygen-voice.wav", { type: blob.type || "audio/wav" });
+      addAudioClip("voice", file, url);
+      setTtsNotice("Audio generated and added to the Voice timeline. Preview it below.");
+      setStatus("HeyGen Turbo narration generated");
+    } catch (error) { setTtsNotice(error.message); }
+    finally { setTtsBusy(false); }
+  }
+
   async function generateAiScript() {
     const topic = (videoSetup.topic || project || "").trim();
     if (topic.length < 3) { setAiNotice("Enter a topic in Create Video before generating a script."); return; }
@@ -702,7 +739,7 @@ function App() {
 
   const nav = [
     ["home","Home",Home], ["create",workspaceMode === "exam" ? "New Lesson" : "New Video",Plus], ["studio",workspaceMode === "exam" ? "Lesson Studio" : "Video Studio",LayoutDashboard], ["script",workspaceMode === "exam" ? "Lesson Script" : "Script & Story",FileText],
-    ["voice","Voice Studio",Mic], ["presenter","Presenter",Webcam],
+    ["voice","Voice Studio",Mic], ["ai-voice","AI Voice Studio",AudioLines], ["presenter","Presenter",Webcam],
     ["assets","Media Library",FolderOpen], ["export","Export",Film]
   ];
 
@@ -800,6 +837,32 @@ function App() {
           </div>
           <h3>Production checklist</h3><div className="checklist"><p><Check/> One clear learning objective per scene</p><p><Check/> Explain technical terms in context</p><p><Check/> Keep on-screen text concise</p><p><Check/> Verify facts against official sources</p></div><div className="note-box"><Sparkles size={18}/><div><b>AI integration ready</b><p>Connect your preferred LLM API to generate scripts, scene beats and visual prompts. API keys should be stored server-side, never in browser code.</p></div></div><button className="btn subtle full" onClick={()=>setActive("studio")}>Back to studio</button></section></div>}
 
+        {active==="ai-voice" && <div className="two-col">
+          <section className="panel pad-panel">
+            <div className="eyebrow">HEYGEN VOICE TURBO · TEXT TO SPEECH</div>
+            <h3>AI Voice Studio</h3>
+            <p className="muted">Generate natural narration from your Gujarati or multilingual script. Your HeyGen API key stays securely on the Render backend.</p>
+            <label className="field-label">Narration text
+              <textarea className="script-area" value={ttsText} onChange={e=>setTtsText(e.target.value)} placeholder="Paste or write your Gujarati narration here…" maxLength={5000}/>
+            </label>
+            <div className="editor-foot"><span>{ttsText.length.toLocaleString()} / 5,000 characters</span><button className="mini-action" onClick={()=>{setTtsText(script);setTtsNotice("Current project script copied into the TTS editor.");}}>Use current project script</button></div>
+            <label className="field-label">HeyGen Voice ID<input value={ttsVoiceId} onChange={e=>setTtsVoiceId(e.target.value)} placeholder="Paste voice_id from your HeyGen voice library"/></label>
+            <div className="create-grid">
+              <label className="field-label">Language<select value={ttsLanguage} onChange={e=>setTtsLanguage(e.target.value)}><option value="gu">Gujarati (gu)</option><option value="hi">Hindi (hi)</option><option value="en">English (en)</option><option value="auto">Auto / other (auto)</option></select></label>
+              <label className="field-label">Speaking speed · {Number(ttsSpeed).toFixed(1)}x<input type="range" min="0.5" max="2" step="0.1" value={ttsSpeed} onChange={e=>setTtsSpeed(Number(e.target.value))}/></label>
+            </div>
+            <button className="btn primary full" disabled={ttsBusy} onClick={generateHeyGenVoice}><AudioLines size={16}/>{ttsBusy?"Generating audio…":"Generate HeyGen Turbo Voice"}</button>
+            {ttsNotice && <p className="ai-api-notice" role="status">{ttsNotice}</p>}
+            {ttsAudioUrl && <div className="ai-assistant-box"><b>Generated narration preview</b><audio className="voice-player" controls src={ttsAudioUrl}/><a className="btn subtle full" href={ttsAudioUrl} download="officerlab-heygen-voice.wav"><Download size={15}/> Download audio</a><button className="btn subtle full" onClick={()=>{setActive("studio");setStatus("HeyGen narration is available in the Voice timeline");}}>View in video timeline</button></div>}
+          </section>
+          <section className="panel pad-panel">
+            <div className="eyebrow">SETUP REQUIRED</div><h3>Connect your HeyGen account</h3>
+            <div className="option-card"><AudioLines/><div><b>HeyGen Voice Turbo</b><small>Fast TTS model using your selected voice ID</small></div><span className="tag-ready">API</span></div>
+            <ol className="tts-steps"><li>Open your HeyGen account and create an API key.</li><li>In Render → your OfficerLab worker → Environment, add <code>HEYGEN_API_KEY</code>.</li><li>Paste a compatible public or instant voice ID into the field on the left.</li><li>Redeploy the Render service, then generate a short test.</li></ol>
+            <div className="note-box"><Sparkles size={18}/><div><b>Free Turbo preview</b><p>HeyGen advertises its Turbo free preview through 30 November 2026. Availability and limits can change. Check your HeyGen dashboard before large narration jobs.</p></div></div>
+            <p className="muted">Do not paste your API key into this page or into chat. Only the voice ID and narration text are sent from the browser.</p>
+          </section>
+        </div>}
         {active==="voice" && <div className="two-col"><section className="panel pad-panel"><div className="eyebrow">VOICE RECORDING / TIMELINE TRACK</div><h3>Record and attach narration</h3><p className="muted">Record narration separately here, or use Presenter → Record video + mic to capture presenter video and microphone voice-over simultaneously in one synchronized clip.</p><div className="record-orb"><div className={audioRecording?"pulse":""}><Mic size={30}/></div></div><div className="center">{audioRecording?<button className="btn danger" onClick={stopAudioRecording}><Square size={15}/> Stop recording</button>:<button className="btn primary" onClick={startAudioRecording}><Mic size={15}/> Start recording</button>}</div>{voiceUrl&&<><div className="recorded"><Check size={16}/> Voice recording ready<a href={voiceUrl} download="officerlab-voice.webm">Download audio</a></div><audio ref={voicePlayerRef} className="voice-player" controls src={voiceUrl} onLoadedMetadata={e=>{const d=Number.isFinite(e.currentTarget.duration)?e.currentTarget.duration:0;setVoiceDuration(d);setVoiceTrimEnd(prev=>prev>0?Math.min(prev,d):d);e.currentTarget.volume=voiceVolume/100;}}/><div className="voice-edit-controls"><b>Timeline audio editing</b><label>Trim start: {voiceTrimStart.toFixed(1)} sec<input type="range" min="0" max={Math.max(1,voiceDuration)} step="0.1" value={Math.min(voiceTrimStart,voiceDuration||0)} onChange={e=>{const v=Math.min(Number(e.target.value),Math.max(0,voiceTrimEnd-0.1));setVoiceTrimStart(v);setAudioClips(old=>old.map(c=>c.track==="voice"&&c.url===voiceUrl?{...c,sourceStart:v}:c));}}/></label><label>Trim end: {(voiceTrimEnd||voiceDuration).toFixed(1)} sec<input type="range" min="0" max={Math.max(1,voiceDuration)} step="0.1" value={Math.min(voiceTrimEnd||voiceDuration,voiceDuration||0)} onChange={e=>{const v=Math.max(Number(e.target.value),voiceTrimStart+0.1);setVoiceTrimEnd(v);setAudioClips(old=>old.map(c=>c.track==="voice"&&c.url===voiceUrl?{...c,sourceEnd:v}:c));}}/></label><label>Timeline offset: {voiceOffset.toFixed(1)} sec<input type="range" min="0" max="120" step="0.5" value={voiceOffset} onChange={e=>{const v=Number(e.target.value);setVoiceOffset(v);setAudioClips(old=>old.map(c=>c.track==="voice"&&c.url===voiceUrl?{...c,start:v,sceneId:""}:c));}}/></label><label>Volume: {voiceVolume}%<input type="range" min="0" max="150" step="1" value={voiceVolume} onChange={e=>{const v=Number(e.target.value);setVoiceVolume(v);setAudioClips(old=>old.map(c=>c.track==="voice"&&c.url===voiceUrl?{...c,volume:v/100}:c));if(voicePlayerRef.current)voicePlayerRef.current.volume=Math.min(1,v/100);}}/></label><button className="mini-action" onClick={()=>{if(voicePlayerRef.current){voicePlayerRef.current.currentTime=voiceTrimStart;voicePlayerRef.current.play();}setStatus("Playing narration from trim start");}}>Play from trim start</button></div><button className="btn primary full" onClick={()=>{setActive("studio");setStatus("Narration and edit settings attached to timeline");}}>Attach / view in timeline</button></>}</section><section className="panel pad-panel"><div className="eyebrow">VOICE WORKFLOW</div><h3>Voiceover options</h3><div className="option-card"><Mic/><div><b>Own voice recording</b><small>Available now in this browser</small></div><span className="tag-ready">Ready</span></div><div className="option-card"><Volume2/><div><b>AI text-to-speech</b><small>Connect a TTS provider through a secure backend</small></div><span className="tag-planned">Integration</span></div><div className="option-card"><AudioLines/><div><b>Voice timing and sync</b><small>Precise word-level timing is part of the rendering-worker integration</small></div><span className="tag-planned">Next phase</span></div></section></div>}
 
         {active==="presenter" && <div className="two-col"><section className="panel pad-panel"><div className="panel-head"><div><div className="eyebrow">PRESENTER CAMERA</div><h3>Face-camera recording</h3></div><span className={cameraOn?"tag-ready":"tag-planned"}>{cameraOn?"Connected":"Not connected"}</span></div><div className="camera-box">{cameraOn || videoUrl ? <video ref={videoRef} muted playsInline autoPlay controls={!cameraOn && !!videoUrl} src={!cameraOn && videoUrl ? videoUrl : undefined}/> : <div className="camera-placeholder"><Webcam size={40}/><b>Camera preview</b><small>Connect your camera to begin</small></div>}{recording&&<span className="recording-label"><i/> REC</span>}</div><div className="camera-actions">{!cameraOn?<button className="btn primary" onClick={startCamera}><Webcam size={15}/> Connect camera</button>:<button className="btn subtle" onClick={stopCamera}>Disconnect</button>}{cameraOn&&!recording?<button className="btn danger" onClick={startVideoRecording}><Radio size={15}/> Record video + mic</button>:cameraOn&&<button className="btn danger" onClick={stopVideoRecording}><Square size={15}/> Stop</button>}</div>{videoUrl&&<div className="recorded"><Check size={16}/> Presenter video + microphone audio ready<a href={videoUrl} download="officerlab-presenter-with-audio.webm">Download synced clip</a></div>}</section><section className="panel pad-panel"><div className="eyebrow">COMPOSITION</div><h3>Presenter + graphics</h3><p className="muted">The planned composite workflow places your presenter footage alongside the animated explainer canvas.</p><div className="composition-preview"><div className="comp-slide">GRAPHICS<br/><small>Explainer visual</small></div><div className="comp-presenter"><Webcam size={25}/><small>Presenter</small></div></div><div className="note-box"><AudioLines size={18}/><div><b>Presenter + voice-over together</b><p>When you start presenter recording, the camera stream records its microphone audio and video in the same WebM file. Use headphones to prevent speaker echo. Separate voice-track mixing and final MP4 compositing still require the render worker.</p></div></div></section></div>}
