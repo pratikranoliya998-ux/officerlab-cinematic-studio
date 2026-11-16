@@ -96,7 +96,9 @@ function PresentationStudio() {
   async function startRecording(){
     if(!pdfReady||!streamReady){setError("Presentation load કરો અને camera + microphone connect કરો.");return;}
     const canvas=outputCanvasRef.current; const videoStream=canvas.captureStream(30); const audioTracks=streamRef.current?.getAudioTracks()||[];
-    const combined=new MediaStream([...videoStream.getVideoTracks(),...audioTracks]);
+    let processedAudio=audioTracks;
+    try{if(audioTracks.length){const AC=window.AudioContext||window.webkitAudioContext;const audioContext=new AC();const source=audioContext.createMediaStreamSource(new MediaStream(audioTracks));const compressor=audioContext.createDynamicsCompressor();compressor.threshold.value=-24;compressor.knee.value=24;compressor.ratio.value=3;compressor.attack.value=.005;compressor.release.value=.22;const gain=audioContext.createGain();gain.gain.value=1.1;const destination=audioContext.createMediaStreamDestination();source.connect(compressor);compressor.connect(gain);gain.connect(destination);processedAudio=destination.stream.getAudioTracks();window.__officerlabAudioContext=audioContext;}}catch(err){console.warn("Audio processing unavailable; using original microphone track",err);}
+    const combined=new MediaStream([...videoStream.getVideoTracks(),...processedAudio]);
     chunksRef.current=[];const mime=["video/webm;codecs=vp9,opus","video/webm;codecs=vp8,opus","video/webm"].find(t=>MediaRecorder.isTypeSupported(t));
     try{const rec=new MediaRecorder(combined,mime?{mimeType:mime,videoBitsPerSecond:6000000}:undefined);recorderRef.current=rec;
       rec.ondataavailable=e=>{if(e.data?.size)chunksRef.current.push(e.data)};
