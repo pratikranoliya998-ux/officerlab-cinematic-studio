@@ -3,7 +3,7 @@ import { createRoot } from "react-dom/client";
 import { Camera, CameraOff, Circle, Download, Mic, Play, RotateCcw, Square, Video, Upload, ChevronLeft, ChevronRight, Pencil, Highlighter, Eraser, ArrowUpRight, RectangleHorizontal, Type, ZoomIn, ZoomOut, Undo2, Maximize, Minimize } from "lucide-react";
 import "./style.css";
 
-const WORKER = (import.meta.env.VITE_RENDER_API_URL || "").replace(/\/+$/, "");
+const WORKER = (import.meta.env.VITE_RENDER_API_URL || "https://officerlab-cinematic-worker.onrender.com").replace(/\/+$/, "");
 function loadPdfJs() {
   return new Promise((resolve, reject) => {
     if (window.pdfjsLib) return resolve(window.pdfjsLib);
@@ -38,7 +38,7 @@ function PresentationStudio() {
       if(/\.pptx?$/i.test(selected.name)){
         if(!WORKER)throw new Error("PPT/PPTX માટે Render worker URL configure હોવું જરૂરી છે.");
         const form=new FormData(); form.append("file",selected,selected.name);
-        const response=await fetch(WORKER+"/presentation-to-pdf",{method:"POST",body:form}); setUploadProgress(75);
+        setUploadProgress(25); const response=await fetch(WORKER+"/presentation-to-pdf",{method:"POST",body:form}); setUploadProgress(75);
         if(!response.ok){let d={};try{d=await response.json()}catch{} throw new Error(d.detail||"PowerPoint conversion failed (HTTP "+response.status+").");}
         pdfBlob=await response.blob();
       } else if(!/\.pdf$/i.test(selected.name)) throw new Error("PDF, PPT અથવા PPTX ફાઇલ પસંદ કરો.");
