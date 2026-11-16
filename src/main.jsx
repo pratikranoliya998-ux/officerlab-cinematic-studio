@@ -102,6 +102,51 @@ function App() {
   const voiceFileRef = useRef(null);
   const selectedScene = scenes.find(s => s.id === selected) || scenes[0];
   const wordCount = useMemo(() => script.trim() ? script.trim().split(/\s+/).length : 0, [script]);
+  const [aiProvider, setAiProvider] = useState("openai");
+  const [aiProviders, setAiProviders] = useState({});
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiNotice, setAiNotice] = useState("");
+  useEffect(() => {
+    if (active !== "script") return;
+    let cancelled = false;
+    fetch("/api/ai/providers").then(async response => {
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.detail || "Could not load provider status");
+      if (!cancelled) setAiProviders(data.providers || {});
+    }).catch(error => { if (!cancelled) setAiNotice(error.message); });
+    return () => { cancelled = true; };
+  }, [active]);
+  async function testAiProvider() {
+    setAiBusy(true); setAiNotice("Testing " + aiProvider + " connection…");
+    try {
+      const response = await fetch("/api/ai/providers/test", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ provider: aiProvider }) });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.detail || "Provider test failed");
+      setAiNotice(data.message || (aiProvider + " connection successful"));
+      setAiProviders(current => ({ ...current, [aiProvider]: { ...(current[aiProvider] || {}), configured: true, model: data.model } }));
+    } catch (error) { setAiNotice(error.message); }
+    finally { setAiBusy(false); }
+  }
+  async function generateAiScript() {
+    const topic = (videoSetup.topic || project || "").trim();
+    if (topic.length < 3) { setAiNotice("Enter a topic in Create Video before generating a script."); return; }
+    setAiBusy(true); setAiNotice("Generating your lesson script…");
+    try {
+      const response = await fetch("/api/ai/script/generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
+        topic, audience: workspaceMode === "exam" ? "GPSC / GSSSB aspirants" : "General YouTube audience",
+        language: videoSetup.language || "Gujarati + English technical terms",
+        duration_minutes: Math.max(1, Math.min(60, Number(videoSetup.duration) || 10)),
+        subject_context: script, provider: aiProvider,
+        style: workspaceMode === "exam" ? "Gujarati classroom lecture, exam-oriented, concept-first" : "engaging cinematic explainer with storytelling"
+      }) });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.detail || "Script generation failed");
+      setScript(data.text || "");
+      setAiNotice("Generated with " + (data.provider || aiProvider) + " · " + (data.model || "AI"));
+      setStatus("AI script generated and saved in this project");
+    } catch (error) { setAiNotice(error.message); }
+    finally { setAiBusy(false); }
+  }
 
   useEffect(() => {
     setWorkspaceState(current => {
@@ -739,7 +784,16 @@ function App() {
           </div>
         </>}
 
-        {active==="script" && <div className="two-col"><section className="panel pad-panel"><div className="panel-head"><div><span className="eyebrow">SCRIPT EDITOR</span><h3>Gujarati narration</h3></div><span className="format-tag">{wordCount} words</span></div><label className="field-label">Project title<input value={project} onChange={e=>setProject(e.target.value)}/></label><textarea className="script-area" value={script} onChange={e=>setScript(e.target.value)} placeholder="Write your Gujarati narration here…"/><div className="editor-foot"><span>Gujarati + English technical terms supported</span><button className="btn primary" onClick={()=>setStatus("Script saved to project")}>Save script</button></div></section><section className="panel pad-panel"><div className="eyebrow">SCRIPT ASSISTANT</div><h3>Production checklist</h3><div className="checklist"><p><Check/> One clear learning objective per scene</p><p><Check/> Explain technical terms in context</p><p><Check/> Keep on-screen text concise</p><p><Check/> Verify facts against official sources</p></div><div className="note-box"><Sparkles size={18}/><div><b>AI integration ready</b><p>Connect your preferred LLM API to generate scripts, scene beats and visual prompts. API keys should be stored server-side, never in browser code.</p></div></div><button className="btn subtle full" onClick={()=>setActive("studio")}>Back to studio</button></section></div>}
+        {active==="script" && <div className="two-col"><section className="panel pad-panel"><div className="panel-head"><div><span className="eyebrow">SCRIPT EDITOR</span><h3>Gujarati narration</h3></div><span className="format-tag">{wordCount} words</span></div><label className="field-label">Project title<input value={project} onChange={e=>setProject(e.target.value)}/></label><textarea className="script-area" value={script} onChange={e=>setScript(e.target.value)} placeholder="Write your Gujarati narration here…"/><div className="editor-foot"><span>Gujarati + English technical terms supported</span><button className="btn primary" onClick={()=>setStatus("Script saved to project")}>Save script</button></div></section><section className="panel pad-panel"><div className="eyebrow">SCRIPT ASSISTANT</div><h3>AI script studio</h3>
+          <div className="ai-assistant-box">
+            <label className="field-label">AI provider<select value={aiProvider} onChange={e=>setAiProvider(e.target.value)}><option value="openai">OpenAI</option><option value="gemini">Google Gemini</option></select></label>
+            <div className="ai-provider-state"><span>{aiProvider === "openai" ? "OpenAI" : "Gemini"} · {aiProviders[aiProvider]?.model || "Model configured on Render"}</span><b className={aiProviders[aiProvider]?.configured ? "good" : "pending"}>{aiProviders[aiProvider]?.configured ? "Configured" : "Not configured"}</b></div>
+            <button className="btn subtle full" disabled={aiBusy} onClick={testAiProvider}>Test API connection</button>
+            <button className="btn primary full" disabled={aiBusy} onClick={generateAiScript}><Sparkles size={15}/>{aiBusy ? "Please wait…" : "Generate full lecture script"}</button>
+            {aiNotice && <p className="ai-api-notice" role="status">{aiNotice}</p>}
+            <p className="muted">Uses the project topic and current script as source context. Generated text replaces the narration editor; verify factual, legal and exam details against official sources before publishing.</p>
+          </div>
+          <h3>Production checklist</h3><div className="checklist"><p><Check/> One clear learning objective per scene</p><p><Check/> Explain technical terms in context</p><p><Check/> Keep on-screen text concise</p><p><Check/> Verify facts against official sources</p></div><div className="note-box"><Sparkles size={18}/><div><b>AI integration ready</b><p>Connect your preferred LLM API to generate scripts, scene beats and visual prompts. API keys should be stored server-side, never in browser code.</p></div></div><button className="btn subtle full" onClick={()=>setActive("studio")}>Back to studio</button></section></div>}
 
         {active==="voice" && <div className="two-col"><section className="panel pad-panel"><div className="eyebrow">VOICE RECORDING / TIMELINE TRACK</div><h3>Record and attach narration</h3><p className="muted">Record narration separately here, or use Presenter → Record video + mic to capture presenter video and microphone voice-over simultaneously in one synchronized clip.</p><div className="record-orb"><div className={audioRecording?"pulse":""}><Mic size={30}/></div></div><div className="center">{audioRecording?<button className="btn danger" onClick={stopAudioRecording}><Square size={15}/> Stop recording</button>:<button className="btn primary" onClick={startAudioRecording}><Mic size={15}/> Start recording</button>}</div>{voiceUrl&&<><div className="recorded"><Check size={16}/> Voice recording ready<a href={voiceUrl} download="officerlab-voice.webm">Download audio</a></div><audio ref={voicePlayerRef} className="voice-player" controls src={voiceUrl} onLoadedMetadata={e=>{const d=Number.isFinite(e.currentTarget.duration)?e.currentTarget.duration:0;setVoiceDuration(d);setVoiceTrimEnd(prev=>prev>0?Math.min(prev,d):d);e.currentTarget.volume=voiceVolume/100;}}/><div className="voice-edit-controls"><b>Timeline audio editing</b><label>Trim start: {voiceTrimStart.toFixed(1)} sec<input type="range" min="0" max={Math.max(1,voiceDuration)} step="0.1" value={Math.min(voiceTrimStart,voiceDuration||0)} onChange={e=>{const v=Math.min(Number(e.target.value),Math.max(0,voiceTrimEnd-0.1));setVoiceTrimStart(v);setAudioClips(old=>old.map(c=>c.track==="voice"&&c.url===voiceUrl?{...c,sourceStart:v}:c));}}/></label><label>Trim end: {(voiceTrimEnd||voiceDuration).toFixed(1)} sec<input type="range" min="0" max={Math.max(1,voiceDuration)} step="0.1" value={Math.min(voiceTrimEnd||voiceDuration,voiceDuration||0)} onChange={e=>{const v=Math.max(Number(e.target.value),voiceTrimStart+0.1);setVoiceTrimEnd(v);setAudioClips(old=>old.map(c=>c.track==="voice"&&c.url===voiceUrl?{...c,sourceEnd:v}:c));}}/></label><label>Timeline offset: {voiceOffset.toFixed(1)} sec<input type="range" min="0" max="120" step="0.5" value={voiceOffset} onChange={e=>{const v=Number(e.target.value);setVoiceOffset(v);setAudioClips(old=>old.map(c=>c.track==="voice"&&c.url===voiceUrl?{...c,start:v,sceneId:""}:c));}}/></label><label>Volume: {voiceVolume}%<input type="range" min="0" max="150" step="1" value={voiceVolume} onChange={e=>{const v=Number(e.target.value);setVoiceVolume(v);setAudioClips(old=>old.map(c=>c.track==="voice"&&c.url===voiceUrl?{...c,volume:v/100}:c));if(voicePlayerRef.current)voicePlayerRef.current.volume=Math.min(1,v/100);}}/></label><button className="mini-action" onClick={()=>{if(voicePlayerRef.current){voicePlayerRef.current.currentTime=voiceTrimStart;voicePlayerRef.current.play();}setStatus("Playing narration from trim start");}}>Play from trim start</button></div><button className="btn primary full" onClick={()=>{setActive("studio");setStatus("Narration and edit settings attached to timeline");}}>Attach / view in timeline</button></>}</section><section className="panel pad-panel"><div className="eyebrow">VOICE WORKFLOW</div><h3>Voiceover options</h3><div className="option-card"><Mic/><div><b>Own voice recording</b><small>Available now in this browser</small></div><span className="tag-ready">Ready</span></div><div className="option-card"><Volume2/><div><b>AI text-to-speech</b><small>Connect a TTS provider through a secure backend</small></div><span className="tag-planned">Integration</span></div><div className="option-card"><AudioLines/><div><b>Voice timing and sync</b><small>Precise word-level timing is part of the rendering-worker integration</small></div><span className="tag-planned">Next phase</span></div></section></div>}
 
