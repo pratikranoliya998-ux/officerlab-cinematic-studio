@@ -16,26 +16,26 @@ function loadPdfJs() {
 }
 function PresentationStudio() {
   const cameraRef=useRef(null), slideCanvasRef=useRef(null), outputCanvasRef=useRef(null), playbackRef=useRef(null), streamRef=useRef(null), recorderRef=useRef(null), chunksRef=useRef([]), timerRef=useRef(null), rafRef=useRef(null), pdfRef=useRef(null), pageRef=useRef(1), micRef=useRef(null);
-  const [file,setFile]=useState(null), [pdfReady,setPdfReady]=useState(false), [page,setPage]=useState(1), [pages,setPages]=useState(0), [streamReady,setStreamReady]=useState(false), [recording,setRecording]=useState(false), [seconds,setSeconds]=useState(0), [videoUrl,setVideoUrl]=useState(""), [mp4Url,setMp4Url]=useState(""), [converting,setConverting]=useState(false), [loading,setLoading]=useState(false), [error,setError]=useState(""), [cameraFacing,setCameraFacing]=useState("user"), [pip,setPip]=useState("bottom-right"), [faceSize,setFaceSize]=useState(25), [faceShape,setFaceShape]=useState("rounded"), [facePos,setFacePos]=useState({x:73,y:68});
+  const [file,setFile]=useState(null), [pdfReady,setPdfReady]=useState(false), [page,setPage]=useState(1), [pages,setPages]=useState(0), [streamReady,setStreamReady]=useState(false), [recording,setRecording]=useState(false), [seconds,setSeconds]=useState(0), [videoUrl,setVideoUrl]=useState(""), [mp4Url,setMp4Url]=useState(""), [converting,setConverting]=useState(false), [loading,setLoading]=useState(false), [error,setError]=useState(""), [cameraFacing,setCameraFacing]=useState("user"), [pip,setPip]=useState("bottom-right"), [faceSize,setFaceSize]=useState(25), [faceShape,setFaceShape]=useState("rounded"), [facePos,setFacePos]=useState({x:73,y:68}), [faceOpacity,setFaceOpacity]=useState(100), [symbol,setSymbol]=useState("officerlab"), [logoUrl,setLogoUrl]=useState(""), [logoImage,setLogoImage]=useState(null), [uploadProgress,setUploadProgress]=useState(0);
   const dragRef=useRef(null);
   const layoutRef=useRef({});
-  layoutRef.current={faceSize,faceShape,facePos,recording};
+  layoutRef.current={faceSize,faceShape,facePos,faceOpacity,symbol,logoImage,recording};
   useEffect(()=>{pageRef.current=page; if(pdfRef.current) drawSlide();},[page,pdfReady]);
   useEffect(()=>()=>{if(timerRef.current)clearInterval(timerRef.current); if(rafRef.current)cancelAnimationFrame(rafRef.current); if(recorderRef.current?.state==="recording")recorderRef.current.stop(); streamRef.current?.getTracks().forEach(t=>t.stop()); if(videoUrl)URL.revokeObjectURL(videoUrl); if(mp4Url)URL.revokeObjectURL(mp4Url);},[]);
   async function loadFile(selected){
-    if(!selected)return; setError(""); setLoading(true); setPdfReady(false); setFile(selected); setVideoUrl(""); setMp4Url("");
+    if(!selected)return; if(selected.size>500*1024*1024){setError("500 MBથી મોટી ફાઇલ હાલમાં supported નથી. PPTને compress કરીને ફરી upload કરો.");return;} setError(""); setLoading(true); setUploadProgress(5); setPdfReady(false); setFile(selected); setVideoUrl(""); setMp4Url("");
     try{
       let pdfBlob=selected;
       if(/\.pptx?$/i.test(selected.name)){
         if(!WORKER)throw new Error("PPT/PPTX માટે Render worker URL configure હોવું જરૂરી છે.");
         const form=new FormData(); form.append("file",selected,selected.name);
-        const response=await fetch(WORKER+"/presentation-to-pdf",{method:"POST",body:form});
+        const response=await fetch(WORKER+"/presentation-to-pdf",{method:"POST",body:form}); setUploadProgress(75);
         if(!response.ok){let d={};try{d=await response.json()}catch{} throw new Error(d.detail||"PowerPoint conversion failed (HTTP "+response.status+").");}
         pdfBlob=await response.blob();
       } else if(!/\.pdf$/i.test(selected.name)) throw new Error("PDF, PPT અથવા PPTX ફાઇલ પસંદ કરો.");
-      const lib=await loadPdfJs(); const bytes=await pdfBlob.arrayBuffer(); const doc=await lib.getDocument({data:bytes}).promise;
-      pdfRef.current=doc; setPages(doc.numPages); setPage(1); setPdfReady(true);
-    }catch(e){setError(e.message||"Presentation ખોલી શકાતી નથી.");}finally{setLoading(false);}
+      const lib=await loadPdfJs(); setUploadProgress(85); const bytes=await pdfBlob.arrayBuffer(); const doc=await lib.getDocument({data:bytes}).promise;
+      pdfRef.current=doc; setPages(doc.numPages); setPage(1); setPdfReady(true); setUploadProgress(100);
+    }catch(e){setError(e.message||"Presentation ખોલી શકાતી નથી.");}finally{setLoading(false);setTimeout(()=>setUploadProgress(0),1200);}
   }
   async function drawSlide(){
     const canvas=slideCanvasRef.current, doc=pdfRef.current; if(!canvas||!doc)return;
@@ -54,7 +54,7 @@ function PresentationStudio() {
   function drawComposite(){
     const canvas=outputCanvasRef.current, video=cameraRef.current, ctx=canvas?.getContext("2d");
     if(!canvas||!ctx)return;
-    const {faceSize:currentFaceSize,faceShape:currentFaceShape,facePos:currentFacePos,recording:isRecording}=layoutRef.current;
+    const {faceSize:currentFaceSize,faceShape:currentFaceShape,facePos:currentFacePos,faceOpacity:currentFaceOpacity,recording:isRecording}=layoutRef.current;
     const w=1280,h=720; if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;}
     ctx.fillStyle="#101827";ctx.fillRect(0,0,w,h);
     const source=slideCanvasRef.current;
@@ -71,16 +71,18 @@ function PresentationStudio() {
       else if(currentFaceShape==="rounded"){ctx.roundRect(x,y,pw,ph,Math.min(24,pw*.09));}
       else{ctx.rect(x,y,pw,ph);}
       ctx.clip();
+      ctx.globalAlpha=Math.max(0,Math.min(100,currentFaceOpacity))/100;
       ctx.translate(x+pw,y);ctx.scale(-1,1);
       if(currentFaceShape==="portrait"){const scale=Math.max(pw/video.videoWidth,ph/video.videoHeight);const sw=video.videoWidth*scale,sh=video.videoHeight*scale;ctx.drawImage(video,(pw-sw)/2,(ph-sh)/2,sw,sh);}
       else{const scale=Math.max(pw/video.videoWidth,ph/video.videoHeight);const sw=video.videoWidth*scale,sh=video.videoHeight*scale;ctx.drawImage(video,(pw-sw)/2,(ph-sh)/2,sw,sh);}
       ctx.restore();
-      ctx.save();ctx.strokeStyle="#d8ad66";ctx.lineWidth=5;ctx.beginPath();
+      ctx.save();ctx.globalAlpha=1;ctx.strokeStyle="#d8ad66";ctx.lineWidth=5;ctx.beginPath();
       if(currentFaceShape==="circle")ctx.ellipse(x+pw/2,y+ph/2,pw/2-2,ph/2-2,0,0,Math.PI*2);
       else if(currentFaceShape==="rounded")ctx.roundRect(x+2,y+2,pw-4,ph-4,Math.min(24,pw*.09));
       else ctx.rect(x+2,y+2,pw-4,ph-4);
       ctx.stroke();ctx.restore();
     }
+    if(logoImage?.complete && logoImage.naturalWidth){ctx.save();ctx.globalAlpha=.88;ctx.drawImage(logoImage, w-150, 24, 112, 64);ctx.restore();}else if(symbol && symbol!=="none"){ctx.save();ctx.globalAlpha=.82;ctx.fillStyle="#f2c879";ctx.font="bold 24px sans-serif";const marks={officerlab:"OFFICERLAB",youtube:"▶",book:"▤",gavel:"⚖",education:"✦"};ctx.fillText(marks[symbol]||"OFFICERLAB",w-170,48);ctx.restore();}
     if(isRecording){ctx.fillStyle="#d93040";ctx.beginPath();ctx.arc(34,34,8,0,Math.PI*2);ctx.fill();ctx.fillStyle="#fff";ctx.font="bold 18px sans-serif";ctx.fillText("REC",52,40);}
     rafRef.current=requestAnimationFrame(drawComposite);
   }
@@ -110,18 +112,18 @@ function PresentationStudio() {
         <div className="presenter-stage-top"><span><i className={recording?"live-dot active":"live-dot"}/>{recording?"RECORDING":pdfReady?"PRESENTATION READY":"UPLOAD PRESENTATION"}</span><span className="presenter-time">{time}</span></div>
         <div className="presentation-preview">
           <canvas ref={slideCanvasRef} className="presentation-canvas"/><canvas ref={outputCanvasRef} width="1280" height="720" className="recording-canvas"/>
-          {!pdfReady&&!videoUrl&&<div className="presenter-placeholder"><Upload size={40}/><b>તમારી PPT અથવા PDF અહીં upload કરો</b><small>PDF, PPT અને PPTX supported</small></div>}
-          {pdfReady&&!videoUrl&&<video ref={cameraRef} autoPlay muted playsInline className={`camera-pip-preview shape-${faceShape}`} style={{width:`${faceSize}%`,aspectRatio:faceShape==="portrait"?"3 / 4":faceShape==="square"||faceShape==="circle"?"1 / 1":"16 / 9",left:`${facePos.x}%`,top:`${facePos.y}%`}} onPointerDown={e=>{const r=e.currentTarget.parentElement.getBoundingClientRect();dragRef.current={id:e.pointerId};e.currentTarget.setPointerCapture(e.pointerId);}} onPointerMove={e=>{if(!dragRef.current)return;const r=e.currentTarget.parentElement.getBoundingClientRect();const ratio=faceShape==="portrait"?3/4:faceShape==="square"||faceShape==="circle"?1:16/9;const width=r.width*faceSize/100;const height=width/ratio;const x=Math.max(0,Math.min(1-width/r.width,(e.clientX-r.left-width/2)/r.width));const y=Math.max(0,Math.min(1-height/r.height,(e.clientY-r.top-height/2)/r.height));setFacePos({x:x*100,y:y*100});}} onPointerUp={()=>{dragRef.current=null;}} onPointerCancel={()=>{dragRef.current=null;}}/>}
+          {!pdfReady&&!videoUrl&&<div className="presenter-placeholder"><Upload size={40}/><b>તમારી PPT અથવા PDF અહીં upload કરો</b><small>PDF, PPT અને PPTX · Up to 500 MB</small></div>}
+          {pdfReady&&!videoUrl&&<video ref={cameraRef} autoPlay muted playsInline className={`camera-pip-preview shape-${faceShape}`} style={{width:`${faceSize}%`,opacity:faceOpacity/100,aspectRatio:faceShape==="portrait"?"3 / 4":faceShape==="square"||faceShape==="circle"?"1 / 1":"16 / 9",left:`${facePos.x}%`,top:`${facePos.y}%`}} onPointerDown={e=>{const r=e.currentTarget.parentElement.getBoundingClientRect();dragRef.current={id:e.pointerId};e.currentTarget.setPointerCapture(e.pointerId);}} onPointerMove={e=>{if(!dragRef.current)return;const r=e.currentTarget.parentElement.getBoundingClientRect();const ratio=faceShape==="portrait"?3/4:faceShape==="square"||faceShape==="circle"?1:16/9;const width=r.width*faceSize/100;const height=width/ratio;const x=Math.max(0,Math.min(1-width/r.width,(e.clientX-r.left-width/2)/r.width));const y=Math.max(0,Math.min(1-height/r.height,(e.clientY-r.top-height/2)/r.height));setFacePos({x:x*100,y:y*100});}} onPointerUp={()=>{dragRef.current=null;}} onPointerCancel={()=>{dragRef.current=null;}}/>}
           {videoUrl&&<video ref={playbackRef} src={videoUrl} controls playsInline className="presenter-video"/>}
         </div>
-        <div className="presentation-upload"><label className="presenter-btn secondary"><Upload size={16}/>{file?file.name:"Choose PPT / PDF"}<input type="file" accept=".pdf,.ppt,.pptx" onChange={e=>loadFile(e.target.files?.[0])} hidden/></label>{loading&&<span className="upload-state">Presentation તૈયાર થઈ રહી છે…</span>}
+        <div className="presentation-upload"><label className="presenter-btn secondary"><Upload size={16}/>{file?file.name:"Choose PPT / PDF"}<input type="file" accept=".pdf,.ppt,.pptx" onChange={e=>loadFile(e.target.files?.[0])} hidden/></label>{loading&&<span className="upload-state">{uploadProgress?`Processing ${uploadProgress}% · ${Math.round(file?.size/1024/1024)} MB`:"Presentation તૈયાર થઈ રહી છે…"}</span>}
           {pdfReady&&<div className="slide-navigation"><button className="presenter-btn secondary" disabled={page<=1} onClick={()=>setPage(p=>p-1)}><ChevronLeft size={16}/> Previous</button><span>Slide {page} / {pages}</span><button className="presenter-btn secondary" disabled={page>=pages} onClick={()=>setPage(p=>p+1)}>Next <ChevronRight size={16}/></button></div>}
         </div>
         {pdfReady&&streamReady&&!videoUrl&&<div className="face-layout-controls">
           <div className="face-control-heading"><b>Presenter camera layout</b><small>Face windowને mouse અથવા fingerથી drag કરીને screen પર ગમે ત્યાં મૂકો. Recordingમાં પણ live update થશે.</small></div>
           <label className="face-size-control"><span>Face size <b>{faceSize}%</b></span><input type="range" min="12" max="45" step="1" value={faceSize} onChange={e=>setFaceSize(Number(e.target.value))}/></label>
           <label className="face-select-control"><span>Camera shape</span><select value={faceShape} onChange={e=>setFaceShape(e.target.value)}><option value="rounded">Rounded rectangle</option><option value="rectangle">Rectangle</option><option value="square">Square</option><option value="portrait">Portrait (3:4)</option><option value="circle">Circle</option></select></label>
-          <button type="button" className="face-reset-control" onClick={()=>setFacePos({x:73,y:68})}>Reset position</button>
+          <label className="face-opacity-control"><span>Camera transparency <b>{faceOpacity}%</b></span><input type="range" min="0" max="100" value={faceOpacity} onChange={e=>setFaceOpacity(Number(e.target.value))}/></label><label className="face-select-control"><span>Channel symbol</span><select value={symbol} onChange={e=>setSymbol(e.target.value)}><option value="officerlab">OfficerLab wordmark</option><option value="youtube">YouTube play</option><option value="book">Book</option><option value="gavel">Gavel / Justice</option><option value="education">Education sparkle</option><option value="none">No symbol</option></select></label><label className="face-select-control"><span>Upload your YouTube logo</span><input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={e=>{const f=e.target.files?.[0];if(!f)return;const url=URL.createObjectURL(f);setLogoUrl(old=>{if(old)URL.revokeObjectURL(old);return url;});const img=new Image();img.onload=()=>setLogoImage(img);img.src=url;}}/></label>{logoUrl&&<button type="button" className="face-reset-control" onClick={()=>{URL.revokeObjectURL(logoUrl);setLogoUrl("");setLogoImage(null);}}>Remove uploaded logo</button>}<button type="button" className="face-reset-control" onClick={()=>setFacePos({x:73,y:68})}>Reset position</button>
         </div>}
         <div className="presenter-controls">
           {!streamReady&&!videoUrl&&<button className="presenter-btn primary" onClick={()=>startCamera()}><Camera size={17}/> Connect camera + mic</button>}
@@ -131,7 +133,7 @@ function PresentationStudio() {
         </div>
         {error&&<p className="presenter-error">{error}</p>}
       </section>
-      <section className="presenter-tips"><div><Camera size={18}/><span><b>Camera</b><small>Face slideના ખૂણામાં દેખાશે.</small></span></div><div><Mic size={18}/><span><b>Audio</b><small>તમારો microphone audio સાથે record થશે.</small></span></div><div><Play size={18}/><span><b>Slides</b><small>Recording દરમિયાન Next/Previousથી slide બદલો.</small></span></div></section>
+      <section className="presenter-tips"><div><Camera size={18}/><span><b>Camera</b><small>Size, shape, position અને transparency adjust કરો.</small></span></div><div><Mic size={18}/><span><b>Audio</b><small>તમારો microphone audio સાથે record થશે.</small></span></div><div><Play size={18}/><span><b>Slides</b><small>Recording દરમિયાન Next/Previousથી slide બદલો.</small></span></div></section>
       <footer className="presenter-footer">Recording તમારા browserમાં બને છે. PPT/PPTXને PDFમાં બદલવા અને MP4 export માટે configured Render worker તથા internet જરૂરી છે. Camera permission જરૂરી છે.</footer>
     </main>
   </div>;
