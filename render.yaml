@@ -7,7 +7,7 @@ services:
     healthCheckPath: /health
     envVars:
       - key: CORS_ORIGINS
-        value: https://officerlab-cinematic-studio.vercel.app,http://localhost:5173
+        value: https://officerlab-cinematic-studio.vercel.app,http://localhost:5173,https://localhost,capacitor://localhost,http://localhost
       - key: RENDER_API_TOKEN
         sync: false
       - key: OFFICERLAB_API_ACCESS_KEY
