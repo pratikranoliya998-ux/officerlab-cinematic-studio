@@ -35,7 +35,7 @@ function PresentationStudio() {
         const a=annotationCanvasRef.current;if(a){a.width=c.width;a.height=c.height;}
         pdfRef.current=null;setImageMode(true);setPages(1);setPage(1);setPdfReady(true);setUploadProgress(100);return;
       } else setImageMode(false);
-      if(/\\.pptx?$/i.test(selected.name)){
+      if(/\.pptx?$/i.test(selected.name)){
         if(!WORKER)throw new Error("PPT/PPTX માટે Render worker URL configure હોવું જરૂરી છે.");
         const form=new FormData(); form.append("file",selected,selected.name);
         const response=await fetch(WORKER+"/presentation-to-pdf",{method:"POST",body:form}); setUploadProgress(75);
