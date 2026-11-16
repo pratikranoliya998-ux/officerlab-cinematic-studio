@@ -26,7 +26,7 @@ function PresentationStudio() {
     if(!selected)return; if(selected.size>500*1024*1024){setError("500 MBથી મોટી ફાઇલ હાલમાં supported નથી. PPTને compress કરીને ફરી upload કરો.");return;} setError(""); setLoading(true); setUploadProgress(5); setPdfReady(false); setFile(selected); setVideoUrl(""); setMp4Url("");
     try{
       let pdfBlob=selected;
-      if(/^image\\//i.test(selected.type)){
+      if(/^image\//i.test(selected.type)){
         const img=new Image(),url=URL.createObjectURL(selected);
         await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=reject;img.src=url;});
         const c=slideCanvasRef.current;c.width=img.naturalWidth;c.height=img.naturalHeight;c.getContext("2d").drawImage(img,0,0);URL.revokeObjectURL(url);
