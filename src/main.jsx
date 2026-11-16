@@ -126,7 +126,11 @@ function App() {
   const [ttsProgress, setTtsProgress] = useState(0);
   const [ttsTotalChunks, setTtsTotalChunks] = useState(0);
   const [ttsNotice, setTtsNotice] = useState("");
+  const [ttsRecording, setTtsRecording] = useState(false);
   const ttsRunRef = useRef(0);
+  const ttsRecorderRef = useRef(null);
+  const ttsCaptureRef = useRef(null);
+  const ttsRecordChunksRef = useRef([]);
   useEffect(() => {
     if (active !== "script") return;
     let cancelled = false;
@@ -195,7 +199,7 @@ function App() {
     setTtsNotice("વાંચન બંધ કર્યું.");
   }
 
-  function playGujaratiSpeech() {
+  function playGujaratiSpeech(onFinished) {
     if (!("speechSynthesis" in window)) {
       setTtsNotice("આ browserમાં Text-to-Speech ઉપલબ્ધ નથી. Chrome અથવા Edgeનો ઉપયોગ કરો.");
       return;
@@ -222,6 +226,7 @@ function App() {
         if (index === chunks.length - 1) {
           setTtsSpeaking(false); setTtsPaused(false);
           setTtsNotice("વાંચન પૂર્ણ થયું.");
+          if (typeof onFinished === "function") onFinished();
         }
       };
       utterance.onerror = event => {
@@ -240,6 +245,72 @@ function App() {
     } else {
       window.speechSynthesis.pause(); setTtsPaused(true); setTtsNotice("વાંચન Pause કર્યું.");
     }
+  }
+
+  function previewGujaratiVoice() {
+    if (!("speechSynthesis" in window)) return;
+    window.speechSynthesis.cancel();
+    const voice = ttsVoices.find(v => v.name === ttsVoiceName);
+    const sample = new SpeechSynthesisUtterance("નમસ્કાર મિત્રો, OfficerLab માં આપનું સ્વાગત છે.");
+    sample.lang = ttsLanguage;
+    if (voice) sample.voice = voice;
+    sample.rate = Number(ttsSpeed); sample.pitch = Number(ttsPitch); sample.volume = Number(ttsVolume);
+    window.speechSynthesis.speak(sample);
+    setTtsNotice("Selected voice preview playing…");
+  }
+
+  async function recordGujaratiSpeechToProject() {
+    if (!ttsText.trim()) { setTtsNotice("વાંચવા માટે લખાણ ઉમેરો."); return; }
+    if (!navigator.mediaDevices?.getDisplayMedia || !window.MediaRecorder) {
+      setTtsNotice("Chrome/Edge desktopમાં tab-audio recording અજમાવો."); return;
+    }
+    try {
+      setTtsNotice("Share this browser tab and enable Share tab audio.");
+      const display = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+      const tracks = display.getAudioTracks();
+      if (!tracks.length) {
+        display.getTracks().forEach(t => t.stop());
+        setTtsNotice("Audio track મળ્યો નથી. Share dialogમાં browser tab અને Share tab audio પસંદ કરો."); return;
+      }
+      const audioStream = new MediaStream(tracks);
+      display.getVideoTracks().forEach(t => t.stop());
+      const mime = MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? "audio/webm;codecs=opus" : "audio/webm";
+      const recorder = new MediaRecorder(audioStream, { mimeType: mime });
+      ttsRecorderRef.current = recorder; ttsCaptureRef.current = audioStream; ttsRecordChunksRef.current = [];
+      recorder.ondataavailable = e => { if (e.data?.size) ttsRecordChunksRef.current.push(e.data); };
+      recorder.onstop = () => {
+        const blob = new Blob(ttsRecordChunksRef.current, { type: mime });
+        audioStream.getTracks().forEach(t => t.stop());
+        ttsCaptureRef.current = null; ttsRecorderRef.current = null; setTtsRecording(false);
+        if (!blob.size) { setTtsNotice("Audio capture ખાલી છે. Share tab audio ચાલુ છે તેની ખાતરી કરો."); return; }
+        const file = new File([blob], "officerlab-gujarati-tts.webm", { type: mime });
+        const url = URL.createObjectURL(blob);
+        addAudioClip("voice", file, url);
+        setTtsNotice("Narration active project's Voice Timelineમાં ઉમેરાયું.");
+        setStatus("Gujarati TTS added to active project timeline");
+      };
+      recorder.start(250); setTtsRecording(true);
+      setTtsNotice("Recording narration into project…");
+      playGujaratiSpeech(() => { if (recorder.state !== "inactive") recorder.stop(); });
+    } catch (error) {
+      ttsCaptureRef.current?.getTracks().forEach(t => t.stop());
+      ttsCaptureRef.current = null; ttsRecorderRef.current = null; setTtsRecording(false);
+      setTtsNotice(error.name === "NotAllowedError" ? "Tab sharing permission was cancelled." : "Audio capture failed: " + error.message);
+    }
+  }
+
+  function cancelGujaratiRecording() {
+    stopGujaratiSpeech();
+    if (ttsRecorderRef.current && ttsRecorderRef.current.state !== "inactive") ttsRecorderRef.current.stop();
+    else ttsCaptureRef.current?.getTracks().forEach(t => t.stop());
+    setTtsRecording(false);
+  }
+
+  function deleteGeneratedVoiceClips() {
+    const generated = audioClips.filter(c => c.track === "voice" && /gujarati-tts/i.test(c.name));
+    if (!generated.length) { setTtsNotice("No generated Gujarati TTS clips in this project."); return; }
+    generated.forEach(c => removeAudioClip(c.id));
+    setTtsNotice(generated.length + " generated Gujarati TTS clip(s) deleted.");
   }
 
   async function generateAiScript() {
