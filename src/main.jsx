@@ -121,9 +121,57 @@ function PresentationStudio() {
   }
   function stopRecording(){if(timerRef.current)clearInterval(timerRef.current);timerRef.current=null;setRecording(false);if(recorderRef.current?.state==="recording"){recorderRef.current.requestData?.();recorderRef.current.stop();}else{const audioContext=window.__officerlabAudioContext;if(audioContext&&audioContext.state!=="closed")audioContext.close().catch(()=>{});delete window.__officerlabAudioContext;}if(rafRef.current)cancelAnimationFrame(rafRef.current);}
   async function convertMp4(){
-    if(!WORKER){setError("MP4 માટે VITE_RENDER_API_URL configure કરો.");return;}setConverting(true);setError("");
-    try{const blob=await(await fetch(videoUrl)).blob();const form=new FormData();form.append("file",blob,"presentation-presenter.webm");const res=await fetch(WORKER+"/convert-presenter",{method:"POST",body:form});if(!res.ok){let d={};try{d=await res.json()}catch{}throw new Error(d.detail||"MP4 conversion failed.");}const out=await res.blob();setMp4Url(URL.createObjectURL(out));}
-    catch(e){setError(e.message);}finally{setConverting(false);}
+    if(!WORKER){setError("MP4 export માટે Render worker URL configure નથી.");return;}
+    if(!videoUrl){setError("પહેલાં recording બનાવો અને preview તૈયાર થવા દો.");return;}
+    setConverting(true);setError("");
+    const fetchTimed=async(url,options={},timeoutMs=600000)=>{
+      const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),timeoutMs);
+      try{return await fetch(url,{...options,signal:controller.signal});}
+      finally{clearTimeout(timer);}
+    };
+    try{
+      const blob=await(await fetch(videoUrl)).blob();
+      if(blob.size<1024)throw new Error("Recording file ખાલી અથવા બહુ નાની છે. ફરીથી record કરો.");
+      const mb=(blob.size/1024/1024).toFixed(2);
+      setError("Render worker સાથે connection તપાસી રહ્યા છીએ…");
+      let health=null,lastHealthError=null;
+      for(let attempt=1;attempt<=3;attempt++){
+        try{
+          health=await fetchTimed(WORKER+"/health",{method:"GET",cache:"no-store"},90000);
+          if(health.ok)break;
+          lastHealthError=new Error("Worker health check returned HTTP "+health.status);
+        }catch(err){lastHealthError=err;}
+        if(attempt<3)await new Promise(resolve=>setTimeout(resolve,2500));
+      }
+      if(!health||!health.ok){
+        if(lastHealthError?.name==="AbortError")throw new Error("Render worker શરૂ થવામાં 90 secondsથી વધુ સમય લાગ્યો. Internet તપાસો અને ફરી પ્રયાસ કરો.");
+        if(lastHealthError instanceof TypeError)throw new Error("Android app Render worker સુધી પહોંચી શકતી નથી. આ network અથવા CORS સમસ્યા હોઈ શકે છે. Worker: "+WORKER+" · App origin: "+window.location.origin);
+        throw new Error(lastHealthError?.message||"Render worker health check failed.");
+      }
+      let healthData={};try{healthData=await health.json();}catch{}
+      if(healthData.ok===false)throw new Error("Render worker હાલમાં ready નથી.");
+      if(healthData.ffmpeg===false)throw new Error("Render workerમાં FFmpeg ઉપલબ્ધ નથી.");
+      setError("Recording upload થઈ રહી છે ("+mb+" MB)…");
+      const form=new FormData();form.append("file",blob,"presentation-presenter.webm");
+      let res;
+      try{res=await fetchTimed(WORKER+"/convert-presenter",{method:"POST",body:form},600000);}
+      catch(err){
+        if(err?.name==="AbortError")throw new Error("MP4 conversionમાં 10 મિનિટથી વધુ સમય લાગ્યો. નાનું recording બનાવી ફરી પ્રયાસ કરો.");
+        if(err instanceof TypeError)throw new Error("Recording upload દરમિયાન Android WebViewનું connection તૂટી ગયું. Network અથવા CORS તપાસો. Worker: "+WORKER+" · App origin: "+window.location.origin+" · File: "+mb+" MB");
+        throw err;
+      }
+      if(!res.ok){
+        let detail="MP4 conversion failed (HTTP "+res.status+").";
+        try{const data=await res.json();if(data?.detail)detail=data.detail;}catch{try{const body=await res.text();if(body)detail=body.slice(0,500);}catch{}}
+        throw new Error(detail);
+      }
+      const out=await res.blob();
+      if(out.size<1024)throw new Error("Workerએ ખાલી MP4 પાછું આપ્યું. ફરીથી recording બનાવી પ્રયાસ કરો.");
+      setMp4Url(URL.createObjectURL(out));setError("");
+    }catch(e){
+      const message=e?.message||"Unknown MP4 export error.";
+      setError(message==="Failed to fetch"?"Android app worker સુધી પહોંચી શકી નથી. Render worker sleeping, network અથવા CORS કારણ હોઈ શકે છે. ફરી પ્રયાસ કરો. Worker: "+WORKER+" · App origin: "+window.location.origin:message);
+    }finally{setConverting(false);}
   }
   async function saveOrShareMp4(){
     if(!mp4Url)return;
