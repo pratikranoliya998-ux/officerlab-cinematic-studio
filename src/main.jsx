@@ -131,7 +131,7 @@ function PresentationStudio() {
       const dataUrl=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(new Error("MP4 file read failed"));reader.readAsDataURL(blob);});
       const base64=String(dataUrl).split(",")[1];
       const saved=await Filesystem.writeFile({path:"officerlab-presentation.mp4",data:base64,directory:Directory.Cache,recursive:true});
-      await Share.share({title:"OfficerLab presentation",text:"Recorded presentation video",url:saved.uri,files:[saved.uri],dialogTitle:"Save or share your MP4"});
+      await Share.share({title:"OfficerLab presentation",text:"Recorded presentation video",files:[saved.uri],dialogTitle:"Save or share your MP4"});
     }catch(e){setError("MP4 share/save failed: "+(e?.message||"Unknown error"));}
     finally{setSavingVideo(false);}
   }
