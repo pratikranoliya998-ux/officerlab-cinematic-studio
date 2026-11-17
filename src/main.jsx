@@ -1,4 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
+import { Capacitor } from "@capacitor/core";
+import { Directory, Filesystem } from "@capacitor/filesystem";
+import { Share } from "@capacitor/share";
 import { createRoot } from "react-dom/client";
 import { Camera, CameraOff, Circle, Download, Mic, Play, RotateCcw, Square, Video, Upload, ChevronLeft, ChevronRight, Pencil, Highlighter, Eraser, ArrowUpRight, RectangleHorizontal, Type, ZoomIn, ZoomOut, Undo2, Maximize, Minimize } from "lucide-react";
 import "./style.css";
@@ -16,7 +19,7 @@ function loadPdfJs() {
 }
 function PresentationStudio() {
   const cameraRef=useRef(null), slideCanvasRef=useRef(null), annotationCanvasRef=useRef(null), outputCanvasRef=useRef(null), playbackRef=useRef(null), streamRef=useRef(null), recorderRef=useRef(null), chunksRef=useRef([]), timerRef=useRef(null), rafRef=useRef(null), pdfRef=useRef(null), pageRef=useRef(1), micRef=useRef(null);
-  const [file,setFile]=useState(null), [pdfReady,setPdfReady]=useState(false), [page,setPage]=useState(1), [pages,setPages]=useState(0), [streamReady,setStreamReady]=useState(false), [recording,setRecording]=useState(false), [seconds,setSeconds]=useState(0), [videoUrl,setVideoUrl]=useState(""), [mp4Url,setMp4Url]=useState(""), [converting,setConverting]=useState(false), [loading,setLoading]=useState(false), [error,setError]=useState(""), [cameraFacing,setCameraFacing]=useState("user"), [pip,setPip]=useState("bottom-right"), [faceSize,setFaceSize]=useState(25), [faceShape,setFaceShape]=useState("rounded"), [facePos,setFacePos]=useState({x:73,y:68}), [faceOpacity,setFaceOpacity]=useState(100), [symbol,setSymbol]=useState("officerlab"), [logoUrl,setLogoUrl]=useState(""), [logoImage,setLogoImage]=useState(null), [uploadProgress,setUploadProgress]=useState(0), [imageMode,setImageMode]=useState(false), [tool,setTool]=useState("pen"), [inkColor,setInkColor]=useState("#ffdf55"), [inkSize,setInkSize]=useState(5), [zoom,setZoom]=useState(1), [lowerThird,setLowerThird]=useState(""), [chapterTitle,setChapterTitle]=useState(""), [chapters,setChapters]=useState([]), [cursorSpotlight,setCursorSpotlight]=useState(false), [cursorPos,setCursorPos]=useState({x:50,y:50}); const [annotationText,setAnnotationText]=useState(""); const [transition,setTransition]=useState("fade"), [toolsOpen,setToolsOpen]=useState(false), [isFullscreen,setIsFullscreen]=useState(false), [immersiveMode,setImmersiveMode]=useState(false);
+  const [file,setFile]=useState(null), [pdfReady,setPdfReady]=useState(false), [page,setPage]=useState(1), [pages,setPages]=useState(0), [streamReady,setStreamReady]=useState(false), [recording,setRecording]=useState(false), [seconds,setSeconds]=useState(0), [videoUrl,setVideoUrl]=useState(""), [mp4Url,setMp4Url]=useState(""), [converting,setConverting]=useState(false), [savingVideo,setSavingVideo]=useState(false), [loading,setLoading]=useState(false), [error,setError]=useState(""), [cameraFacing,setCameraFacing]=useState("user"), [pip,setPip]=useState("bottom-right"), [faceSize,setFaceSize]=useState(25), [faceShape,setFaceShape]=useState("rounded"), [facePos,setFacePos]=useState({x:73,y:68}), [faceOpacity,setFaceOpacity]=useState(100), [symbol,setSymbol]=useState("officerlab"), [logoUrl,setLogoUrl]=useState(""), [logoImage,setLogoImage]=useState(null), [uploadProgress,setUploadProgress]=useState(0), [imageMode,setImageMode]=useState(false), [tool,setTool]=useState("pen"), [inkColor,setInkColor]=useState("#ffdf55"), [inkSize,setInkSize]=useState(5), [zoom,setZoom]=useState(1), [lowerThird,setLowerThird]=useState(""), [chapterTitle,setChapterTitle]=useState(""), [chapters,setChapters]=useState([]), [cursorSpotlight,setCursorSpotlight]=useState(false), [cursorPos,setCursorPos]=useState({x:50,y:50}); const [annotationText,setAnnotationText]=useState(""); const [transition,setTransition]=useState("fade"), [toolsOpen,setToolsOpen]=useState(false), [isFullscreen,setIsFullscreen]=useState(false), [immersiveMode,setImmersiveMode]=useState(false);
   const dragRef=useRef(null), drawingRef=useRef(false), annotationHistoryRef=useRef([]), zoomRef=useRef(1);
   const layoutRef=useRef({});
   layoutRef.current={faceSize,faceShape,facePos,faceOpacity,symbol,logoImage,recording};
@@ -117,6 +120,21 @@ function PresentationStudio() {
     try{const blob=await(await fetch(videoUrl)).blob();const form=new FormData();form.append("file",blob,"presentation-presenter.webm");const res=await fetch(WORKER+"/convert-presenter",{method:"POST",body:form});if(!res.ok){let d={};try{d=await res.json()}catch{}throw new Error(d.detail||"MP4 conversion failed.");}const out=await res.blob();setMp4Url(URL.createObjectURL(out));}
     catch(e){setError(e.message);}finally{setConverting(false);}
   }
+  async function saveOrShareMp4(){
+    if(!mp4Url)return;
+    if(!Capacitor.isNativePlatform()){
+      const link=document.createElement("a");link.href=mp4Url;link.download="officerlab-presentation.mp4";link.click();return;
+    }
+    setError("");setSavingVideo(true);
+    try{
+      const blob=await(await fetch(mp4Url)).blob();
+      const dataUrl=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(new Error("MP4 file read failed"));reader.readAsDataURL(blob);});
+      const base64=String(dataUrl).split(",")[1];
+      const saved=await Filesystem.writeFile({path:"officerlab-presentation.mp4",data:base64,directory:Directory.Cache,recursive:true});
+      await Share.share({title:"OfficerLab presentation",text:"Recorded presentation video",url:saved.uri,files:[saved.uri],dialogTitle:"Save or share your MP4"});
+    }catch(e){setError("MP4 share/save failed: "+(e?.message||"Unknown error"));}
+    finally{setSavingVideo(false);}
+  }
   function retake(){if(videoUrl)URL.revokeObjectURL(videoUrl);if(mp4Url)URL.revokeObjectURL(mp4Url);setVideoUrl("");setMp4Url("");setError("");}
   const time=String(Math.floor(seconds/60)).padStart(2,"0")+":"+String(seconds%60).padStart(2,"0");
   return <div className={`presenter-app ${immersiveMode?"immersive-mode":""}`}>
@@ -143,7 +161,7 @@ function PresentationStudio() {
           {!streamReady&&!videoUrl&&<button className="presenter-btn primary" onClick={()=>startCamera()}><Camera size={17}/> Connect camera + mic</button>}
           {streamReady&&!recording&&!videoUrl&&<><button className="presenter-btn secondary" onClick={()=>startCamera(cameraFacing==="user"?"environment":"user")}>Switch camera</button><button className="presenter-btn secondary" onClick={stopCamera}><CameraOff size={16}/> Disconnect</button><button className="presenter-btn primary record" onClick={startRecording} disabled={!pdfReady}><Circle size={16} fill="currentColor"/> Start recording</button></>}
           {recording&&<button className="presenter-btn stop" onClick={stopRecording}><Square size={16} fill="currentColor"/> Stop recording</button>}
-          {videoUrl&&<><button className="presenter-btn primary" onClick={convertMp4} disabled={converting||!!mp4Url}>{converting?"Converting…":mp4Url?"MP4 ready":"Convert to MP4"}</button>{mp4Url&&<a className="presenter-btn primary download" href={mp4Url} download="officerlab-presentation.mp4"><Download size={16}/> Download MP4</a>}<a className="presenter-btn secondary download" href={videoUrl} download="officerlab-presentation.webm"><Download size={16}/> WebM backup</a><button className="presenter-btn secondary" onClick={retake}><RotateCcw size={16}/> Record again</button></>}
+          {videoUrl&&<><button className="presenter-btn primary" onClick={convertMp4} disabled={converting||!!mp4Url}>{converting?"Converting…":mp4Url?"MP4 ready":"Convert to MP4"}</button>{mp4Url&&<a className="presenter-btn primary download" href={mp4Url} download="officerlab-presentation.mp4"><Download size={16}/> Download MP4</a>}{mp4Url&&<button type="button" className="presenter-btn secondary" onClick={saveOrShareMp4} disabled={savingVideo}><Download size={16}/>{savingVideo?"Preparing…":"Save / Share MP4"}</button>}<a className="presenter-btn secondary download" href={videoUrl} download="officerlab-presentation.webm"><Download size={16}/> WebM backup</a><button className="presenter-btn secondary" onClick={retake}><RotateCcw size={16}/> Record again</button></>}
         </div>
         {error&&<p className="presenter-error">{error}</p>}
       </section>
