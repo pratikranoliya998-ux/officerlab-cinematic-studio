@@ -18,7 +18,7 @@ function loadPdfJs() {
   });
 }
 function PresentationStudio() {
-  const cameraRef=useRef(null), slideCanvasRef=useRef(null), annotationCanvasRef=useRef(null), outputCanvasRef=useRef(null), playbackRef=useRef(null), streamRef=useRef(null), recorderRef=useRef(null), chunksRef=useRef([]), timerRef=useRef(null), rafRef=useRef(null), pdfRef=useRef(null), pageRef=useRef(1), micRef=useRef(null);
+  const cameraRef=useRef(null), slideCanvasRef=useRef(null), annotationCanvasRef=useRef(null), outputCanvasRef=useRef(null), playbackRef=useRef(null), streamRef=useRef(null), recorderRef=useRef(null), chunksRef=useRef([]), recordingBlobRef=useRef(null), mp4BlobRef=useRef(null), timerRef=useRef(null), rafRef=useRef(null), pdfRef=useRef(null), pageRef=useRef(1), micRef=useRef(null);
   const [file,setFile]=useState(null), [pdfReady,setPdfReady]=useState(false), [page,setPage]=useState(1), [pages,setPages]=useState(0), [streamReady,setStreamReady]=useState(false), [recording,setRecording]=useState(false), [seconds,setSeconds]=useState(0), [videoUrl,setVideoUrl]=useState(""), [mp4Url,setMp4Url]=useState(""), [converting,setConverting]=useState(false), [savingVideo,setSavingVideo]=useState(false), [loading,setLoading]=useState(false), [error,setError]=useState(""), [cameraFacing,setCameraFacing]=useState("user"), [pip,setPip]=useState("bottom-right"), [faceSize,setFaceSize]=useState(25), [faceShape,setFaceShape]=useState("rounded"), [facePos,setFacePos]=useState({x:73,y:68}), [faceOpacity,setFaceOpacity]=useState(100), [symbol,setSymbol]=useState("officerlab"), [logoUrl,setLogoUrl]=useState(""), [logoImage,setLogoImage]=useState(null), [uploadProgress,setUploadProgress]=useState(0), [imageMode,setImageMode]=useState(false), [tool,setTool]=useState("pen"), [inkColor,setInkColor]=useState("#ffdf55"), [inkSize,setInkSize]=useState(5), [zoom,setZoom]=useState(1), [lowerThird,setLowerThird]=useState(""), [chapterTitle,setChapterTitle]=useState(""), [chapters,setChapters]=useState([]), [cursorSpotlight,setCursorSpotlight]=useState(false), [cursorPos,setCursorPos]=useState({x:50,y:50}); const [annotationText,setAnnotationText]=useState(""); const [transition,setTransition]=useState("fade"), [toolsOpen,setToolsOpen]=useState(false), [isFullscreen,setIsFullscreen]=useState(false), [immersiveMode,setImmersiveMode]=useState(false);
   const dragRef=useRef(null), drawingRef=useRef(false), annotationHistoryRef=useRef([]), zoomRef=useRef(1);
   const layoutRef=useRef({});
@@ -132,13 +132,13 @@ function PresentationStudio() {
     let processedAudio=audioTracks;
     try{if(audioTracks.length){const AC=window.AudioContext||window.webkitAudioContext;const audioContext=new AC();const source=audioContext.createMediaStreamSource(new MediaStream(audioTracks));const compressor=audioContext.createDynamicsCompressor();compressor.threshold.value=-24;compressor.knee.value=24;compressor.ratio.value=3;compressor.attack.value=.005;compressor.release.value=.22;const gain=audioContext.createGain();gain.gain.value=1.1;const destination=audioContext.createMediaStreamDestination();source.connect(compressor);compressor.connect(gain);gain.connect(destination);processedAudio=destination.stream.getAudioTracks();window.__officerlabAudioContext=audioContext;}}catch(err){console.warn("Audio processing unavailable; using original microphone track",err);}
     const combined=new MediaStream([...videoStream.getVideoTracks(),...processedAudio]);
-    chunksRef.current=[];const mime=["video/webm;codecs=vp9,opus","video/webm;codecs=vp8,opus","video/webm"].find(t=>MediaRecorder.isTypeSupported(t));
+    chunksRef.current=[];recordingBlobRef.current=null;mp4BlobRef.current=null;const mime=["video/webm;codecs=vp9,opus","video/webm;codecs=vp8,opus","video/webm"].find(t=>MediaRecorder.isTypeSupported(t));
     try{const rec=new MediaRecorder(combined,mime?{mimeType:mime,videoBitsPerSecond:6000000}:undefined);recorderRef.current=rec;
       rec.ondataavailable=e=>{if(e.data?.size)chunksRef.current.push(e.data)};
       const watchedTracks=streamRef.current?.getTracks()||[];
       const onSourceTrackEnded=(event)=>{if(recorderRef.current?.state!=="recording")return;const kind=event.currentTarget.kind==="video"?"Camera":"Microphone";stopRecording();setError(kind+" connection was interrupted. The recording has been finalized; review the preview and save it before recording again.");};
       watchedTracks.forEach(track=>track.addEventListener("ended",onSourceTrackEnded,{once:true}));
-      rec.onstop=()=>{watchedTracks.forEach(track=>track.removeEventListener("ended",onSourceTrackEnded));const blob=new Blob(chunksRef.current,{type:rec.mimeType||"video/webm"});if(blob.size){setVideoUrl(URL.createObjectURL(blob));setMp4Url("");}const audioContext=window.__officerlabAudioContext;if(audioContext&&audioContext.state!=="closed")audioContext.close().catch(()=>{});delete window.__officerlabAudioContext;combined.getTracks().forEach(track=>track.stop());};
+      rec.onstop=()=>{watchedTracks.forEach(track=>track.removeEventListener("ended",onSourceTrackEnded));const blob=new Blob(chunksRef.current,{type:rec.mimeType||"video/webm"});if(blob.size){recordingBlobRef.current=blob;mp4BlobRef.current=null;setVideoUrl(URL.createObjectURL(blob));setMp4Url("");}const audioContext=window.__officerlabAudioContext;if(audioContext&&audioContext.state!=="closed")audioContext.close().catch(()=>{});delete window.__officerlabAudioContext;combined.getTracks().forEach(track=>track.stop());};
       drawComposite();rec.start(1000);setSeconds(0);setRecording(true);timerRef.current=setInterval(()=>setSeconds(v=>v+1),1000);
     }catch(e){setError("Recording શરૂ થઈ શક્યું નથી: "+e.message);}
   }
@@ -153,7 +153,8 @@ function PresentationStudio() {
       finally{clearTimeout(timer);}
     };
     try{
-      const blob=await(await fetch(videoUrl)).blob();
+      const blob=recordingBlobRef.current;
+      if(!blob)throw new Error("Recording data ઉપલબ્ધ નથી. ફરીથી record કરો.");
       if(blob.size<1024)throw new Error("Recording file ખાલી અથવા બહુ નાની છે. ફરીથી record કરો.");
       const mb=(blob.size/1024/1024).toFixed(2);
       setError("Render worker સાથે connection તપાસી રહ્યા છીએ…");
@@ -190,7 +191,7 @@ function PresentationStudio() {
       }
       const out=await res.blob();
       if(out.size<1024)throw new Error("Workerએ ખાલી MP4 પાછું આપ્યું. ફરીથી recording બનાવી પ્રયાસ કરો.");
-      setMp4Url(URL.createObjectURL(out));setError("");
+      mp4BlobRef.current=out;setMp4Url(URL.createObjectURL(out));setError("");
     }catch(e){
       const message=e?.message||"Unknown MP4 export error.";
       setError(message==="Failed to fetch"?"Android app worker સુધી પહોંચી શકી નથી. Render worker sleeping, network અથવા CORS કારણ હોઈ શકે છે. ફરી પ્રયાસ કરો. Worker: "+WORKER+" · App origin: "+window.location.origin:message);
@@ -203,7 +204,8 @@ function PresentationStudio() {
     }
     setError("");setSavingVideo(true);
     try{
-      const blob=await(await fetch(mp4Url)).blob();
+      const blob=mp4BlobRef.current;
+      if(!blob)throw new Error("MP4 data ઉપલબ્ધ નથી. MP4 ફરીથી convert કરો.");
       const dataUrl=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(new Error("MP4 file read failed"));reader.readAsDataURL(blob);});
       const base64=String(dataUrl).split(",")[1];
       const saved=await Filesystem.writeFile({path:"officerlab-presentation.mp4",data:base64,directory:Directory.Cache,recursive:true});
@@ -211,7 +213,7 @@ function PresentationStudio() {
     }catch(e){setError("MP4 share/save failed: "+(e?.message||"Unknown error"));}
     finally{setSavingVideo(false);}
   }
-  function retake(){if(videoUrl)URL.revokeObjectURL(videoUrl);if(mp4Url)URL.revokeObjectURL(mp4Url);setVideoUrl("");setMp4Url("");setError("");}
+  function retake(){if(videoUrl)URL.revokeObjectURL(videoUrl);if(mp4Url)URL.revokeObjectURL(mp4Url);recordingBlobRef.current=null;mp4BlobRef.current=null;setVideoUrl("");setMp4Url("");setError("");}
   const time=String(Math.floor(seconds/60)).padStart(2,"0")+":"+String(seconds%60).padStart(2,"0");
   return <div className={`presenter-app ${immersiveMode?"immersive-mode":""}`}>
     <header className="presenter-header"><div className="presenter-brand"><span className="presenter-mark"><Video size={21}/></span><div><b>OfficerLab</b><small>PRESENTATION STUDIO</small></div></div><div className="presenter-header-actions"><span className="presenter-private">Your slides · Your face · Your voice</span><button type="button" className="presenter-btn secondary fullscreen-btn" onClick={toggleFullscreen}>{isFullscreen?<Minimize size={16}/>:<Maximize size={16}/>} {isFullscreen||immersiveMode?"Exit full screen":"Full screen"}</button></div></header>
