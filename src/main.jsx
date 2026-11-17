@@ -112,7 +112,10 @@ function PresentationStudio() {
     chunksRef.current=[];const mime=["video/webm;codecs=vp9,opus","video/webm;codecs=vp8,opus","video/webm"].find(t=>MediaRecorder.isTypeSupported(t));
     try{const rec=new MediaRecorder(combined,mime?{mimeType:mime,videoBitsPerSecond:6000000}:undefined);recorderRef.current=rec;
       rec.ondataavailable=e=>{if(e.data?.size)chunksRef.current.push(e.data)};
-      rec.onstop=()=>{const blob=new Blob(chunksRef.current,{type:rec.mimeType||"video/webm"});if(blob.size){setVideoUrl(URL.createObjectURL(blob));setMp4Url("");}const audioContext=window.__officerlabAudioContext;if(audioContext&&audioContext.state!=="closed")audioContext.close().catch(()=>{});delete window.__officerlabAudioContext;combined.getTracks().forEach(track=>track.stop());};
+      const watchedTracks=streamRef.current?.getTracks()||[];
+      const onSourceTrackEnded=(event)=>{if(recorderRef.current?.state!=="recording")return;const kind=event.currentTarget.kind==="video"?"Camera":"Microphone";stopRecording();setError(kind+" connection was interrupted. The recording has been finalized; review the preview and save it before recording again.");};
+      watchedTracks.forEach(track=>track.addEventListener("ended",onSourceTrackEnded,{once:true}));
+      rec.onstop=()=>{watchedTracks.forEach(track=>track.removeEventListener("ended",onSourceTrackEnded));const blob=new Blob(chunksRef.current,{type:rec.mimeType||"video/webm"});if(blob.size){setVideoUrl(URL.createObjectURL(blob));setMp4Url("");}const audioContext=window.__officerlabAudioContext;if(audioContext&&audioContext.state!=="closed")audioContext.close().catch(()=>{});delete window.__officerlabAudioContext;combined.getTracks().forEach(track=>track.stop());};
       drawComposite();rec.start(1000);setSeconds(0);setRecording(true);timerRef.current=setInterval(()=>setSeconds(v=>v+1),1000);
     }catch(e){setError("Recording શરૂ થઈ શક્યું નથી: "+e.message);}
   }
