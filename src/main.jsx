@@ -42,8 +42,31 @@ function PresentationStudio() {
       } else setImageMode(false);
       if(/\.pptx?$/i.test(selected.name)){
         if(!WORKER)throw new Error("PPT/PPTX માટે Render worker URL configure હોવું જરૂરી છે.");
+        setUploadProgress(15);
+        let health;
+        try{
+          const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),90000);
+          try{health=await fetch(WORKER+"/health",{method:"GET",cache:"no-store",signal:controller.signal});}
+          finally{clearTimeout(timer);}
+        }catch(err){
+          if(err?.name==="AbortError")throw new Error("Render worker 90 secondsમાં શરૂ થયો નથી. Internet તપાસો અને ફરી upload કરો.");
+          if(err instanceof TypeError)throw new Error("Android app Render worker સુધી પહોંચી શકતી નથી. Network અથવા CORS સમસ્યા હોઈ શકે છે. Worker: "+WORKER+" · App origin: "+window.location.origin);
+          throw err;
+        }
+        if(!health.ok)throw new Error("Render worker health check failed (HTTP "+health.status+"). થોડા સમય પછી ફરી પ્રયાસ કરો.");
         const form=new FormData(); form.append("file",selected,selected.name);
-        setUploadProgress(25); const response=await fetch(WORKER+"/presentation-to-pdf",{method:"POST",body:form}); setUploadProgress(75);
+        setUploadProgress(35);
+        let response;
+        try{
+          const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),600000);
+          try{response=await fetch(WORKER+"/presentation-to-pdf",{method:"POST",body:form,signal:controller.signal});}
+          finally{clearTimeout(timer);}
+        }catch(err){
+          if(err?.name==="AbortError")throw new Error("PowerPoint conversionમાં 10 મિનિટથી વધુ સમય લાગ્યો. PPTને compress કરીને ફરી પ્રયાસ કરો.");
+          if(err instanceof TypeError)throw new Error("PPT upload દરમિયાન Android WebViewનું connection તૂટી ગયું. Network અથવા CORS તપાસો. Worker: "+WORKER+" · App origin: "+window.location.origin);
+          throw err;
+        }
+        setUploadProgress(75);
         if(!response.ok){let d={};try{d=await response.json()}catch{} throw new Error(d.detail||"PowerPoint conversion failed (HTTP "+response.status+").");}
         pdfBlob=await response.blob();
       } else if(!/\.pdf$/i.test(selected.name)) throw new Error("PDF, PPT અથવા PPTX ફાઇલ પસંદ કરો.");
