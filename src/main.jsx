@@ -107,11 +107,11 @@ function PresentationStudio() {
     chunksRef.current=[];const mime=["video/webm;codecs=vp9,opus","video/webm;codecs=vp8,opus","video/webm"].find(t=>MediaRecorder.isTypeSupported(t));
     try{const rec=new MediaRecorder(combined,mime?{mimeType:mime,videoBitsPerSecond:6000000}:undefined);recorderRef.current=rec;
       rec.ondataavailable=e=>{if(e.data?.size)chunksRef.current.push(e.data)};
-      rec.onstop=()=>{const blob=new Blob(chunksRef.current,{type:rec.mimeType||"video/webm"});if(blob.size){setVideoUrl(URL.createObjectURL(blob));setMp4Url("");}};
+      rec.onstop=()=>{const blob=new Blob(chunksRef.current,{type:rec.mimeType||"video/webm"});if(blob.size){setVideoUrl(URL.createObjectURL(blob));setMp4Url("");}const audioContext=window.__officerlabAudioContext;if(audioContext&&audioContext.state!=="closed")audioContext.close().catch(()=>{});delete window.__officerlabAudioContext;combined.getTracks().forEach(track=>track.stop());};
       drawComposite();rec.start(1000);setSeconds(0);setRecording(true);timerRef.current=setInterval(()=>setSeconds(v=>v+1),1000);
     }catch(e){setError("Recording શરૂ થઈ શક્યું નથી: "+e.message);}
   }
-  function stopRecording(){if(timerRef.current)clearInterval(timerRef.current);timerRef.current=null;setRecording(false);if(recorderRef.current?.state==="recording")recorderRef.current.stop();if(rafRef.current)cancelAnimationFrame(rafRef.current);}
+  function stopRecording(){if(timerRef.current)clearInterval(timerRef.current);timerRef.current=null;setRecording(false);if(recorderRef.current?.state==="recording"){recorderRef.current.requestData?.();recorderRef.current.stop();}else{const audioContext=window.__officerlabAudioContext;if(audioContext&&audioContext.state!=="closed")audioContext.close().catch(()=>{});delete window.__officerlabAudioContext;}if(rafRef.current)cancelAnimationFrame(rafRef.current);}
   async function convertMp4(){
     if(!WORKER){setError("MP4 માટે VITE_RENDER_API_URL configure કરો.");return;}setConverting(true);setError("");
     try{const blob=await(await fetch(videoUrl)).blob();const form=new FormData();form.append("file",blob,"presentation-presenter.webm");const res=await fetch(WORKER+"/convert-presenter",{method:"POST",body:form});if(!res.ok){let d={};try{d=await res.json()}catch{}throw new Error(d.detail||"MP4 conversion failed.");}const out=await res.blob();setMp4Url(URL.createObjectURL(out));}
