@@ -9,154 +9,601 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="/gpsc-guidance-recorder.webmanifest">
 <link rel="icon" href="/gpsc-recorder-icon.svg" type="image/svg+xml">
-<meta name="description" content="OfficerLab GPSC Guidance webcam and microphone recorder">
-<title>GPSC Guidance — Face Cam Recorder | OfficerLab</title>
+<meta name="description" content="OfficerLab Lecture Studio — camera, screen, presentation and microphone recording">
+<title>OfficerLab Lecture Studio | GPSC Guidance</title>
 <style>
-:root{color-scheme:dark;--bg:#0d1117;--panel:#161b22;--panel2:#1b2230;--line:#2a3140;--text:#e6edf3;--muted:#9aa7b4;--blue:#2f81f7;--red:#f85149;--green:#3fb950}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
-header{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:center;flex-wrap:wrap}h1{font-size:18px;margin:0;font-weight:700}.tag{font-size:12px;color:var(--muted);border:1px solid var(--line);padding:4px 9px;border-radius:30px}
-main{max-width:1400px;margin:auto;padding:16px;display:grid;grid-template-columns:minmax(0,1.7fr) minmax(290px,1fr);gap:16px}.card{min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:14px}.card h2{font-size:13px;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;margin:0 0 12px}
-.stage{background:#000;border-radius:12px;aspect-ratio:16/9;position:relative;overflow:hidden;display:grid;place-items:center}#preview{width:100%;height:100%;object-fit:cover;transform:scaleX(-1);display:none}.placeholder{text-align:center;padding:20px;color:var(--muted);line-height:1.7}.badge{display:none;position:absolute;top:10px;left:10px;background:#000b;border:1px solid #ffffff30;border-radius:30px;padding:6px 11px;font-size:13px}.badge.on{display:flex;gap:8px;align-items:center}.dot{background:var(--red);width:9px;height:9px;border-radius:50%;animation:pulse 1s infinite}@keyframes pulse{50%{opacity:.3}}.mirror{position:absolute;bottom:8px;right:10px;color:#ffffff80;font-size:11px}
-.controls{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}button{font:inherit;font-weight:650;border-radius:10px;padding:10px 14px;border:1px solid var(--line);background:var(--panel2);color:var(--text);cursor:pointer}button:disabled{opacity:.4;cursor:not-allowed}button.primary{background:var(--blue);border-color:var(--blue);color:white}button.danger{background:var(--red);border-color:var(--red);color:white}.devices{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:13px}label{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:5px}select,textarea{width:100%;font:inherit;color:var(--text);background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:10px}textarea{min-height:200px;line-height:1.6;resize:vertical}.hint{font-size:12px;color:var(--muted);line-height:1.55;margin:8px 0 0}.error{display:none;background:#f8514920;border:1px solid #f8514980;color:#ffb3ae;border-radius:10px;padding:11px;margin-top:12px;font-size:13px}
-#recList{display:flex;flex-direction:column;gap:10px;max-height:460px;overflow:auto}.empty{text-align:center;padding:24px 10px;color:var(--muted);font-size:13px}.rec{display:grid;grid-template-columns:112px minmax(0,1fr);gap:10px;align-items:center;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:9px}.rec video{width:112px;aspect-ratio:16/9;background:#000;object-fit:cover;border-radius:7px}.meta{font-size:12px;color:var(--muted);min-width:0;line-height:1.5}.meta strong{display:block;color:var(--text);overflow-wrap:anywhere}.actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}.actions a,.actions button{font-size:12px;padding:5px 9px;border-radius:7px;text-decoration:none}.actions a{background:var(--green);border:1px solid var(--green);color:#06220e}
-@media(max-width:900px){main{grid-template-columns:1fr}}@media(max-width:520px){main{padding:10px;gap:10px}.card{padding:11px}.devices{grid-template-columns:1fr}.controls button{flex:1}.rec{grid-template-columns:94px minmax(0,1fr)}.rec video{width:94px}}
-
-.slide-panel{margin-top:14px;padding:12px;background:var(--panel2);border:1px solid var(--line);border-radius:11px}
-.slide-panel h3{margin:0 0 9px;font-size:13px;color:var(--text)}
-.slide-top{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
-.slide-top input{min-width:0;flex:1;font:inherit;font-size:13px;color:var(--text);max-width:100%}
-.slide-nav{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}
-.slide-nav button{padding:8px 12px}
-.slide-count{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
-.slide-check{display:flex;align-items:center;gap:7px;margin-left:auto;font-size:12px;color:var(--muted);text-transform:none;letter-spacing:0}
-.slide-check input{accent-color:var(--blue)}
-#compositeCanvas{display:none;width:100%;height:100%;object-fit:contain;background:#000}
-@media(max-width:520px){.slide-check{margin-left:0;width:100%}.slide-top input{width:100%;flex-basis:100%}}
-
-/* Landscape-first teaching layout and compact floating tools */
-main{padding-bottom:112px}
-.orientation-hint{margin:12px auto 0;max-width:1400px;padding:10px 14px;border:1px solid #2f81f766;background:#2f81f71a;color:#c6dcff;border-radius:10px;font-size:13px;display:flex;align-items:center;gap:10px;justify-content:space-between}
-.orientation-hint button{font-size:12px;padding:7px 10px;white-space:nowrap}
-@media (orientation:landscape){.orientation-hint{display:none}}
-.controls{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 8px);z-index:80;width:max-content;max-width:calc(100vw - 16px);justify-content:center;flex-wrap:wrap;padding:8px;background:#101722ed;border:1px solid #ffffff24;border-radius:14px;box-shadow:0 8px 30px #0009;backdrop-filter:blur(12px);margin:0}
-.controls button{min-height:46px}
-#compositeCanvas{position:absolute;inset:0}#annotationCanvas{position:absolute;inset:0;width:100%;height:100%;z-index:4;display:none;touch-action:none}
-#annotationFab{position:absolute;left:12px;bottom:12px;z-index:7;width:50px;height:50px;border-radius:50%;padding:0;display:none;align-items:center;justify-content:center;background:var(--blue);color:#fff;border:2px solid #ffffff80;font-size:22px;box-shadow:0 5px 20px #0008}
-#toolTray{position:absolute;left:12px;bottom:72px;z-index:8;width:min(320px,calc(100% - 24px));padding:11px;border-radius:13px;background:#111923f2;border:1px solid #ffffff35;box-shadow:0 8px 28px #0009;backdrop-filter:blur(12px)}
+:root{color-scheme:dark;--bg:#0d1117;--panel:#161b22;--panel2:#1b2230;--line:#2a3140;--text:#e6edf3;--muted:#9aa7b4;--blue:#2f81f7;--red:#f85149;--green:#3fb950;--amber:#d29922}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+header{padding:12px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+h1{font-size:17px;margin:0;font-weight:750}.brand-sub{font-size:11px;color:var(--muted)}
+.tag{font-size:11px;color:var(--muted);border:1px solid var(--line);padding:4px 9px;border-radius:30px}
+button,select,input,textarea{font:inherit}
+button{font-weight:650;border-radius:10px;padding:10px 13px;border:1px solid var(--line);background:var(--panel2);color:var(--text);cursor:pointer;min-height:42px}
+button:disabled{opacity:.38;cursor:not-allowed}
+button.primary{background:var(--blue);border-color:var(--blue);color:white}
+button.danger{background:var(--red);border-color:var(--red);color:white}
+button.success{background:var(--green);border-color:var(--green);color:#06220e}
+button.active{border-color:var(--blue);background:#17345d}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid #2f81f7;outline-offset:2px}
+.orientation-hint{margin:10px auto;max-width:1500px;padding:9px 13px;border:1px solid #2f81f766;background:#2f81f71a;color:#c6dcff;border-radius:10px;font-size:12px;display:flex;align-items:center;gap:10px;justify-content:space-between}
+.orientation-hint button{padding:6px 10px;min-height:34px;font-size:12px}
+@media(orientation:landscape){.orientation-hint{display:none}}
+main{max-width:1600px;margin:auto;padding:14px 14px 116px;display:grid;grid-template-columns:minmax(0,1.8fr) minmax(300px,.8fr);gap:14px}
+.card{min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:13px}
+.card h2{font-size:12px;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;margin:0 0 10px}
+.stage{position:relative;background:#000;border-radius:11px;overflow:hidden;aspect-ratio:16/9;display:grid;place-items:center;isolation:isolate}
+#compositeCanvas{width:100%;height:100%;display:block;object-fit:contain;background:#000}
+#annotationCanvas{position:absolute;inset:0;width:100%;height:100%;z-index:4;touch-action:none;pointer-events:none}
+#annotationCanvas.enabled{pointer-events:auto}
+#cameraVideo,#screenVideo{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;left:-5px;top:-5px}
+.stage-placeholder{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;color:#a5b0bd;padding:20px;line-height:1.65;pointer-events:none}
+.rec-badge{display:none;position:absolute;left:10px;top:10px;z-index:9;align-items:center;gap:7px;background:#000c;border:1px solid #ffffff30;border-radius:30px;padding:6px 10px;font-size:12px;font-variant-numeric:tabular-nums}
+.rec-badge.on{display:flex}.rec-dot{width:9px;height:9px;border-radius:50%;background:var(--red);animation:pulse 1s infinite}@keyframes pulse{50%{opacity:.25}}
+#pipHandle{position:absolute;z-index:6;display:none;aspect-ratio:16/9;border:2px solid #ffffffb0;border-radius:10px;box-shadow:0 3px 16px #0009;pointer-events:none}
+#pipHandle .drag-bar{position:absolute;left:0;right:0;top:0;height:27px;background:#06101dcc;border-radius:7px 7px 0 0;display:flex;align-items:center;justify-content:center;font-size:11px;color:white;pointer-events:auto;touch-action:none;cursor:move}
+#annotationFab{position:absolute;left:10px;bottom:10px;z-index:8;width:48px;height:48px;border-radius:50%;padding:0;display:none;align-items:center;justify-content:center;background:var(--blue);color:#fff;border:2px solid #ffffff80;font-size:22px;box-shadow:0 5px 20px #0008}
+#toolTray{position:absolute;left:10px;bottom:66px;z-index:10;width:min(330px,calc(100% - 20px));padding:10px;border-radius:12px;background:#111923f2;border:1px solid #ffffff35;box-shadow:0 8px 28px #0009;backdrop-filter:blur(12px)}
 #toolTray[hidden]{display:none}
-.tool-row{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-bottom:9px}
-.tool-row:last-child{margin-bottom:0}
-.tool-row button{min-width:44px;min-height:44px;padding:8px 10px}
-.tool-row button.active{background:var(--blue);border-color:var(--blue);color:#fff}
-.tool-row label{margin:0;min-width:100%;font-size:11px}
-.tool-row input[type=color]{width:46px;height:44px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);padding:3px}
+.tool-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:8px}.tool-row:last-child{margin-bottom:0}
+.tool-row button{min-width:44px;min-height:42px;padding:7px 9px;font-size:12px}
+.tool-row button.active{background:var(--blue);border-color:var(--blue)}
+.tool-row label{margin:0;min-width:100%;font-size:10px;color:var(--muted)}
+.tool-row input[type=color]{width:45px;height:40px;padding:3px;border:1px solid var(--line);border-radius:8px;background:var(--panel2)}
 .tool-row input[type=range]{width:100%;height:34px;accent-color:var(--blue);touch-action:pan-x}
-.tool-val{margin-left:auto;color:var(--muted);font-size:12px}
-@media(max-width:700px){.orientation-hint{margin:10px;padding:9px 11px}.controls{width:calc(100% - 12px);bottom:calc(env(safe-area-inset-bottom,0px) + 5px);gap:6px}.controls button{flex:1;min-width:0;padding:9px 8px;font-size:12px;min-height:48px}main{padding-bottom:125px}.tool-row button{min-width:48px;min-height:48px}.tool-row input[type=range]{height:42px}}
-@media(max-height:450px) and (orientation:landscape){main{padding:8px 8px 90px;grid-template-columns:minmax(0,1fr) minmax(230px,.42fr);gap:8px}.card{padding:9px}.card h2{margin-bottom:7px}.stage{max-height:calc(100vh - 155px)}.controls{bottom:4px}.orientation-hint{display:none}}
+.tool-val{margin-left:auto;color:var(--muted);font-size:11px}
+.capture-panel{display:flex;gap:9px;align-items:end;flex-wrap:wrap;margin-top:12px}
+.field{flex:1;min-width:145px}.field label,.field-label{display:block;font-size:10px;color:var(--muted);letter-spacing:.07em;text-transform:uppercase;margin:0 0 5px}
+select,textarea,input[type=text]{width:100%;padding:9px 10px;border-radius:9px;background:var(--panel2);color:var(--text);border:1px solid var(--line);font-size:13px}
+textarea{min-height:150px;resize:vertical;line-height:1.6}
+.device-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px}
+.device-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}.device-actions button{flex:1}
+.audio-panel{display:flex;align-items:center;gap:9px;margin-top:10px;padding:9px 10px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;flex-wrap:wrap}
+.meter{height:9px;min-width:90px;flex:1;border-radius:10px;background:#080d14;overflow:hidden;border:1px solid #ffffff12}
+#meterFill{height:100%;width:0;background:linear-gradient(90deg,#3fb950 0%,#d29922 72%,#f85149 95%);transition:width .08s}
+.small{font-size:11px;color:var(--muted)}
+.check{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);text-transform:none;letter-spacing:0}
+.check input{accent-color:var(--blue);width:17px;height:17px}
+.layout-panel,.slide-panel{margin-top:11px;padding:10px;background:var(--panel2);border:1px solid var(--line);border-radius:11px}
+.layout-row,.slide-nav{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.layout-row button,.slide-nav button{padding:7px 10px;min-height:38px;font-size:12px}
+.layout-row button.active{background:var(--blue);border-color:var(--blue)}
+.slide-top{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.slide-top input{flex:1;min-width:160px;color:var(--muted);font-size:12px}
+.slide-nav{margin-top:9px}.slide-count{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.error{display:none;background:#f8514920;border:1px solid #f8514980;color:#ffb3ae;border-radius:10px;padding:10px;margin-top:10px;font-size:12px}
+.hint{font-size:11px;color:var(--muted);line-height:1.5;margin:7px 0 0}
+#recList{display:flex;flex-direction:column;gap:9px;max-height:420px;overflow:auto}
+.empty{padding:20px 9px;text-align:center;color:var(--muted);font-size:12px;line-height:1.55}
+.rec{display:grid;grid-template-columns:100px minmax(0,1fr);gap:9px;align-items:center;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px}
+.rec video{width:100px;aspect-ratio:16/9;background:#000;border-radius:6px}
+.meta{min-width:0;color:var(--muted);font-size:11px;line-height:1.5}.meta strong{display:block;color:var(--text);overflow-wrap:anywhere}
+.actions{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}.actions a,.actions button{font-size:11px;padding:5px 8px;min-height:30px;text-decoration:none}
+.actions a{background:var(--green);border:1px solid var(--green);color:#06220e;border-radius:7px}
+.recovery{padding:9px;border:1px solid #d2992270;background:#d2992214;border-radius:9px;margin-bottom:8px;font-size:12px}
+.sticky-controls{position:fixed;z-index:50;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 7px);width:max-content;max-width:calc(100vw - 12px);display:flex;gap:7px;flex-wrap:wrap;justify-content:center;padding:7px;background:#101722ed;border:1px solid #ffffff25;border-radius:13px;box-shadow:0 8px 30px #0009;backdrop-filter:blur(12px)}
+.sticky-controls button{min-height:47px}
+.screen-note{font-size:11px;color:var(--muted);margin-top:8px}
+@media(max-width:950px){main{grid-template-columns:1fr}}
+@media(max-width:650px){header{padding:10px 12px}h1{font-size:15px}main{padding:9px 9px 132px;gap:9px}.card{padding:10px}.device-grid{grid-template-columns:1fr}.sticky-controls{width:calc(100% - 10px);bottom:calc(env(safe-area-inset-bottom,0px) + 4px);gap:5px}.sticky-controls button{flex:1;min-width:0;padding:8px 7px;font-size:11px;min-height:49px}.layout-row button{flex:1}.tool-row button{min-width:47px;min-height:47px}.tool-row input[type=range]{height:42px}.rec{grid-template-columns:82px minmax(0,1fr)}.rec video{width:82px}}
+@media(max-height:480px) and (orientation:landscape){main{padding:7px 7px 85px;grid-template-columns:minmax(0,1.55fr) minmax(235px,.65fr);gap:7px}.card{padding:8px}.stage{max-height:calc(100vh - 190px)}.sticky-controls{bottom:3px}.orientation-hint{display:none}}
 </style>
 </head>
 <body>
-<header><h1>🎥 GPSC Guidance — Face Cam Recorder</h1><span class="tag">OfficerLab · Local recording · No upload</span><button id="installApp" type="button" hidden style="margin-left:auto;padding:7px 11px;font-size:12px">⬇ Install App</button></header>
+<header>
+  <div><h1>🎥 OfficerLab Lecture Studio</h1><div class="brand-sub">GPSC Guidance · Local-first recording</div></div>
+  <span class="tag">16:9 · 1080p / 30fps target</span>
+  <button id="installApp" type="button" hidden style="margin-left:auto;padding:6px 10px;font-size:11px">⬇ Install App</button>
+</header>
 <div class="orientation-hint" id="orientationHint">
-  <span>📱 For YouTube lectures, rotate your phone to <b>Landscape (16:9)</b>. Turn on Auto-rotate if needed.</span>
+  <span>📱 YouTube lecture માટે ફોન આડો <b>Landscape (16:9)</b> રાખો. Auto-rotate ચાલુ કરો.</span>
   <button id="dismissOrientation" type="button">Got it</button>
 </div>
 <main>
 <section class="card">
-<h2>Camera & Recording</h2>
-<div class="stage"><video id="preview" autoplay muted playsinline></video><canvas id="compositeCanvas" width="1280" height="720" aria-label="Slide and face camera composite preview"></canvas><canvas id="annotationCanvas" width="1280" height="720" aria-label="Teaching annotations"></canvas><button id="annotationFab" type="button" aria-label="Open teaching tools" title="Teaching tools">✎</button><div id="toolTray" hidden>
-<div class="tool-row"><button type="button" data-tool="pen" class="active">✎ Pen</button><button type="button" data-tool="eraser">⌫ Eraser</button><button type="button" data-tool="text">T Text</button><button type="button" id="clearInk">Clear</button></div>
-<div class="tool-row"><label for="inkColor">Pen colour</label><input type="color" id="inkColor" value="#ff3b30"><label for="inkWidth">Pen size</label><input type="range" id="inkWidth" min="2" max="24" value="6"><span class="tool-val" id="inkWidthVal">6 px</span></div>
-<div class="tool-row"><label for="faceSize">Face cam size <span class="tool-val" id="faceSizeVal">25%</span></label><input type="range" id="faceSize" min="16" max="42" value="25"></div>
-<div class="tool-row"><label for="faceOpacity">Camera transparency <span class="tool-val" id="faceOpacityVal">100%</span></label><input type="range" id="faceOpacity" min="35" max="100" value="100"></div>
-</div><div class="placeholder" id="placeholder">Camera is off.<br><b>Start Camera</b> to begin.</div><div class="badge" id="badge"><span class="dot"></span>REC <span id="timer">00:00</span></div><div class="mirror">Mirrored preview · normal recording</div></div>
-<div class="slide-panel">
-<h3>📊 Slide Presentation + Face Cam</h3>
-<div class="slide-top"><input id="slidesInput" type="file" accept="application/pdf,image/*" multiple aria-label="Upload PDF or slide images"><span class="hint" style="margin:0">PDF or slide images · PPT/PPTX: export to PDF first</span></div>
-<div class="slide-nav">
-<button id="prevSlide" disabled>← Previous</button><span class="slide-count" id="slideCount">No presentation loaded</span><button id="nextSlide" disabled>Next →</button>
-<label class="slide-check"><input type="checkbox" id="showFacecam" checked> Show face camera on slides</label><button id="clearSlides" disabled>✕ Clear slides</button>
-</div>
-<p class="hint">Upload a PDF deck or multiple slide images. The camera appears as a picture-in-picture overlay. Recording captures the slides, face camera and microphone together.</p>
-</div>
-<div class="controls">
-<button class="primary" id="cam">▶ Start Camera</button><button id="record" disabled>⏺ Start Recording</button><button id="pause" disabled>Ⅱ Pause</button><button id="full">⛶ Fullscreen</button>
-</div>
-<div class="devices"><div><label for="camera">Camera</label><select id="camera" disabled><option value="">Default camera</option></select></div><div><label for="microphone">Microphone</label><select id="microphone" disabled><option value="">Default microphone</option></select></div></div>
-<div class="error" id="error" role="alert"></div>
-<p class="hint">Use this page over HTTPS in Chrome and allow camera and microphone access. Recordings stay in this browser session until you download them; they are not uploaded to OfficerLab.</p>
+  <h2>Recording Stage</h2>
+  <div class="stage" id="stage">
+    <canvas id="compositeCanvas" width="1920" height="1080" aria-label="Lecture recording preview"></canvas>
+    <canvas id="annotationCanvas" width="1920" height="1080" aria-label="Teaching annotations"></canvas>
+    <video id="cameraVideo" autoplay muted playsinline></video>
+    <video id="screenVideo" autoplay muted playsinline></video>
+    <div id="pipHandle"><div class="drag-bar" id="pipDragBar">⠿ Drag Face Cam</div></div>
+    <button id="annotationFab" type="button" aria-label="Open teaching tools" title="Teaching tools">✎</button>
+    <div id="toolTray" hidden>
+      <div class="tool-row"><button type="button" data-tool="pen" class="active">✎ Pen</button><button type="button" data-tool="eraser">⌫ Eraser</button><button type="button" data-tool="text">T Text</button><button type="button" id="clearInk">Clear</button></div>
+      <div class="tool-row"><label for="inkColor">Pen colour</label><input type="color" id="inkColor" value="#ff3b30"><label for="inkWidth">Pen thickness</label><input type="range" id="inkWidth" min="3" max="32" value="9"><span class="tool-val" id="inkWidthVal">9 px</span></div>
+    </div>
+    <div class="stage-placeholder" id="placeholder">Choose a capture mode, start the required source,<br>and your lecture preview will appear here.</div>
+    <div class="rec-badge" id="badge"><span class="rec-dot"></span>REC <span id="timer">00:00</span><span id="recResolution">1920×1080</span></div>
+  </div>
+
+  <div class="capture-panel">
+    <div class="field"><label for="captureMode">Capture mode</label><select id="captureMode">
+      <option value="camera">Camera only</option>
+      <option value="screen">Screen / slides only</option>
+      <option value="screen-camera" selected>Screen + Face Cam (PiP)</option>
+    </select></div>
+    <div class="field"><label for="quality">Recording quality</label><select id="quality"><option value="1080">1080p · 30 fps</option><option value="720">720p · 30 fps</option><option value="480">480p · 30 fps</option></select></div>
+  </div>
+  <div class="device-grid">
+    <div class="field"><label for="cameraSelect">Camera input</label><select id="cameraSelect"><option value="">Default camera</option></select></div>
+    <div class="field"><label for="micSelect">Microphone input</label><select id="micSelect"><option value="">Default microphone</option></select></div>
+  </div>
+  <div class="device-actions">
+    <button id="cameraBtn">📷 Start Camera</button>
+    <button id="micBtn">🎙 Enable Microphone</button>
+    <button id="screenBtn">🖥 Share Screen</button>
+  </div>
+  <div class="audio-panel">
+    <span class="small" id="micStatus">Mic: off</span>
+    <div class="meter" role="meter" aria-label="Microphone input level" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="meterFill"></div></div>
+    <button id="muteBtn" type="button" disabled>Mute Mic</button>
+    <label class="check"><input id="includeSystemAudio" type="checkbox" checked> Include shared screen audio</label>
+  </div>
+  <div class="layout-panel">
+    <div class="field-label">Switch layout during recording</div>
+    <div class="layout-row" id="layoutButtons">
+      <button type="button" data-layout="pip" class="active">Slides + PiP</button>
+      <button type="button" data-layout="screen">Screen only</button>
+      <button type="button" data-layout="face">Face camera</button>
+      <button type="button" data-layout="split">Side-by-side</button>
+    </div>
+    <div class="layout-row" style="margin-top:8px">
+      <button type="button" data-position="br">PiP ↘</button><button type="button" data-position="bl">PiP ↙</button><button type="button" data-position="tr">PiP ↗</button><button type="button" data-position="tl">PiP ↖</button>
+      <label class="check"><input id="safeGuides" type="checkbox"> Safe-zone guides</label>
+      <label class="check"><input id="mirrorOutput" type="checkbox"> Mirror final camera</label>
+    </div>
+    <div class="tool-row" style="margin-top:8px">
+      <label for="faceSize">Face Cam width <span id="faceSizeVal" class="tool-val">18%</span></label>
+      <input type="range" id="faceSize" min="12" max="32" value="18">
+      <label for="faceOpacity">Face Cam opacity <span id="faceOpacityVal" class="tool-val">100%</span></label>
+      <input type="range" id="faceOpacity" min="35" max="100" value="100">
+    </div>
+    <p class="hint">Drag the “Drag Face Cam” handle in the preview to reposition the webcam overlay. Layout and PiP adjustments are included in the recording.</p>
+  </div>
+
+  <div class="slide-panel">
+    <h2 style="margin-bottom:8px">Presentation slides</h2>
+    <div class="slide-top"><input id="slidesInput" type="file" accept="application/pdf,image/*" multiple><span class="small">PDF or image files · PPT/PPTX: export to PDF first</span></div>
+    <div class="slide-nav"><button id="prevSlide" disabled>← Previous</button><span id="slideCount" class="slide-count">No slides loaded</span><button id="nextSlide" disabled>Next →</button><button id="clearSlides" disabled>Clear slides</button></div>
+    <p class="hint">PDF files render one page at a time. Image filenames are sorted naturally (slide-1, slide-2, slide-10).</p>
+  </div>
+  <div id="error" class="error" role="alert"></div>
+  <p class="screen-note">Screen capture depends on browser support. Camera and microphone permission require HTTPS. Screen sharing must be started by the presenter.</p>
 </section>
-<aside style="display:flex;flex-direction:column;gap:16px;min-width:0">
-<section class="card"><h2>Script / Talking Points</h2><textarea id="notes" placeholder="Paste your GPSC guidance outline here…&#10;&#10;1. Syllabus breakdown — Prelims vs Mains&#10;2. Source list & timeline&#10;3. Answer writing practice plan&#10;4. Common mistakes to avoid"></textarea><p class="hint">Notes are automatically saved in this browser on this device.</p></section>
-<section class="card"><h2>Recordings <span id="count"></span></h2><div id="recList"><div class="empty" id="empty">No recordings yet.<br>Start the camera, then press Start Recording.</div></div></section>
+
+<aside style="display:flex;flex-direction:column;gap:13px;min-width:0">
+  <section class="card"><h2>Script / Talking Points</h2><textarea id="notes" placeholder="Paste your GPSC lecture outline here…&#10;&#10;1. Introduction&#10;2. Key concepts&#10;3. Examples and diagrams&#10;4. Revision questions"></textarea><p class="hint">Notes auto-save in this browser.</p></section>
+  <section class="card"><h2>Recordings & Recovery</h2><div id="recoveryList"></div><div id="recList"><div class="empty" id="empty">No recordings yet.<br>Start a capture source and press Start Recording.</div></div></section>
+  <section class="card"><h2>Pre-recording checklist</h2>
+    <div class="small" style="line-height:1.9">
+      <div>☐ Camera at eye level, head and shoulders visible</div>
+      <div>☐ Light in front of your face</div>
+      <div>☐ Quiet room and microphone level checked</div>
+      <div>☐ Slides readable in 16:9 landscape</div>
+      <div>☐ Webcam overlay not covering slide text</div>
+    </div>
+    <p class="hint">Tip: record a short test clip and play it back before your full lecture.</p>
+  </section>
 </aside>
 </main>
+
+<div class="sticky-controls" id="stickyControls">
+  <button id="testBtn">🧪 30s Test</button>
+  <button id="recordBtn" class="primary" disabled>⏺ Start Recording</button>
+  <button id="pauseBtn" disabled>Ⅱ Pause</button>
+  <button id="stopBtn" class="danger" disabled>■ Stop</button>
+  <button id="fullscreenBtn">⛶ Full Screen</button>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
 (()=>{'use strict';
-const el=id=>document.getElementById(id),preview=el('preview'),placeholder=el('placeholder'),cam=el('cam'),record=el('record'),pause=el('pause'),camera=el('camera'),microphone=el('microphone'),badge=el('badge'),timer=el('timer'),error=el('error'),recList=el('recList'),empty=el('empty'),notes=el('notes');
-const compositeCanvas=el('compositeCanvas'),compositeCtx=compositeCanvas.getContext('2d'),slidesInput=el('slidesInput'),prevSlide=el('prevSlide'),nextSlide=el('nextSlide'),slideCount=el('slideCount'),showFacecam=el('showFacecam'),clearSlides=el('clearSlides');
-const annotationCanvas=el('annotationCanvas'),annotationCtx=annotationCanvas.getContext('2d'),annotationFab=el('annotationFab'),toolTray=el('toolTray'),inkColor=el('inkColor'),inkWidth=el('inkWidth'),inkWidthVal=el('inkWidthVal'),faceSize=el('faceSize'),faceSizeVal=el('faceSizeVal'),faceOpacity=el('faceOpacity'),faceOpacityVal=el('faceOpacityVal');
-let stream=null,recorder=null,chunks=[],started=0,ticker=null,recording=false,paused=false;
-let slides=[],slideIndex=0,slideSource=null,slideUrls=[],pdfDoc=null,drawFrame=0,captureStreamForRecorder=null,activeTool='pen',drawing=false,lastPoint=null;
-const saved=[];
-const showError=m=>{error.textContent=m;error.style.display='block'},clearError=()=>{error.textContent='';error.style.display='none'};
-const clock=ms=>{const s=Math.floor(ms/1000);return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')};
-const size=n=>n<1024?n+' B':n<1048576?(n/1024).toFixed(1)+' KB':(n/1048576).toFixed(1)+' MB';
+const $=id=>document.getElementById(id);
+const cameraVideo=$('cameraVideo'),screenVideo=$('screenVideo'),canvas=$('compositeCanvas'),ctx=canvas.getContext('2d',{alpha:false});
+const inkCanvas=$('annotationCanvas'),ink=inkCanvas.getContext('2d'),stage=$('stage'),placeholder=$('placeholder');
+const captureMode=$('captureMode'),quality=$('quality'),cameraSelect=$('cameraSelect'),micSelect=$('micSelect');
+const cameraBtn=$('cameraBtn'),micBtn=$('micBtn'),screenBtn=$('screenBtn'),recordBtn=$('recordBtn'),pauseBtn=$('pauseBtn'),stopBtn=$('stopBtn');
+const muteBtn=$('muteBtn'),meterFill=$('meterFill'),micStatus=$('micStatus'),badge=$('badge'),timer=$('timer'),error=$('error');
+const slidesInput=$('slidesInput'),prevSlide=$('prevSlide'),nextSlide=$('nextSlide'),slideCount=$('slideCount'),clearSlides=$('clearSlides');
+const annotationFab=$('annotationFab'),toolTray=$('toolTray'),pipHandle=$('pipHandle'),pipDragBar=$('pipDragBar');
+const faceSize=$('faceSize'),faceOpacity=$('faceOpacity'),safeGuides=$('safeGuides'),mirrorOutput=$('mirrorOutput');
+const recList=$('recList'),empty=$('empty'),recoveryList=$('recoveryList');
+let cameraStream=null,micStream=null,screenStream=null,recorder=null,recordTimer=null,meterRAF=0,drawRAF=0;
+let audioContext=null,audioDestination=null,micGain=null,screenGain=null,micAnalyser=null,micSource=null,screenAudioSource=null;
+let layout='pip',pip={x:.77,y:.73},activeTool='pen',drawing=false,slides=[],slideIndex=0,pdfDoc=null,slideSource=null,slideUrls=[];
+let sessionId=null,chunkIndex=0,writeQueue=Promise.resolve(),localChunks=[],recording=false,paused=false,startedAt=0,testTimeout=null;
+let saved=[],recoveryItems=[];
+const showError=message=>{error.textContent=message;error.style.display='block'};
+const clearError=()=>{error.textContent='';error.style.display='none'};
+const clock=ms=>{const sec=Math.max(0,Math.floor(ms/1000));return String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0')};
+const fileSize=bytes=>bytes<1024?bytes+' B':bytes<1048576?(bytes/1024).toFixed(1)+' KB':(bytes/1048576).toFixed(1)+' MB';
 const stamp=()=>{const d=new Date(),p=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'_'+p(d.getHours())+p(d.getMinutes())+p(d.getSeconds())};
-function supportedMime(){if(!window.MediaRecorder)return null;for(const t of ['video/webm;codecs=vp8,opus','video/webm','video/mp4'])try{if(MediaRecorder.isTypeSupported(t))return t}catch{}return ''}
-async function devices(){try{const ds=await navigator.mediaDevices.enumerateDevices();for(const [sel,kind,label] of [[camera,'videoinput','Camera'],[microphone,'audioinput','Microphone']]){const old=sel.value;sel.replaceChildren(new Option('Default '+label.toLowerCase(),''));ds.filter(d=>d.kind===kind).forEach((d,i)=>sel.add(new Option(d.label||label+' '+(i+1),d.deviceId)));if([...sel.options].some(o=>o.value===old))sel.value=old;sel.disabled=!stream||recording}}catch{}}
-function syncStage(){const hasSlides=slides.length>0;compositeCanvas.style.display=hasSlides?'block':'none';annotationCanvas.style.display=hasSlides?'block':'none';annotationFab.style.display=hasSlides?'flex':'none';preview.style.display=stream&&!hasSlides?'block':'none';placeholder.style.display=!stream&&!hasSlides?'block':'none';}
-function saveInkForSlide(){if(slides[slideIndex]&&annotationCanvas)slides[slideIndex].ink=annotationCanvas.toDataURL('image/png');}
-function restoreInkForSlide(){annotationCtx.clearRect(0,0,1280,720);const src=slides[slideIndex]?.ink;if(src){const im=new Image();im.onload=()=>annotationCtx.drawImage(im,0,0,1280,720);im.src=src;}}
-function getInkPoint(e){const r=annotationCanvas.getBoundingClientRect();return{x:(e.clientX-r.left)*annotationCanvas.width/r.width,y:(e.clientY-r.top)*annotationCanvas.height/r.height};}
-function inkStart(e){if(!activeTool||!slides.length||!toolTray.hidden)return;if(activeTool==='text'){const value=prompt('Enter slide text:');if(value){const p=getInkPoint(e);annotationCtx.save();annotationCtx.fillStyle=inkColor.value;annotationCtx.font='bold 34px system-ui';annotationCtx.shadowColor='#000';annotationCtx.shadowBlur=4;annotationCtx.fillText(value,p.x,p.y);annotationCtx.restore();}saveInkForSlide();return;}drawing=true;lastPoint=getInkPoint(e);annotationCanvas.setPointerCapture(e.pointerId);annotationCtx.beginPath();annotationCtx.moveTo(lastPoint.x,lastPoint.y);}
-function inkMove(e){if(!drawing)return;const p=getInkPoint(e);annotationCtx.save();annotationCtx.lineCap='round';annotationCtx.lineJoin='round';annotationCtx.lineWidth=Number(inkWidth.value);annotationCtx.globalCompositeOperation=activeTool==='eraser'?'destination-out':'source-over';annotationCtx.strokeStyle=inkColor.value;annotationCtx.lineTo(p.x,p.y);annotationCtx.stroke();annotationCtx.restore();lastPoint=p;}
-function inkEnd(){if(!drawing)return;drawing=false;annotationCtx.closePath();saveInkForSlide();}
-
-function updateSlideControls(){const total=slides.length;slideCount.textContent=total?'Slide '+(slideIndex+1)+' / '+total:'No presentation loaded';prevSlide.disabled=total===0||slideIndex===0;nextSlide.disabled=total===0||slideIndex>=total-1;clearSlides.disabled=total===0;}
-function stopDrawLoop(){if(drawFrame)cancelAnimationFrame(drawFrame);drawFrame=0}
-function drawRoundedVideo(ctx,video,x,y,w,h,r){if(!video||!video.videoWidth||!showFacecam.checked||!stream)return;ctx.save();ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.clip();ctx.drawImage(video,x,y,w,h);ctx.restore();ctx.strokeStyle='rgba(255,255,255,.85)';ctx.lineWidth=3;ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.stroke();ctx.fillStyle='rgba(0,0,0,.55)';ctx.fillRect(x,y+h-27,w,27);ctx.fillStyle='#fff';ctx.font='bold 16px system-ui';ctx.fillText('GPSC Guidance',x+10,y+h-8);}
-function drawComposite(){const ctx=compositeCtx,W=compositeCanvas.width,H=compositeCanvas.height;ctx.fillStyle='#111827';ctx.fillRect(0,0,W,H);if(slideSource){const sw=slideSource.width||slideSource.naturalWidth||W,sh=slideSource.height||slideSource.naturalHeight||H;if(sw&&sh){const scale=Math.min(W/sw,H/sh),dw=sw*scale,dh=sh*scale;ctx.fillStyle='#080b10';ctx.fillRect(0,0,W,H);ctx.drawImage(slideSource,(W-dw)/2,(H-dh)/2,dw,dh);}}if(annotationCanvas.style.display!=='none')ctx.drawImage(annotationCanvas,0,0,W,H);const fw=W*Number(faceSize.value)/100,fh=fw*9/16,fx=W-fw-28,fy=H-fh-28;ctx.save();ctx.globalAlpha=Number(faceOpacity.value)/100;drawRoundedVideo(ctx,preview,fx,fy,fw,fh,14);ctx.restore();drawFrame=requestAnimationFrame(drawComposite);}
-function startDrawLoop(){stopDrawLoop();drawComposite()}
-async function showSlide(index){if(index<0||index>=slides.length)return;if(slides.length)saveInkForSlide();slideIndex=index;const item=slides[index];if(item.kind==='pdf'){const page=await pdfDoc.getPage(item.page);const base=page.getViewport({scale:1});const scale=Math.min(2,1280/base.width);const viewport=page.getViewport({scale});const c=document.createElement('canvas');c.width=Math.ceil(viewport.width);c.height=Math.ceil(viewport.height);await page.render({canvasContext:c.getContext('2d'),viewport}).promise;slideSource=c;}else{slideSource=item.image;}restoreInkForSlide();syncStage();updateSlideControls();if(!drawFrame)startDrawLoop();}
-async function loadSlides(files){clearError();stopDrawLoop();slides=[];slideSource=null;slideUrls.forEach(u=>URL.revokeObjectURL(u));slideUrls=[];pdfDoc=null;const list=[...files];if(!list.length){syncStage();updateSlideControls();return;}try{const pdfs=list.filter(f=>f.type==='application/pdf'||f.name.toLowerCase().endsWith('.pdf'));if(pdfs.length){if(list.length!==1)throw new Error('Upload one PDF at a time, or upload multiple slide images.');if(!window.pdfjsLib)throw new Error('The PDF viewer could not load. Check your internet connection and reload.');pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';pdfDoc=await pdfjsLib.getDocument({data:await pdfs[0].arrayBuffer()}).promise;slides=Array.from({length:pdfDoc.numPages},(_,i)=>({kind:'pdf',page:i+1}));}else{const imgs=list.filter(f=>f.type.startsWith('image/')).sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true,sensitivity:'base'}));if(!imgs.length)throw new Error('Please upload a PDF or slide image files.');for(const file of imgs){const url=URL.createObjectURL(file);slideUrls.push(url);const image=new Image();image.src=url;await image.decode();slides.push({kind:'image',image});}}slideIndex=0;await showSlide(0);showError('');}catch(e){slides=[];pdfDoc=null;slideSource=null;syncStage();updateSlideControls();showError('Could not load presentation: '+e.message);}}
-function stopStream(){if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;preview.srcObject=null;syncStage();cam.textContent='▶ Start Camera';cam.classList.add('primary');record.disabled=true;camera.disabled=microphone.disabled=true}
-async function startCamera(){clearError();if(!navigator.mediaDevices?.getUserMedia){showError('Camera access requires HTTPS. Open this link in Chrome, not from Downloads.');return}try{const v={width:{ideal:1280},height:{ideal:720},frameRate:{ideal:30}};if(camera.value)v.deviceId={exact:camera.value};else v.facingMode='user';const a={echoCancellation:true,noiseSuppression:true};if(microphone.value)a.deviceId={exact:microphone.value};stopStream();stream=await navigator.mediaDevices.getUserMedia({video:v,audio:a});preview.srcObject=stream;await preview.play().catch(()=>{});syncStage();cam.textContent='⏹ Stop Camera';cam.classList.remove('primary');record.disabled=false;await devices();if(slides.length&&!drawFrame)startDrawLoop()}catch(e){stopStream();const m=e.name==='NotAllowedError'||e.name==='SecurityError'?'Permission denied. Allow camera and microphone in Chrome site settings and make sure this page uses HTTPS.':e.name==='NotFoundError'?'No camera or microphone was found.':e.name==='NotReadableError'?'Camera or microphone is busy in another app. Close that app and retry.':e.name==='OverconstrainedError'?'Selected device is unavailable. Choose Default and retry.':'Could not start camera: '+e.message;showError(m)}}
-function startRecording(){clearError();if(!stream)return;const mime=supportedMime();if(mime===null){showError('This browser does not support MediaRecorder.');return}chunks=[];try{let inputStream=stream;if(slides.length){if(!compositeCanvas.captureStream)throw new Error('Canvas video recording is not supported in this browser.');if(!drawFrame)startDrawLoop();captureStreamForRecorder=compositeCanvas.captureStream(30);inputStream=new MediaStream([...captureStreamForRecorder.getVideoTracks(),...stream.getAudioTracks()]);}recorder=mime?new MediaRecorder(inputStream,{mimeType:mime}):new MediaRecorder(inputStream)}catch(e){if(captureStreamForRecorder){captureStreamForRecorder.getVideoTracks().forEach(t=>t.stop());captureStreamForRecorder=null}showError('Unable to start recording: '+e.message);return}recorder.ondataavailable=e=>{if(e.data?.size)chunks.push(e.data)};recorder.onerror=e=>{showError('Recording error: '+(e.error?.message||'unknown'));stopRecording()};recorder.onstop=()=>{const type=recorder?.mimeType||mime||'video/webm',blob=new Blob(chunks,{type}),duration=Date.now()-started;chunks=[];if(blob.size)addRecording(blob,duration,type);recorder=null;if(captureStreamForRecorder){captureStreamForRecorder.getVideoTracks().forEach(t=>t.stop());captureStreamForRecorder=null}};recorder.start(1000);started=Date.now();recording=true;paused=false;record.textContent='⏹ Stop Recording';record.classList.add('danger');pause.disabled=false;cam.disabled=true;camera.disabled=microphone.disabled=true;badge.classList.add('on');ticker=setInterval(()=>{if(!paused)timer.textContent=clock(Date.now()-started)},250)}
-function stopRecording(){if(!recording)return;recording=false;paused=false;clearInterval(ticker);ticker=null;badge.classList.remove('on');record.textContent='⏺ Start Recording';record.classList.remove('danger');pause.disabled=true;pause.textContent='Ⅱ Pause';cam.disabled=false;record.disabled=!stream;camera.disabled=microphone.disabled=!stream;if(recorder&&recorder.state!=='inactive')recorder.stop()}
-function addRecording(blob,duration,mime){const ext=mime.includes('mp4')?'mp4':'webm',name='gpsc-guidance-'+stamp()+'.'+ext,url=URL.createObjectURL(blob);saved.unshift({blob,url,name,duration});render()}
-function render(){recList.replaceChildren();el('count').textContent=saved.length?'('+saved.length+')':'';if(!saved.length){recList.append(empty);return}saved.forEach((r,i)=>{const box=document.createElement('div');box.className='rec';const vid=document.createElement('video');vid.src=r.url;vid.controls=true;vid.preload='metadata';vid.playsInline=true;const meta=document.createElement('div');meta.className='meta';const title=document.createElement('strong');title.textContent=r.name;const info=document.createElement('div');info.textContent=clock(r.duration)+' · '+size(r.blob.size);const actions=document.createElement('div');actions.className='actions';const link=document.createElement('a');link.href=r.url;link.download=r.name;link.textContent='⬇ Download';const del=document.createElement('button');del.textContent='✕ Delete';del.onclick=()=>{URL.revokeObjectURL(r.url);saved.splice(i,1);render()};actions.append(link,del);meta.append(title,info,actions);box.append(vid,meta);recList.append(box)})}
-cam.onclick=()=>{if(stream){stopStream()}else startCamera()};
-record.onclick=()=>recording?stopRecording():startRecording();
-pause.onclick=()=>{if(!recorder||!recording)return;if(!paused&&recorder.state==='recording'){recorder.pause();paused=true;pause.textContent='▶ Resume'}else if(paused&&recorder.state==='paused'){recorder.resume();paused=false;pause.textContent='Ⅱ Pause'}};
-camera.onchange=()=>{if(stream&&!recording)startCamera()};microphone.onchange=()=>{if(stream&&!recording)startCamera()};
+function setCanvasQuality(){const h=Number(quality.value);canvas.width=h===1080?1920:h===720?1280:854;canvas.height=h===1080?1080:h===720?720:480;inkCanvas.width=canvas.width;inkCanvas.height=canvas.height;}
+function modeNeedsCamera(){return captureMode.value==='camera'||captureMode.value==='screen-camera'}
+function modeNeedsScreen(){return captureMode.value==='screen'||captureMode.value==='screen-camera'}
+function baseAvailable(){return captureMode.value==='camera'?!!cameraStream:(!!screenStream||slides.length>0)}
+function updateControls(){
+ const mode=captureMode.value;recordBtn.disabled=recording||!baseAvailable()||(mode==='screen-camera'&&!cameraStream);
+ cameraBtn.disabled=recording;micBtn.disabled=recording;screenBtn.disabled=recording;
+ $('muteBtn').disabled=!micStream||recording;
+ $('cameraBtn').textContent=cameraStream?'⏹ Stop Camera':'📷 Start Camera';
+ $('micBtn').textContent=micStream?'✓ Microphone Ready':'🎙 Enable Microphone';
+ $('screenBtn').textContent=screenStream?'⏹ Stop Sharing':'🖥 Share Screen';
+ cameraSelect.disabled=!cameraStream||recording;micSelect.disabled=!micStream||recording;
+ const hasBase=baseAvailable();placeholder.style.display=hasBase?'none':'flex';
+ pipHandle.style.display=(captureMode.value==='screen-camera'&&cameraStream&&layout==='pip')?'block':'none';
+ $('layoutButtons').querySelectorAll('[data-layout]').forEach(b=>b.classList.toggle('active',b.dataset.layout===layout));
+ updatePipHandle();
+}
+function updatePipHandle(){
+ pipHandle.style.left=(pip.x*100)+'%';pipHandle.style.top=(pip.y*100)+'%';pipHandle.style.width=faceSize.value+'%';
+}
+function requestId(){return (crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+'-'+Math.random().toString(36).slice(2));}
+let dbPromise=null;
+function openDB(){
+ if(dbPromise)return dbPromise;
+ dbPromise=new Promise((resolve,reject)=>{
+  if(!indexedDB){reject(new Error('IndexedDB is unavailable'));return;}
+  const req=indexedDB.open('officerlab-lecture-recorder',1);
+  req.onupgradeneeded=()=>{const db=req.result;if(!db.objectStoreNames.contains('sessions'))db.createObjectStore('sessions',{keyPath:'id'});if(!db.objectStoreNames.contains('chunks'))db.createObjectStore('chunks',{keyPath:['sessionId','index']});};
+  req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error||new Error('Could not open local recording storage'));
+ });
+ return dbPromise;
+}
+async function dbAction(store,mode,action){
+ const db=await openDB();
+ return new Promise((resolve,reject)=>{
+  const tx=db.transaction(store,mode),obj=tx.objectStore(store);let result;
+  try{result=action(obj)}catch(e){reject(e);return;}
+  tx.oncomplete=()=>resolve(result?.result);tx.onerror=()=>reject(tx.error||new Error('Local storage transaction failed'));tx.onabort=()=>reject(tx.error||new Error('Local storage transaction aborted'));
+ });
+}
+const putSession=row=>dbAction('sessions','readwrite',s=>s.put(row));
+const putChunk=row=>dbAction('chunks','readwrite',s=>s.put(row));
+const getAllSessions=()=>dbAction('sessions','readonly',s=>s.getAll());
+const getAllChunks=()=>dbAction('chunks','readonly',s=>s.getAll());
+const deleteChunk=(id,index)=>dbAction('chunks','readwrite',s=>s.delete([id,index]));
+function getMime(){
+ if(!window.MediaRecorder)return null;
+ for(const type of ['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm','video/mp4'])try{if(MediaRecorder.isTypeSupported(type))return type}catch{}
+ return '';
+}
+function cover(ctx,video,x,y,w,h,mirror=false){
+ if(!video||!video.videoWidth||!video.videoHeight)return;
+ const scale=Math.max(w/video.videoWidth,h/video.videoHeight),sw=w/scale,sh=h/scale,sx=(video.videoWidth-sw)/2,sy=(video.videoHeight-sh)/2;
+ ctx.save();if(mirror){ctx.translate(x+w,y);ctx.scale(-1,1);ctx.drawImage(video,sx,sy,sw,sh,0,0,w,h)}else ctx.drawImage(video,sx,sy,sw,sh,x,y,w,h);ctx.restore();
+}
+function contain(ctx,source,x,y,w,h){
+ if(!source)return;
+ const sw=source.videoWidth||source.width||source.naturalWidth,sh=source.videoHeight||source.height||source.naturalHeight;if(!sw||!sh)return;
+ const scale=Math.min(w/sw,h/sh),dw=sw*scale,dh=sh*scale;ctx.drawImage(source,x+(w-dw)/2,y+(h-dh)/2,dw,dh);
+}
+function drawPip(x,y,w,h){
+ if(!cameraStream||!cameraVideo.videoWidth)return;
+ ctx.save();ctx.globalAlpha=Number(faceOpacity.value)/100;ctx.fillStyle='#000';ctx.fillRect(x,y,w,h);cover(ctx,cameraVideo,x,y,w,h,mirrorOutput.checked);
+ ctx.restore();ctx.save();ctx.strokeStyle='#ffffff';ctx.lineWidth=Math.max(3,canvas.width/640);ctx.strokeRect(x,y,w,h);ctx.restore();
+}
+function drawGuides(){
+ if(!safeGuides.checked)return;
+ ctx.save();ctx.strokeStyle='rgba(255,255,255,.5)';ctx.lineWidth=2;ctx.setLineDash([12,10]);ctx.strokeRect(canvas.width*.05,canvas.height*.06,canvas.width*.9,canvas.height*.88);ctx.beginPath();ctx.moveTo(canvas.width/2,0);ctx.lineTo(canvas.width/2,canvas.height);ctx.stroke();ctx.restore();
+}
+function drawScene(){
+ ctx.fillStyle='#05080d';ctx.fillRect(0,0,canvas.width,canvas.height);
+ const mode=captureMode.value;
+ const source=mode==='camera'?cameraVideo:(screenStream?screenVideo:slideSource);
+ if(layout==='face'||mode==='camera'){
+  if(cameraStream)cover(ctx,cameraVideo,0,0,canvas.width,canvas.height,mirrorOutput.checked);
+ }else if(layout==='split'&&cameraStream){
+  ctx.fillStyle='#080b10';ctx.fillRect(0,0,canvas.width,canvas.height);
+  if(source&&source!==cameraVideo)contain(ctx,source,0,0,canvas.width*.5,canvas.height);
+  cover(ctx,cameraVideo,canvas.width*.5,0,canvas.width*.5,canvas.height,mirrorOutput.checked);
+ }else{
+  if(source===screenVideo&&screenStream)contain(ctx,screenVideo,0,0,canvas.width,canvas.height);
+  else if(source)contain(ctx,source,0,0,canvas.width,canvas.height);
+  if(layout==='pip'&&mode==='screen-camera'&&cameraStream){
+   const w=canvas.width*Number(faceSize.value)/100,h=w*9/16;
+   drawPip(canvas.width*pip.x,canvas.height*pip.y,w,h);
+  }
+ }
+ if(slides.length&&captureMode.value!=='camera'&&inkCanvas.style.display!=='none')ctx.drawImage(inkCanvas,0,0,canvas.width,canvas.height);
+ if(layout==='pip'&&mode==='screen-camera'&&cameraStream&&slides.length===0&&screenStream&&inkCanvas.style.display!=='none')ctx.drawImage(inkCanvas,0,0,canvas.width,canvas.height);
+ drawGuides();
+ drawRAF=requestAnimationFrame(drawScene);
+}
+function startDraw(){if(drawRAF)cancelAnimationFrame(drawRAF);drawScene();}
+function stopDraw(){if(drawRAF)cancelAnimationFrame(drawRAF);drawRAF=0;}
+function syncVisuals(){
+ const annotationVisible=slides.length>0||!!screenStream;
+ inkCanvas.style.display=annotationVisible?'block':'none';
+ annotationFab.style.display=annotationVisible?'flex':'none';
+ updateControls();
+ if(!drawRAF)startDraw();
+}
+function drawMicMeter(){
+ if(!micAnalyser){meterFill.style.width='0%';meterRAF=requestAnimationFrame(drawMicMeter);return;}
+ const data=new Uint8Array(micAnalyser.fftSize);micAnalyser.getByteTimeDomainData(data);
+ let sum=0;for(const v of data){const n=(v-128)/128;sum+=n*n;}
+ const rms=Math.sqrt(sum/data.length);const level=Math.min(100,Math.round(rms*260));
+ meterFill.style.width=level+'%';meterFill.parentElement.setAttribute('aria-valuenow',String(level));
+ meterRAF=requestAnimationFrame(drawMicMeter);
+}
+async function createAudioGraph(){
+ if(audioContext)return;
+ const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
+ audioContext=new AC();audioDestination=audioContext.createMediaStreamDestination();micAnalyser=audioContext.createAnalyser();micAnalyser.fftSize=512;
+ if(meterRAF)cancelAnimationFrame(meterRAF);drawMicMeter();
+}
+async function connectMic(){
+ if(!micStream)return;
+ await createAudioGraph();if(!audioContext)return;
+ await audioContext.resume();
+ if(micSource){try{micSource.disconnect()}catch{}}
+ micSource=audioContext.createMediaStreamSource(micStream);micGain=audioContext.createGain();micGain.gain.value=$('muteBtn').dataset.muted==='true'?0:1;
+ micSource.connect(micAnalyser);micSource.connect(micGain);micGain.connect(audioDestination);
+ micStatus.textContent='Mic: ready';muteBtn.disabled=recording;micBtn.textContent='✓ Microphone Ready';
+}
+async function connectScreenAudio(){
+ if(!screenStream)return;
+ const tracks=screenStream.getAudioTracks();if(!tracks.length)return;
+ await createAudioGraph();if(!audioContext)return;
+ await audioContext.resume();if(screenAudioSource){try{screenAudioSource.disconnect()}catch{}}
+ screenAudioSource=audioContext.createMediaStreamSource(new MediaStream(tracks));screenGain=audioContext.createGain();screenGain.gain.value=1;screenAudioSource.connect(screenGain);screenGain.connect(audioDestination);
+}
+async function startCamera(){
+ clearError();if(cameraStream)return;
+ if(!navigator.mediaDevices?.getUserMedia){showError('Camera access requires a secure HTTPS page and a supported browser.');return;}
+ const h=Number(quality.value),v={width:{ideal:h===1080?1920:h===720?1280:854},height:{ideal:h},frameRate:{ideal:30,max:30}};
+ if(cameraSelect.value)v.deviceId={exact:cameraSelect.value};else v.facingMode='user';
+ try{cameraStream=await navigator.mediaDevices.getUserMedia({video:v,audio:false});cameraVideo.srcObject=cameraStream;await cameraVideo.play().catch(()=>{});cameraBtn.textContent='⏹ Stop Camera';cameraSelect.disabled=false;await refreshDevices();syncVisuals();}catch(e){cameraStream=null;showError(cameraError(e));}
+}
+function stopCamera(){
+ if(cameraStream)cameraStream.getTracks().forEach(t=>t.stop());cameraStream=null;cameraVideo.srcObject=null;cameraBtn.textContent='📷 Start Camera';cameraSelect.disabled=true;syncVisuals();
+}
+function cameraError(e){
+ if(e.name==='NotAllowedError'||e.name==='SecurityError')return 'Camera permission denied. Allow camera access in Chrome site settings.';
+ if(e.name==='NotFoundError')return 'No camera was found on this device.';
+ if(e.name==='NotReadableError')return 'Camera is busy in another app. Close it and retry.';
+ if(e.name==='OverconstrainedError')return 'Selected camera or resolution is unavailable. Try Default or 720p.';
+ return 'Could not start camera: '+(e.message||e.name);
+}
+async function refreshDevices(){
+ try{
+  const devices=await navigator.mediaDevices.enumerateDevices();
+  const fill=(select,kind,label)=>{const current=select.value;select.replaceChildren(new Option('Default '+label.toLowerCase(),''));devices.filter(d=>d.kind===kind).forEach((d,i)=>select.add(new Option(d.label||label+' '+(i+1),d.deviceId)));if([...select.options].some(o=>o.value===current))select.value=current;};
+  fill(cameraSelect,'videoinput','Camera');fill(micSelect,'audioinput','Microphone');cameraSelect.disabled=!cameraStream||recording;micSelect.disabled=!micStream||recording;
+ }catch{}
+}
+async function startMic(){
+ clearError();if(micStream)return;
+ if(!navigator.mediaDevices?.getUserMedia){showError('Microphone access requires HTTPS.');return;}
+ try{
+  const a={echoCancellation:true,noiseSuppression:true,autoGainControl:true};if(micSelect.value)a.deviceId={exact:micSelect.value};
+  micStream=await navigator.mediaDevices.getUserMedia({audio:a,video:false});await connectMic();micStatus.textContent='Mic: live';muteBtn.disabled=false;micBtn.textContent='✓ Microphone Ready';await refreshDevices();
+ }catch(e){micStream=null;showError(e.name==='NotAllowedError'?'Microphone permission denied. Allow microphone access in Chrome site settings.':'Could not start microphone: '+e.message);}
+}
+function stopMic(){
+ if(micStream)micStream.getTracks().forEach(t=>t.stop());micStream=null;
+ if(micSource){try{micSource.disconnect()}catch{}micSource=null;}if(micGain){try{micGain.disconnect()}catch{}micGain=null;}
+ micStatus.textContent='Mic: off';muteBtn.disabled=true;micBtn.textContent='🎙 Enable Microphone';micSelect.disabled=true;meterFill.style.width='0%';
+}
+async function startScreen(){
+ clearError();if(screenStream)return;
+ if(!navigator.mediaDevices?.getDisplayMedia){showError('Screen capture is not available in this browser. Use Chrome on HTTPS or use uploaded PDF slides.');return;}
+ try{
+  screenStream=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:{ideal:30,max:30}},audio:$('includeSystemAudio').checked});
+  screenVideo.srcObject=screenStream;await screenVideo.play().catch(()=>{});
+  screenStream.getVideoTracks()[0].addEventListener('ended',()=>{stopScreen();});
+  if(screenStream.getAudioTracks().length)await connectScreenAudio();
+  screenBtn.textContent='⏹ Stop Sharing';syncVisuals();
+ }catch(e){screenStream=null;if(e.name!=='NotAllowedError')showError('Could not share screen: '+e.message);}
+}
+function stopScreen(){
+ if(screenStream)screenStream.getTracks().forEach(t=>t.stop());screenStream=null;screenVideo.srcObject=null;
+ if(screenAudioSource){try{screenAudioSource.disconnect()}catch{}screenAudioSource=null;}if(screenGain){try{screenGain.disconnect()}catch{}screenGain=null;}
+ screenBtn.textContent='🖥 Share Screen';syncVisuals();
+}
+async function loadSlides(files){
+ clearError();slides=[];slideSource=null;slideUrls.forEach(URL.revokeObjectURL);slideUrls=[];pdfDoc=null;
+ const selected=[...files];if(!selected.length){syncSlideControls();syncVisuals();return;}
+ try{
+  const pdf=selected.filter(f=>f.type==='application/pdf'||f.name.toLowerCase().endsWith('.pdf'));
+  if(pdf.length){
+   if(selected.length!==1)throw new Error('Upload one PDF at a time, or select multiple slide images.');
+   if(!window.pdfjsLib)throw new Error('PDF.js did not load. Check your internet connection and reload.');
+   pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+   pdfDoc=await pdfjsLib.getDocument({data:await pdf[0].arrayBuffer()}).promise;slides=Array.from({length:pdfDoc.numPages},(_,i)=>({kind:'pdf',page:i+1}));
+  }else{
+   const imgs=selected.filter(f=>f.type.startsWith('image/')).sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true,sensitivity:'base'}));
+   if(!imgs.length)throw new Error('Choose a PDF or slide images.');
+   for(const file of imgs){const url=URL.createObjectURL(file);slideUrls.push(url);const image=new Image();image.src=url;await image.decode();slides.push({kind:'image',image});}
+  }
+  await showSlide(0);
+ }catch(e){slides=[];slideSource=null;pdfDoc=null;syncSlideControls();syncVisuals();showError('Presentation could not be loaded: '+e.message);}
+}
+async function showSlide(index){
+ if(index<0||index>=slides.length)return;slideIndex=index;
+ if(slides[index].kind==='pdf'){
+  const page=await pdfDoc.getPage(slides[index].page),base=page.getViewport({scale:1}),scale=Math.min(2,canvas.width/base.width),viewport=page.getViewport({scale});
+  const c=document.createElement('canvas');c.width=Math.ceil(viewport.width);c.height=Math.ceil(viewport.height);
+  await page.render({canvasContext:c.getContext('2d'),viewport}).promise;slideSource=c;
+ }else slideSource=slides[index].image;
+ ink.clearRect(0,0,inkCanvas.width,inkCanvas.height);syncSlideControls();syncVisuals();
+}
+function syncSlideControls(){
+ slideCount.textContent=slides.length?'Slide '+(slideIndex+1)+' / '+slides.length:'No slides loaded';
+ prevSlide.disabled=!slides.length||slideIndex===0;nextSlide.disabled=!slides.length||slideIndex===slides.length-1;clearSlides.disabled=!slides.length;
+}
+function setLayout(name){
+ layout=name;
+ $('layoutButtons').querySelectorAll('[data-layout]').forEach(b=>b.classList.toggle('active',b.dataset.layout===name));
+ updateControls();
+}
+function movePip(position){
+ const map={br:[.77,.73],bl:[.03,.73],tr:[.77,.03],tl:[.03,.03]};
+ if(map[position])pip={x:map[position][0],y:map[position][1]};updatePipHandle();
+}
+function startDrag(e){
+ if(!cameraStream)return;e.preventDefault();pipDragBar.setPointerCapture(e.pointerId);
+ const rect=stage.getBoundingClientRect(),startX=e.clientX,startY=e.clientY,start={...pip};
+ const move=ev=>{const dx=(ev.clientX-startX)/rect.width,dy=(ev.clientY-startY)/rect.height;const w=Number(faceSize.value)/100,h=w*9/16;pip.x=Math.max(0,Math.min(1-w,start.x+dx));pip.y=Math.max(0,Math.min(1-h,start.y+dy));updatePipHandle();};
+ const end=()=>{pipDragBar.removeEventListener('pointermove',move);pipDragBar.removeEventListener('pointerup',end);pipDragBar.removeEventListener('pointercancel',end);};
+ pipDragBar.addEventListener('pointermove',move);pipDragBar.addEventListener('pointerup',end);pipDragBar.addEventListener('pointercancel',end);
+}
+function getInkPoint(e){const r=inkCanvas.getBoundingClientRect();return{x:(e.clientX-r.left)*inkCanvas.width/r.width,y:(e.clientY-r.top)*inkCanvas.height/r.height};}
+function inkStart(e){
+ if(toolTray.hidden===false)return;
+ if(activeTool==='text'){
+  const text=prompt('Enter text to place on this slide:');if(text){const p=getInkPoint(e);ink.save();ink.fillStyle=$('inkColor').value;ink.font='bold '+Math.round(canvas.width/48)+'px system-ui';ink.shadowColor='#000';ink.shadowBlur=5;ink.fillText(text,p.x,p.y);ink.restore();}return;
+ }
+ drawing=true;const p=getInkPoint(e);inkCanvas.setPointerCapture(e.pointerId);ink.beginPath();ink.moveTo(p.x,p.y);
+}
+function inkMove(e){
+ if(!drawing)return;const p=getInkPoint(e);ink.save();ink.lineCap='round';ink.lineJoin='round';ink.lineWidth=Number($('inkWidth').value);ink.globalCompositeOperation=activeTool==='eraser'?'destination-out':'source-over';ink.strokeStyle=$('inkColor').value;ink.lineTo(p.x,p.y);ink.stroke();ink.restore();
+}
+function inkEnd(){if(drawing){drawing=false;ink.closePath();}}
+async function makeAudioTrack(){
+ const tracks=[];
+ if(audioDestination)audioDestination.stream.getAudioTracks().forEach(t=>tracks.push(t));
+ if(!tracks.length){if(micStream)micStream.getAudioTracks().forEach(t=>tracks.push(t));if(screenStream)screenStream.getAudioTracks().forEach(t=>tracks.push(t));}
+ return tracks;
+}
+async function startRecording(isTest=false){
+ clearError();if(recording)return;
+ const mode=captureMode.value;
+ if(mode==='camera'&&!cameraStream){showError('Start the camera before recording in Camera Only mode.');return;}
+ if(mode!=='camera'&&!screenStream&&!slides.length){showError('Share your screen or upload a PDF/slides before recording.');return;}
+ if(mode==='screen-camera'&&!cameraStream){showError('Screen + Face Cam mode also requires the camera. Start Camera first.');return;}
+ const mime=getMime();if(mime===null){showError('MediaRecorder is not supported in this browser. Try current Chrome.');return;}
+ try{if(micStream)await connectMic();if(screenStream&&screenStream.getAudioTracks().length)await connectScreenAudio();if(audioContext)await audioContext.resume();}catch(e){showError('Audio could not be prepared: '+e.message);return;}
+ setCanvasQuality();if(!drawRAF)startDraw();
+ const videoCapture=canvas.captureStream(30),audioTracks=await makeAudioTrack();
+ const output=new MediaStream([...videoCapture.getVideoTracks(),...audioTracks]);
+ const h=Number(quality.value),videoBits=h===1080?6500000:h===720?4000000:2200000;
+ try{recorder=mime?new MediaRecorder(output,{mimeType:mime,videoBitsPerSecond:videoBits,audioBitsPerSecond:160000}):new MediaRecorder(output,{videoBitsPerSecond:videoBits,audioBitsPerSecond:160000});}
+ catch(e){videoCapture.getTracks().forEach(t=>t.stop());showError('Recorder could not start: '+e.message);return;}
+ sessionId=requestId();chunkIndex=0;localChunks=[];writeQueue=Promise.resolve();const session={id:sessionId,name:'officerlab-lecture-'+stamp()+'.webm',status:'recording',mime:mime||'video/webm',quality:h,createdAt:Date.now(),duration:0};
+ try{await putSession(session);}catch(e){showError('Local recovery storage could not be initialized: '+e.message);recorder=null;videoCapture.getTracks().forEach(t=>t.stop());return;}
+ recorder.ondataavailable=e=>{
+  if(!e.data||!e.data.size)return;
+  const index=chunkIndex++,blob=e.data;localChunks.push(blob);
+  writeQueue=writeQueue.then(()=>putChunk({sessionId,index,blob})).catch(err=>showError('Local recovery save warning: '+err.message));
+ };
+ recorder.onerror=e=>showError('Recording error: '+(e.error?.message||'unknown'));
+ recorder.onstop=async()=>{
+  clearInterval(recordTimer);recordTimer=null;
+  try{
+   await writeQueue;
+   const type=recorder?.mimeType||mime||'video/webm',blob=new Blob(localChunks,{type}),duration=Date.now()-startedAt;
+   const ext=type.includes('mp4')?'mp4':'webm',name='officerlab-lecture-'+stamp()+'.'+ext;
+   if(blob.size){
+    const row={...session,name,status:'complete',mime:type,duration,blob,completedAt:Date.now()};
+    await putSession(row);await addSaved(row);
+    for(let i=0;i<chunkIndex;i++)await deleteChunk(sessionId,i);
+   }
+  }catch(e){showError('Recording finished, but it could not be saved to local recovery storage: '+e.message);if(localChunks.length){const blob=new Blob(localChunks,{type:mime||'video/webm'});await addSaved({id:sessionId,name:session.name,status:'complete',mime:blob.type,duration:Date.now()-startedAt,blob});}}
+  localChunks=[];if(recorder&&recorder.stream)recorder.stream.getTracks().forEach(t=>{if(t.kind==='video'&&t.label.includes('Canvas'))t.stop()});recorder=null;recording=false;paused=false;sessionId=null;
+  recordBtn.textContent='⏺ Start Recording';recordBtn.classList.add('primary');pauseBtn.disabled=true;stopBtn.disabled=true;cameraBtn.disabled=false;micBtn.disabled=false;screenBtn.disabled=false;cameraSelect.disabled=!cameraStream;micSelect.disabled=!micStream;badge.classList.remove('on');updateControls();
+ };
+ recorder.start(2000);startedAt=Date.now();recording=true;paused=false;
+ recordBtn.textContent='● Recording';recordBtn.classList.add('danger');pauseBtn.disabled=false;stopBtn.disabled=false;cameraBtn.disabled=true;micBtn.disabled=true;screenBtn.disabled=true;cameraSelect.disabled=true;micSelect.disabled=true;badge.classList.add('on');timer.textContent='00:00';
+ recordTimer=setInterval(()=>{if(!paused)timer.textContent=clock(Date.now()-startedAt)},250);
+ if(isTest){testTimeout=setTimeout(()=>{if(recording)stopRecording();},30000);}
+ updateControls();
+}
+function stopRecording(){
+ if(!recorder||!recording)return;
+ if(testTimeout){clearTimeout(testTimeout);testTimeout=null;}
+ if(recorder.state!=='inactive')recorder.stop();
+}
+function pauseRecording(){
+ if(!recorder||!recording)return;
+ if(!paused&&recorder.state==='recording'){recorder.pause();paused=true;pauseBtn.textContent='▶ Resume';}
+ else if(paused&&recorder.state==='paused'){recorder.resume();paused=false;pauseBtn.textContent='Ⅱ Pause';}
+}
+async function addSaved(row){
+ const url=URL.createObjectURL(row.blob);saved.unshift({...row,url});renderRecordings();
+}
+function renderRecordings(){
+ recList.replaceChildren();if(!saved.length){recList.append(empty);return;}
+ saved.forEach((r,i)=>{
+  const box=document.createElement('div');box.className='rec';const video=document.createElement('video');video.src=r.url;video.controls=true;video.preload='metadata';video.playsInline=true;
+  const meta=document.createElement('div');meta.className='meta';const title=document.createElement('strong');title.textContent=r.name;
+  const info=document.createElement('div');info.textContent=clock(r.duration||0)+' · '+fileSize(r.blob.size);
+  const actions=document.createElement('div');actions.className='actions';const link=document.createElement('a');link.href=r.url;link.download=r.name;link.textContent='⬇ Download';
+  const del=document.createElement('button');del.textContent='Delete';del.onclick=async()=>{URL.revokeObjectURL(r.url);saved.splice(i,1);try{await dbAction('sessions','readwrite',s=>s.delete(r.id));}catch{}renderRecordings();};
+  actions.append(link,del);meta.append(title,info,actions);box.append(video,meta);recList.append(box);
+ });
+}
+async function loadLocalRecordings(){
+ try{
+  const sessions=await getAllSessions(),chunks=await getAllChunks();
+  for(const row of sessions.filter(s=>s.status==='complete'&&s.blob).sort((a,b)=>(b.completedAt||0)-(a.completedAt||0)))await addSaved(row);
+  const interrupted=sessions.filter(s=>s.status==='recording');
+  recoveryList.replaceChildren();
+  for(const s of interrupted){
+   const parts=chunks.filter(c=>c.sessionId===s.id).sort((a,b)=>a.index-b.index);
+   if(!parts.length)continue;
+   const blob=new Blob(parts.map(p=>p.blob),{type:s.mime||'video/webm'});
+   const card=document.createElement('div');card.className='recovery';const title=document.createElement('b');title.textContent='Interrupted recording found';const info=document.createElement('div');info.textContent=parts.length+' saved chunks · '+fileSize(blob.size);
+   const recover=document.createElement('button');recover.textContent='Recover & add to recordings';recover.className='success';recover.onclick=async()=>{const row={...s,status:'complete',blob,duration:0,completedAt:Date.now(),name:s.name.replace('officerlab-lecture-','officerlab-recovered-')};await putSession(row);await addSaved(row);for(const p of parts)await deleteChunk(s.id,p.index);card.remove();};
+   const discard=document.createElement('button');discard.textContent='Discard';discard.onclick=async()=>{for(const p of parts)await deleteChunk(s.id,p.index);await dbAction('sessions','readwrite',o=>o.delete(s.id));card.remove();};
+   card.append(title,info,recover,discard);recoveryList.append(card);
+  }
+ }catch(e){showError('Local recording recovery is unavailable: '+e.message);}
+}
+function setMute(muted){
+ $('muteBtn').dataset.muted=muted?'true':'false';muteBtn.textContent=muted?'Unmute Mic':'Mute Mic';
+ if(micGain&&audioContext)micGain.gain.setTargetAtTime(muted?0:1,audioContext.currentTime,.015);
+ micStatus.textContent=micStream?(muted?'Mic: muted':'Mic: live'):'Mic: off';
+}
+cameraBtn.onclick=()=>cameraStream?stopCamera():startCamera();
+micBtn.onclick=()=>startMic();
+screenBtn.onclick=()=>screenStream?stopScreen():startScreen();
+$('muteBtn').onclick=()=>setMute($('muteBtn').dataset.muted!=='true');
+recordBtn.onclick=()=>recording?stopRecording():startRecording();
+pauseBtn.onclick=pauseRecording;stopBtn.onclick=stopRecording;
+$('testBtn').onclick=()=>startRecording(true);
+captureMode.onchange=()=>{if(captureMode.value==='camera')setLayout('face');else if(layout==='face')setLayout('pip');updateControls();};
+quality.onchange=()=>{if(!recording){setCanvasQuality();syncVisuals();}};
+cameraSelect.onchange=()=>{if(cameraStream&&!recording){stopCamera();startCamera();}};
+micSelect.onchange=async()=>{if(micStream&&!recording){stopMic();await startMic();}};
+$('includeSystemAudio').onchange=()=>{if(screenStream){showError('To change system audio selection, stop screen sharing and share again.');}};
 slidesInput.onchange=()=>loadSlides(slidesInput.files);
 prevSlide.onclick=()=>showSlide(slideIndex-1);nextSlide.onclick=()=>showSlide(slideIndex+1);
-showFacecam.onchange=()=>{if(slides.length&&!drawFrame)startDrawLoop()};
-clearSlides.onclick=()=>{slidesInput.value='';slides=[];pdfDoc=null;slideSource=null;stopDrawLoop();slideUrls.forEach(u=>URL.revokeObjectURL(u));slideUrls=[];annotationCtx.clearRect(0,0,1280,720);toolTray.hidden=true;syncStage();updateSlideControls()};
+clearSlides.onclick=()=>{slidesInput.value='';slides=[];slideSource=null;pdfDoc=null;slideUrls.forEach(URL.revokeObjectURL);slideUrls=[];ink.clearRect(0,0,inkCanvas.width,inkCanvas.height);syncSlideControls();syncVisuals();};
+$('layoutButtons').querySelectorAll('[data-layout]').forEach(b=>b.onclick=()=>setLayout(b.dataset.layout));
+document.querySelectorAll('[data-position]').forEach(b=>b.onclick=()=>movePip(b.dataset.position));
+faceSize.oninput=()=>{ $('faceSizeVal').textContent=faceSize.value+'%';updatePipHandle();};
+faceOpacity.oninput=()=>$('faceOpacityVal').textContent=faceOpacity.value+'%';
 annotationFab.onclick=()=>{toolTray.hidden=!toolTray.hidden;};
-document.querySelectorAll('[data-tool]').forEach(btn=>btn.addEventListener('click',()=>{activeTool=btn.dataset.tool;document.querySelectorAll('[data-tool]').forEach(b=>b.classList.toggle('active',b===btn));annotationCanvas.style.pointerEvents='auto';toolTray.hidden=true;}));
-annotationCanvas.addEventListener('pointerdown',inkStart);annotationCanvas.addEventListener('pointermove',inkMove);annotationCanvas.addEventListener('pointerup',inkEnd);annotationCanvas.addEventListener('pointercancel',inkEnd);annotationCanvas.addEventListener('pointerleave',inkEnd);
-el('clearInk').onclick=()=>{annotationCtx.clearRect(0,0,1280,720);saveInkForSlide();toolTray.hidden=true};
-inkWidth.oninput=()=>inkWidthVal.textContent=inkWidth.value+' px';
-faceSize.oninput=()=>faceSizeVal.textContent=faceSize.value+'%';
-faceOpacity.oninput=()=>faceOpacityVal.textContent=faceOpacity.value+'%';
-showFacecam.onchange=()=>{if(slides.length&&!drawFrame)startDrawLoop()};
-el('dismissOrientation').onclick=()=>el('orientationHint').remove();
-window.addEventListener('orientationchange',()=>{if(screen.orientation?.type?.startsWith('landscape'))el('orientationHint').style.display='none';});
-el('full').textContent='⛶ Enter Full Screen';
-el('full').onclick=async()=>{try{if(!document.fullscreenElement){await document.documentElement.requestFullscreen({navigationUI:'hide'});if(screen.orientation?.lock){try{await screen.orientation.lock('landscape')}catch{showError('Full screen is on. Rotate your phone manually to Landscape for 16:9.')};}}else{await document.exitFullscreen();if(screen.orientation?.unlock)screen.orientation.unlock();}}catch{showError('Full screen is not available. Use Chrome and try again, or install this app from the browser menu.')}};
-document.addEventListener('fullscreenchange',()=>{el('full').textContent=document.fullscreenElement?'⛶ Exit Full Screen':'⛶ Enter Full Screen'});
-let deferredInstallPrompt=null;
-window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstallPrompt=e;el('installApp').hidden=false;});
-el('installApp').onclick=async()=>{if(!deferredInstallPrompt){showError('In Chrome, open the ⋮ menu and choose Add to Home screen or Install app.');return;}deferredInstallPrompt.prompt();await deferredInstallPrompt.userChoice;deferredInstallPrompt=null;el('installApp').hidden=true;};
-window.addEventListener('appinstalled',()=>{el('installApp').hidden=true;});
-try{notes.value=localStorage.getItem('gpsc-guidance-notes')||''}catch{}let save;notes.oninput=()=>{clearTimeout(save);save=setTimeout(()=>{try{localStorage.setItem('gpsc-guidance-notes',notes.value)}catch{}},350)};
-window.addEventListener('beforeunload',e=>{if(recording){e.preventDefault();e.returnValue=''}});window.addEventListener('pagehide',()=>{saved.forEach(r=>URL.revokeObjectURL(r.url));slideUrls.forEach(u=>URL.revokeObjectURL(u));stopDrawLoop();if(stream)stream.getTracks().forEach(t=>t.stop())});
-syncStage();updateSlideControls();
-if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('/gpsc-recorder-sw.js',{scope:'/'}).catch(err=>console.warn('GPSC recorder service worker:',err)));}
-})();
+document.querySelectorAll('[data-tool]').forEach(b=>b.onclick=()=>{activeTool=b.dataset.tool;document.querySelectorAll('[data-tool]').forEach(x=>x.classList.toggle('active',x===b));toolTray.hidden=true;inkCanvas.classList.add('enabled');});
+inkCanvas.addEventListener('pointerdown',inkStart);inkCanvas.addEventListener('pointermove',inkMove);inkCanvas.addEventListener('pointerup',inkEnd);inkCanvas.addEventListener('pointercancel',inkEnd);inkCanvas.addEventListener('pointerleave',inkEnd);
+$('clearInk').onclick=()=>{ink.clearRect(0,0,inkCanvas.width,inkCanvas.height);toolTray.hidden=true;};
+$('inkWidth').oninput=()=>$('inkWidthVal').textContent=$('inkWidth').value+' px';
+pipDragBar.addEventListener('pointerdown',startDrag);
+$('dismissOrientation').onclick=()=>$('orientationHint').remove();
+window.addEventListener('orientationchange',()=>{if(screen.orientation?.type?.startsWith('landscape'))$('orientationHint').style.display='none';});
+$('fullscreenBtn').onclick=async()=>{
+ try{
+  if(!document.fullscreenElement){await document.documentElement.requestFullscreen({navigationUI:'hide'});if(screen.orientation?.lock){try{await screen.orientation.lock('landscape')}catch{showError('Fullscreen enabled. Rotate your phone manually to Landscape.');}}}
+  else{await document.exitFullscreen();screen.orientation?.unlock?.();}
+ }catch{showError('Fullscreen is not available here. In Chrome, use the menu and choose Install app for an app-style window.');}
+};
+document.addEventListener('fullscreenchange',()=>{$('fullscreenBtn').textContent=document.fullscreenElement?'⛶ Exit Full Screen':'⛶ Full Screen';});
+let installPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e;$('installApp').hidden=false;});
+$('installApp').onclick=async()=>{if(!installPrompt){showError('In Chrome, open ⋮ and choose Install app or Add to Home screen.');return;}installPrompt.prompt();await installPrompt.userChoice;installPrompt=null;$('installApp').hidden=true;};
+window.addEventListener('appinstalled',()=>$('installApp').hidden=true);
+try{$('notes').value=localStorage.getItem('officerlab-lecture-notes')||'';}catch{}
+let noteTimer;$('notes').oninput=()=>{clearTimeout(noteTimer);noteTimer=setTimeout(()=>{try{localStorage.setItem('officerlab-lecture-notes',$('notes').value);}catch{}},350);};
+window.addEventListener('beforeunload',e=>{if(recording){e.preventDefault();e.returnValue='';}});
+window.addEventListener('pagehide',()=>{stopDraw();if(cameraStream)cameraStream.getTracks().forEach(t=>t.stop());if(micStream)micStream.getTracks().forEach(t=>t.stop());if(screenStream)screenStream.getTracks().forEach(t=>t.stop());if(audioContext)audioContext.close().catch(()=>{});saved.forEach(r=>URL.revokeObjectURL(r.url));slideUrls.forEach(URL.revokeObjectURL);});
+async function init(){
+ setCanvasQuality();syncSlideControls();updateControls();startDraw();drawMicMeter();await refreshDevices();await loadLocalRecordings();
+ if('serviceWorker'in navigator)navigator.serviceWorker.register('/gpsc-recorder-sw.js',{scope:'/'}).catch(e=>console.warn('Service worker:',e));
+}
+init();
+})(); 
 </script>
-</body></html>
+</body>
+</html>
