@@ -561,8 +561,9 @@ function setupMediaSessionControls(){
  const ms=navigator.mediaSession,act=(name,fn)=>{try{ms.setActionHandler(name,fn)}catch{}};
  act('play',()=>{if(activeMediaVideo)activeMediaVideo.play().catch(()=>{});});
  act('pause',()=>{if(activeMediaVideo)activeMediaVideo.pause();});
- act('seekbackward',d=>{if(activeMediaVideo)activeMediaVideo.currentTime=Math.max(0,activeMediaVideo.currentTime-(d.seekOffset||10));});
- act('seekforward',d=>{if(activeMediaVideo)activeMediaVideo.currentTime=Math.min(activeMediaVideo.duration||Infinity,activeMediaVideo.currentTime+(d.seekOffset||10));});
+ act('stop',()=>{if(activeMediaVideo)activeMediaVideo.pause();});
+ act('seekbackward',d=>{if(activeMediaVideo)activeMediaVideo.currentTime=Math.max(0,activeMediaVideo.currentTime-((d&&d.seekOffset)||10));});
+ act('seekforward',d=>{if(activeMediaVideo)activeMediaVideo.currentTime=Math.min(activeMediaVideo.duration||Infinity,activeMediaVideo.currentTime+((d&&d.seekOffset)||10));});
  act('seekto',d=>{if(activeMediaVideo&&Number.isFinite(d.seekTime)){if(d.fastSeek&&activeMediaVideo.fastSeek)activeMediaVideo.fastSeek(d.seekTime);else activeMediaVideo.currentTime=d.seekTime;}});
  mediaSessionReady=true;
 }
