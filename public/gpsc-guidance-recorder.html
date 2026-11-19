@@ -620,7 +620,9 @@ function detectCenteredScreenContent(source){
  if(source!==screenCropSource){screenCropSource=source;screenCropResult=null;screenCropResolved=false;screenCropChecks=0;}
  if(screenCropResolved)return screenCropResult;
  const sw=source.videoWidth||source.width||source.naturalWidth,sh=source.videoHeight||source.height||source.naturalHeight;
- if(!sw||!sh||screenCropChecks>=60){screenCropResolved=true;return null;}
+ // Screen-share metadata can arrive a few frames after srcObject is assigned. Do not permanently fail detection while dimensions are still unavailable.
+ if(!sw||!sh)return null;
+ if(screenCropChecks>=60){screenCropResolved=true;return null;}
  screenCropChecks++;
  try{
   const probe=document.createElement('canvas');probe.width=128;probe.height=72;
@@ -857,6 +859,8 @@ async function startScreen(){
   resetScreenCropDetection();
    screenStream=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:{ideal:30,max:30}},audio:$('includeSystemAudio').checked});
   screenVideo.srcObject=screenStream;await screenVideo.play().catch(()=>{});
+  // Re-arm centered-content detection now that the video element has its stream metadata.
+  resetScreenCropDetection();
   screenStream.getVideoTracks()[0].addEventListener('ended',()=>{stopScreen();});
   if(screenStream.getAudioTracks().length)await connectScreenAudio();
   screenBtn.textContent='⏹ Stop Sharing';syncVisuals();
