@@ -503,26 +503,27 @@ async function startRecording(isTest=false){
  const h=Number(quality.value),isAppleMobile=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1),videoBits=isAppleMobile?1200000:(h===1080?6500000:h===720?4000000:2200000);
  try{recorder=mime?new MediaRecorder(output,{mimeType:mime,videoBitsPerSecond:videoBits,audioBitsPerSecond:160000}):new MediaRecorder(output,{videoBitsPerSecond:videoBits,audioBitsPerSecond:160000});}
  catch(e){videoCapture.getTracks().forEach(t=>t.stop());showError('Recorder could not start: '+e.message);return;}
- sessionId=requestId();chunkIndex=0;localChunks=[];writeQueue=Promise.resolve();const session={id:sessionId,name:'officerlab-lecture-'+stamp()+'.webm',status:'recording',mime:mime||'video/webm',quality:h,createdAt:Date.now(),duration:0};
+ sessionId=requestId();chunkIndex=0;localChunks=[];writeQueue=Promise.resolve();const session={id:sessionId,name:'officerlab-lecture-'+stamp()+(mime&&mime.includes('mp4')?'.mp4':'.webm'),status:'recording',mime:mime||'video/webm',quality:h,createdAt:Date.now(),duration:0};
  try{await putSession(session);}catch(e){showError('Local recovery storage could not be initialized: '+e.message);recorder=null;videoCapture.getTracks().forEach(t=>t.stop());return;}
  recorder.ondataavailable=e=>{
   if(!e.data||!e.data.size)return;
-  const index=chunkIndex++,blob=e.data;localChunks.push(blob);
-  writeQueue=writeQueue.then(()=>putChunk({sessionId,index,blob})).catch(err=>showError('Local recovery save warning: '+err.message));
+  const index=chunkIndex++,blob=e.data;
+  if(!window.indexedDB)localChunks.push({index,blob});
+  writeQueue=writeQueue.then(()=>putChunk({sessionId,index,blob})).catch(err=>{localChunks.push({index,blob});showError('Local recovery save warning: '+err.message);});
  };
  recorder.onerror=e=>showError('Recording error: '+(e.error?.message||'unknown'));
  recorder.onstop=async()=>{
   clearInterval(recordTimer);recordTimer=null;
   try{
    await writeQueue;
-   const type=recorder?.mimeType||mime||'video/webm',blob=new Blob(localChunks,{type}),duration=Date.now()-startedAt;
+   const type=recorder?.mimeType||mime||'video/webm',persisted=await getAllChunks().catch(()=>[]),allParts=[...persisted.filter(p=>p.sessionId===sessionId).map(p=>({index:p.index,blob:p.blob})),...localChunks].sort((a,b)=>a.index-b.index),blob=new Blob(allParts.map(p=>p.blob),{type}),duration=Date.now()-startedAt;
    const ext=type.includes('mp4')?'mp4':'webm',name='officerlab-lecture-'+stamp()+'.'+ext;
    if(blob.size){
     const row={...session,name,status:'complete',mime:type,duration,blob,completedAt:Date.now()};
     await putSession(row);await addSaved(row);
     for(let i=0;i<chunkIndex;i++)await deleteChunk(sessionId,i);
    }
-  }catch(e){showError('Recording finished, but it could not be saved to local recovery storage: '+e.message);if(localChunks.length){const blob=new Blob(localChunks,{type:mime||'video/webm'});await addSaved({id:sessionId,name:session.name,status:'complete',mime:blob.type,duration:Date.now()-startedAt,blob});}}
+  }catch(e){showError('Recording finished, but it could not be saved to local recovery storage: '+e.message);if(localChunks.length){const parts=localChunks.sort((a,b)=>a.index-b.index);const blob=new Blob(parts.map(p=>p.blob),{type:mime||'video/webm'});await addSaved({id:sessionId,name:session.name,status:'complete',mime:blob.type,duration:Date.now()-startedAt,blob});}}
   localChunks=[];if(recorder&&recorder.stream)recorder.stream.getTracks().forEach(t=>{if(t.kind==='video'&&t.label.includes('Canvas'))t.stop()});recorder=null;recording=false;paused=false;sessionId=null;
   recordBtn.textContent='⏺ Start Recording';recordBtn.classList.remove('danger');recordBtn.classList.add('primary');pauseBtn.textContent='Ⅱ Pause';pauseBtn.disabled=true;stopBtn.disabled=true;cameraBtn.disabled=false;micBtn.disabled=false;screenBtn.disabled=false;cameraSelect.disabled=!cameraStream;micSelect.disabled=!micStream;badge.classList.remove('on');updateControls();
  };
