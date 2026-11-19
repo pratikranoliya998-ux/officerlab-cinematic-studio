@@ -396,12 +396,12 @@ function syncStagePresenterDock(){
 }
 function updateControls(){
  const mode=captureMode.value;inkCanvas.style.opacity=recording?'0':'1';captureMode.disabled=recording||recordingStarting;quality.disabled=recording||recordingStarting;outputRatio.disabled=recording||recordingStarting;recordBtn.disabled=recording||recordingStarting||!baseAvailable()||((mode==='screen-camera'||mode==='camera-slides')&&!cameraStream);
- cameraBtn.disabled=recording||recordingStarting;micBtn.disabled=recording||recordingStarting;screenBtn.disabled=recording||recordingStarting;$('cameraSwitchBtn').disabled=recording||!cameraStream;
+ cameraBtn.disabled=recording||recordingStarting;micBtn.disabled=recording||recordingStarting;screenBtn.disabled=recording||recordingStarting;$('cameraSwitchBtn').disabled=recording||recordingStarting||!cameraStream;
  $('muteBtn').disabled=!micStream;
  $('cameraBtn').textContent=cameraStream?'⏹ Stop Camera':'📷 Start Camera';
  $('micBtn').textContent=micStream?'✓ Microphone Ready':'🎙 Enable Microphone';
  $('screenBtn').textContent=screenStream?'⏹ Stop Sharing':'🖥 Share Screen';
- cameraSelect.disabled=!cameraStream||recording;micSelect.disabled=!micStream||recording;
+ cameraSelect.disabled=!cameraStream||recording||recordingStarting;micSelect.disabled=!micStream||recording||recordingStarting;
  const hasBase=baseAvailable();placeholder.style.display=hasBase?'none':'flex';
  pipHandle.style.display=((captureMode.value==='screen-camera'||captureMode.value==='camera-slides')&&cameraStream&&layout==='pip')?'block':'none';
  $('layoutButtons').querySelectorAll('[data-layout]').forEach(b=>b.classList.toggle('active',b.dataset.layout===layout));
@@ -557,7 +557,7 @@ async function refreshDevices(){
  try{
   const devices=await navigator.mediaDevices.enumerateDevices();
   const fill=(select,kind,label)=>{const current=select.value;select.replaceChildren(new Option('Default '+label.toLowerCase(),''));devices.filter(d=>d.kind===kind).forEach((d,i)=>select.add(new Option(d.label||label+' '+(i+1),d.deviceId)));if([...select.options].some(o=>o.value===current))select.value=current;};
-  fill(cameraSelect,'videoinput','Camera');fill(micSelect,'audioinput','Microphone');cameraSelect.disabled=!cameraStream||recording;micSelect.disabled=!micStream||recording;
+  fill(cameraSelect,'videoinput','Camera');fill(micSelect,'audioinput','Microphone');cameraSelect.disabled=!cameraStream||recording||recordingStarting;micSelect.disabled=!micStream||recording||recordingStarting;
  }catch{}
 }
 async function startMic(){
