@@ -49,7 +49,13 @@ main{max-width:1600px;margin:auto;padding:14px 14px 116px;display:grid;grid-temp
 #stage:fullscreen{width:100vw;height:100vh;height:100dvh;max-height:none;aspect-ratio:auto;border-radius:0}
 #stage:fullscreen #compositeCanvas,#stage:fullscreen #annotationCanvas{width:100%;height:100%;object-fit:contain}
 #stageFsControlsToggle{display:none}
-#stage:fullscreen #stageFsControlsToggle{display:block;position:absolute;right:12px;top:12px;z-index:21;min-height:38px;padding:6px 11px;border-radius:22px;background:rgba(12,18,30,.34);border:1px solid #ffffff48;box-shadow:0 5px 20px #0005;-webkit-backdrop-filter:blur(20px) saturate(150%);backdrop-filter:blur(20px) saturate(150%);font-size:12px}
+#stage:fullscreen #stageFsControlsToggle{display:block;position:absolute;right:12px;top:12px;z-index:21;width:42px;height:42px;min-height:42px;padding:0;border-radius:50%;background:rgba(12,18,30,.3);border:1px solid #ffffff48;box-shadow:0 5px 20px #0005;-webkit-backdrop-filter:blur(20px) saturate(150%);backdrop-filter:blur(20px) saturate(150%);font-size:17px}
+body.presentation-fullscreen>header,body.presentation-fullscreen>.orientation-hint,body.presentation-fullscreen>.sticky-controls{display:none!important}
+body.presentation-fullscreen>main{display:block!important;width:100vw;height:100vh;height:100dvh;max-width:none;margin:0;padding:0!important}
+body.presentation-fullscreen>main>aside{display:none!important}
+body.presentation-fullscreen>main>section.card{width:100%;height:100%;margin:0;padding:0;border:0;border-radius:0;background:transparent}
+body.presentation-fullscreen>main>section.card>:not(#stage){display:none!important}
+@media(max-width:650px){#stage:fullscreen #stageFsControlsToggle{right:8px;top:8px;width:38px;height:38px;min-height:38px}}
 #stageFsExit{min-height:36px;padding:6px 10px;font-size:12px;background:#ad3440d9;border-color:#ff8790}
 .stage-toolbar{display:flex;gap:7px;align-items:center;justify-content:center;flex-wrap:wrap;margin:8px 0;padding:9px;background:var(--panel2);border:1px solid var(--line);border-radius:10px}
 .stage-toolbar button{min-height:40px;padding:7px 11px;font-size:12px}
@@ -897,6 +903,7 @@ $('fullscreenBtn').onclick=async()=>{
 };
 document.addEventListener('fullscreenchange',()=>{
  const onStage=document.fullscreenElement===stage;
+ document.body.classList.toggle('presentation-fullscreen',onStage);
  $('fullscreenBtn').textContent=document.fullscreenElement?'⛶ Exit Full Screen':'⛶ Full Screen';
  $('stageFullscreenBtn').textContent=onStage?'✕ Exit Presentation Full Screen':'⛶ Presentation Full Screen';
  $('stageFsSlideNav').classList.remove('open');
