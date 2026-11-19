@@ -156,6 +156,7 @@ window.addEventListener('appinstalled',()=>{el('installApp').hidden=true;});
 try{notes.value=localStorage.getItem('gpsc-guidance-notes')||''}catch{}let save;notes.oninput=()=>{clearTimeout(save);save=setTimeout(()=>{try{localStorage.setItem('gpsc-guidance-notes',notes.value)}catch{}},350)};
 window.addEventListener('beforeunload',e=>{if(recording){e.preventDefault();e.returnValue=''}});window.addEventListener('pagehide',()=>{saved.forEach(r=>URL.revokeObjectURL(r.url));slideUrls.forEach(u=>URL.revokeObjectURL(u));stopDrawLoop();if(stream)stream.getTracks().forEach(t=>t.stop())});
 syncStage();updateSlideControls();
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('/gpsc-recorder-sw.js',{scope:'/'}).catch(err=>console.warn('GPSC recorder service worker:',err)));}
 })();
 </script>
 </body></html>
