@@ -138,6 +138,8 @@ textarea{min-height:150px;resize:vertical;line-height:1.6}
 .layout-row button.active{background:var(--blue);border-color:var(--blue)}
 .lower-third-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:9px}
 .brand-kit{margin-top:10px;padding:10px;background:#0d141e;border:1px solid var(--line);border-radius:10px}.brand-kit-title{font-size:11px;font-weight:800;letter-spacing:.06em;color:#b9d7ff;text-transform:uppercase;margin-bottom:8px}.brand-kit-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.brand-kit-fields .field{min-width:0}.brand-kit-fields input[type=color]{width:100%;height:40px;padding:3px;border:1px solid var(--line);border-radius:8px;background:var(--panel2)}.brand-logo-row{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-top:9px}.brand-logo-row input[type=file]{flex:1;min-width:150px;max-width:100%;font-size:11px}.brand-logo-row button{min-height:34px;padding:5px 9px;font-size:11px}.brand-logo-status{display:block;margin-top:6px;color:var(--muted);font-size:10px;line-height:1.4}
+.brand-cards{margin-top:10px;padding:10px;background:#0d141e;border:1px solid var(--line);border-radius:10px}.brand-cards-title{font-size:11px;font-weight:800;letter-spacing:.06em;color:#b9d7ff;text-transform:uppercase;margin-bottom:8px}.brand-card-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.brand-card-config{padding:9px;border:1px solid #2a3140;border-radius:9px;background:#111a27;min-width:0}.brand-card-config strong{display:block;font-size:11px;margin-bottom:7px;color:#e6edf3}.brand-card-config .field{min-width:0;margin-bottom:7px}.brand-card-config input,.brand-card-config select{width:100%;min-width:0}.brand-card-config label{display:block;font-size:10px;color:var(--muted);margin-bottom:4px}.brand-card-config .check{display:flex;align-items:center;gap:6px}.brand-card-config .check input{width:17px;height:17px;flex:0 0 auto}.brand-card-note{font-size:10px;line-height:1.45;color:var(--muted);margin:7px 0 0}
+@media(max-width:520px){.brand-card-grid{grid-template-columns:1fr}}
 @media(max-width:520px){.lower-third-fields,.brand-kit-fields{grid-template-columns:1fr}}.lower-third-fields .field{min-width:0}.lower-third-fields input,.lower-third-fields select{min-width:0}.lower-third-enable{margin-top:9px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}.lower-third-enable input{width:18px;height:18px;accent-color:var(--blue)}
 @media(max-width:520px){.lower-third-fields{grid-template-columns:1fr}}
 .slide-top{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.slide-top input{flex:1;min-width:160px;color:var(--muted);font-size:12px}
@@ -328,6 +330,26 @@ textarea{min-height:150px;resize:vertical;line-height:1.6}
       </div>
       <span class="brand-logo-status" id="brandLogoStatus" role="status">Optional logo · saved on this device · raster images only.</span>
     </div>
+    <div class="brand-cards" id="brandCardsPanel">
+      <div class="brand-cards-title">🎬 Branded intro & outro cards</div>
+      <div class="brand-card-grid">
+        <div class="brand-card-config">
+          <strong>Opening card</strong>
+          <label class="check"><input id="introCardEnabled" type="checkbox"> Enable opening card</label>
+          <div class="field"><label for="introCardDuration">Duration</label><select id="introCardDuration"><option value="2">2 seconds</option><option value="3" selected>3 seconds</option><option value="5">5 seconds</option></select></div>
+          <div class="field"><label for="introCardTitle">Main title</label><input id="introCardTitle" type="text" maxlength="64" value="OfficerLab"></div>
+          <div class="field"><label for="introCardSubtitle">Subtitle</label><input id="introCardSubtitle" type="text" maxlength="100" value="Learn • Prepare • Lead"></div>
+        </div>
+        <div class="brand-card-config">
+          <strong>Closing card</strong>
+          <label class="check"><input id="outroCardEnabled" type="checkbox"> Enable closing card</label>
+          <div class="field"><label for="outroCardDuration">Duration</label><select id="outroCardDuration"><option value="2">2 seconds</option><option value="3" selected>3 seconds</option><option value="5">5 seconds</option></select></div>
+          <div class="field"><label for="outroCardTitle">Main title</label><input id="outroCardTitle" type="text" maxlength="64" value="Thank You"></div>
+          <div class="field"><label for="outroCardSubtitle">Subtitle</label><input id="outroCardSubtitle" type="text" maxlength="100" value="Subscribe for more learning"></div>
+        </div>
+      </div>
+      <p class="brand-card-note">Cards use your Brand Kit logo, colours and font. The opening card plays at the start; the closing card plays after you press Stop. Both are included in the saved video.</p>
+    </div>
     <label class="check lower-third-enable"><input id="lowerThirdEnabled" type="checkbox"> Show on preview and include in recording</label>
     <p class="hint">The name/title graphic slides into the frame when enabled and animates again when recording starts. Leave it unchecked for a clean video.</p>
   </div>
@@ -382,6 +404,7 @@ const annotationFab=$('annotationFab'),toolTray=$('toolTray'),pipHandle=$('pipHa
 const faceSize=$('faceSize'),faceHeight=$('faceHeight'),faceShape=$('faceShape'),faceOpacity=$('faceOpacity'),fsCameraOpacity=$('fsCameraOpacity'),fsCameraOpacityToggle=$('fsCameraOpacityToggle'),fsCameraOpacityPanel=$('fsCameraOpacityPanel'),fsCameraOpacityValue=$('fsCameraOpacityValue'),safeGuides=$('safeGuides'),mirrorOutput=$('mirrorOutput'),outputRatio=$('outputRatio');
 const lowerThirdName=$('lowerThirdName'),lowerThirdTitle=$('lowerThirdTitle'),lowerThirdPosition=$('lowerThirdPosition'),lowerThirdEnabled=$('lowerThirdEnabled');
 const brandAccent=$('brandAccent'),brandPanel=$('brandPanel'),brandFont=$('brandFont'),brandLogoFile=$('brandLogoFile'),brandLogoRemove=$('brandLogoRemove'),brandLogoStatus=$('brandLogoStatus');
+const introCardEnabled=$('introCardEnabled'),introCardDuration=$('introCardDuration'),introCardTitle=$('introCardTitle'),introCardSubtitle=$('introCardSubtitle'),outroCardEnabled=$('outroCardEnabled'),outroCardDuration=$('outroCardDuration'),outroCardTitle=$('outroCardTitle'),outroCardSubtitle=$('outroCardSubtitle');
 let brandLogoDataUrl='',brandLogoImage=null,brandLogoVersion=0;
 const recList=$('recList'),empty=$('empty'),recoveryList=$('recoveryList');
 const dataSaver=$('dataSaver'),wifiOnlyDownloads=$('wifiOnlyDownloads');
@@ -389,7 +412,7 @@ const autoCaptionsEnabled=$('autoCaptionsEnabled'),captionLanguage=$('captionLan
 let cameraStream=null,micStream=null,screenStream=null,recorder=null,recordTimer=null,meterRAF=0,drawRAF=0,preferredFacing='user';
 let audioContext=null,audioDestination=null,micGain=null,screenGain=null,micAnalyser=null,micSource=null,screenAudioSource=null;
 let layout='pip',pip={x:.77,y:.73},activeTool='pen',drawing=false,slides=[],slideIndex=0,pdfDoc=null,slideSource=null,slideUrls=[],presentationSavedOutputRatio=null;
-let sessionId=null,chunkIndex=0,writeQueue=Promise.resolve(),localChunks=[],recording=false,paused=false,recordingStarting=false,startedAt=0,recordElapsedMs=0,recordSegmentStartedAt=0,testTimeout=null;
+let sessionId=null,chunkIndex=0,writeQueue=Promise.resolve(),localChunks=[],recording=false,paused=false,recordingStarting=false,stoppingRecording=false,startedAt=0,recordElapsedMs=0,recordSegmentStartedAt=0,testTimeout=null,outroStartedAt=0,outroTimer=null;
 let saved=[],recoveryItems=[],activeMediaElement=null,mediaSessionReady=false;
 let teleprompterRAF=0,teleprompterLastFrame=0,lastInkPoint=null,lastInkPointerId=null,lowerThirdStartedAt=0;
 let captionRecognition=null,captionDesired=false,captionSuspended=false,captionRestartTimer=null,captionStopResolver=null,captionSaveQueue=Promise.resolve(),activeCaptionSession=null,captionCues=[],captionLastCueEnd=0,captionStopAtMs=null;
@@ -425,7 +448,7 @@ function syncStagePresenterDock(){
  rec.setAttribute('aria-label',rec.title);
  rec.setAttribute('aria-pressed',String(recording));
  rec.disabled=!recording&&recordBtn.disabled;
- pause.disabled=!recording;
+ pause.disabled=!recording||stoppingRecording;
  pause.textContent=paused?'▶':'Ⅱ';
  pause.title=paused?'Resume recording':'Pause recording';
  pause.setAttribute('aria-label',pause.title);
@@ -563,7 +586,34 @@ function drawGuides(){
  if(!safeGuides.checked)return;
  ctx.save();ctx.strokeStyle='rgba(255,255,255,.5)';ctx.lineWidth=2;ctx.setLineDash([12,10]);ctx.strokeRect(canvas.width*.05,canvas.height*.06,canvas.width*.9,canvas.height*.88);ctx.beginPath();ctx.moveTo(canvas.width/2,0);ctx.lineTo(canvas.width/2,canvas.height);ctx.stroke();ctx.restore();
 }
+function drawBrandTitleCard(kind,elapsedMs){
+ const intro=kind==='intro',title=(intro?introCardTitle:outroCardTitle).value.trim(),subtitle=(intro?introCardSubtitle:outroCardSubtitle).value.trim();
+ const W=canvas.width,H=canvas.height,scale=Math.min(W/1920,H/1080),accent=brandAccent.value||'#55a3ff',panel=brandPanel.value||'#050c18';
+ const progress=Math.max(0,Math.min(1,elapsedMs/650)),ease=1-Math.pow(1-progress,3);
+ const fontStack=brandFont.value==='serif'?'Georgia,"Times New Roman",serif':brandFont.value==='mono'?'ui-monospace,SFMono-Regular,Consolas,monospace':brandFont.value==='rounded'?'system-ui,"Trebuchet MS",sans-serif':'system-ui,-apple-system,"Segoe UI",sans-serif';
+ ctx.save();
+ const grad=ctx.createLinearGradient(0,0,W,H);grad.addColorStop(0,panel);grad.addColorStop(1,'#05080d');ctx.fillStyle=grad;ctx.fillRect(0,0,W,H);
+ const glow=ctx.createRadialGradient(W*.5,H*.42,0,W*.5,H*.42,Math.max(W,H)*.72);glow.addColorStop(0,accent+'35');glow.addColorStop(1,'transparent');ctx.fillStyle=glow;ctx.fillRect(0,0,W,H);
+ ctx.globalAlpha=.22;ctx.strokeStyle=accent;ctx.lineWidth=Math.max(2,scale*3);
+ ctx.beginPath();ctx.arc(W*.5,H*.42,Math.min(W,H)*.34,0,Math.PI*2);ctx.stroke();
+ ctx.beginPath();ctx.arc(W*.5,H*.42,Math.min(W,H)*.41,0,Math.PI*2);ctx.stroke();
+ ctx.globalAlpha=ease;
+ const logoSize=Math.min(Math.round(Math.min(W,H)*.18),Math.round(W*.15));
+ if(brandLogoImage&&brandLogoImage.complete&&brandLogoImage.naturalWidth){const x=(W-logoSize)/2,y=H*.17;ctx.save();roundedPath(ctx,x,y,logoSize,logoSize,Math.max(8,logoSize*.12));ctx.clip();ctx.drawImage(brandLogoImage,x,y,logoSize,logoSize);ctx.restore();}
+ else{ctx.fillStyle=accent;ctx.font='850 '+Math.max(16,Math.round(W*.018))+'px '+fontStack;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('OFFICERLAB',W/2,H*.29,W*.7);}
+ const titleY=H*(brandLogoImage?0.53:0.44)+Math.max(0,1-ease)*H*.035;
+ ctx.fillStyle='#ffffff';ctx.font='850 '+Math.max(30,Math.round(Math.min(W*.066,H*.105)))+'px '+fontStack;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(title||'OfficerLab',W/2,titleY,W*.82);
+ if(subtitle){ctx.fillStyle=accent;ctx.font='550 '+Math.max(17,Math.round(Math.min(W*.027,H*.043)))+'px '+fontStack;ctx.fillText(subtitle,W/2,titleY+Math.max(50,H*.09),W*.78);}
+ ctx.fillStyle='#ffffff88';ctx.font='650 '+Math.max(11,Math.round(W*.012))+'px system-ui,sans-serif';ctx.fillText(intro?'LEARN  •  PREPARE  •  LEAD':'OFFICERLAB  •  LECTURE STUDIO',W/2,H*.88,W*.7);
+ ctx.restore();
+}
 function drawScene(){
+ if(recording&&introCardEnabled.checked&&recordingElapsedMs()<Number(introCardDuration.value)*1000){
+  drawBrandTitleCard('intro',recordingElapsedMs());drawRAF=requestAnimationFrame(drawScene);return;
+ }
+ if(recording&&stoppingRecording&&outroStartedAt&&outroCardEnabled.checked){
+  drawBrandTitleCard('outro',performance.now()-outroStartedAt);drawRAF=requestAnimationFrame(drawScene);return;
+ }
  ctx.fillStyle='#05080d';ctx.fillRect(0,0,canvas.width,canvas.height);
  const mode=captureMode.value;
  const showCamera=mode!=='screen'&&!!cameraStream;
@@ -826,10 +876,10 @@ async function startRecording(isTest=false){
     for(let i=0;i<chunkIndex;i++)await deleteChunk(sessionId,i);
    }
   }catch(e){showError('Recording finished, but it could not be saved to local recovery storage: '+e.message);if(localChunks.length){const parts=localChunks.sort((a,b)=>a.index-b.index);const blob=new Blob(parts.map(p=>p.blob),{type:mime||'video/webm'});await addSaved({id:sessionId,name:session.name,status:'complete',mime:blob.type,duration:finalDuration,blob,captions:captionCues.map(c=>({...c}))});}}
-  localChunks=[];if(recorder&&recorder.stream)recorder.stream.getTracks().forEach(t=>{if(t.kind==='video'&&t.label.includes('Canvas'))t.stop()});recorder=null;recording=false;paused=false;recordingStarting=false;recordElapsedMs=0;recordSegmentStartedAt=0;sessionId=null;activeCaptionSession=null;captionRecognition=null;captionCues=[];captionLastCueEnd=0;captionStopAtMs=null;
+  localChunks=[];if(outroTimer){clearTimeout(outroTimer);outroTimer=null;}if(recorder&&recorder.stream)recorder.stream.getTracks().forEach(t=>{if(t.kind==='video'&&t.label.includes('Canvas'))t.stop()});recorder=null;recording=false;paused=false;recordingStarting=false;stoppingRecording=false;outroStartedAt=0;recordElapsedMs=0;recordSegmentStartedAt=0;sessionId=null;activeCaptionSession=null;captionRecognition=null;captionCues=[];captionLastCueEnd=0;captionStopAtMs=null;
   recordBtn.textContent='⏺ Start Recording';recordBtn.classList.remove('danger');recordBtn.classList.add('primary');pauseBtn.textContent='Ⅱ Pause';pauseBtn.disabled=true;stopBtn.disabled=true;cameraBtn.disabled=false;micBtn.disabled=false;screenBtn.disabled=false;cameraSelect.disabled=!cameraStream;micSelect.disabled=!micStream;badge.classList.remove('on');updateControls();restorePresentationOutputRatio();
  };
- recorder.start(3000);startedAt=Date.now();recordElapsedMs=0;recordSegmentStartedAt=startedAt;recording=true;paused=false;if(lowerThirdEnabled.checked)lowerThirdStartedAt=performance.now();
+ recorder.start(3000);startedAt=Date.now();recordElapsedMs=0;recordSegmentStartedAt=startedAt;recording=true;paused=false;stoppingRecording=false;outroStartedAt=0;if(lowerThirdEnabled.checked)lowerThirdStartedAt=performance.now();
  recordBtn.textContent='● Recording';recordBtn.classList.add('danger');pauseBtn.disabled=false;stopBtn.disabled=false;cameraBtn.disabled=true;micBtn.disabled=true;screenBtn.disabled=true;cameraSelect.disabled=true;micSelect.disabled=true;badge.classList.add('on');timer.textContent='00:00';
  recordTimer=setInterval(()=>{timer.textContent=clock(recordingElapsedMs())},250);
  if(autoCaptionsEnabled.checked)startCaptionCapture();
@@ -837,9 +887,16 @@ async function startRecording(isTest=false){
  updateControls();
 }
 function stopRecording(){
- if(!recorder||!recording)return;
+ if(!recorder||!recording||stoppingRecording)return;
  if(testTimeout){clearTimeout(testTimeout);testTimeout=null;}
- if(recorder.state!=='inactive')recorder.stop();
+ stoppingRecording=true;captionStopAtMs=recordingElapsedMs();
+ pauseBtn.disabled=true;stopBtn.disabled=true;syncStagePresenterDock();
+ const finish=()=>{clearTimeout(outroTimer);outroTimer=null;if(recorder&&recorder.state!=='inactive')recorder.stop();};
+ if(outroCardEnabled.checked){
+  outroStartedAt=performance.now();const duration=Math.max(2,Math.min(5,Number(outroCardDuration.value)||3));
+  stopCaptionCapture();
+  outroTimer=setTimeout(finish,duration*1000);
+ }else finish();
 }
 function pauseRecording(){
  if(!recorder||!recording)return;
@@ -1246,6 +1303,24 @@ restoreLowerThirdSettings();
 brandLogoFile.addEventListener('change',()=>{const file=brandLogoFile.files&&brandLogoFile.files[0];if(!file)return;if(!/^image\/(png|jpeg|webp)$/.test(file.type)){brandLogoStatus.textContent='Choose a PNG, JPG or WebP logo.';brandLogoFile.value='';return;}if(file.size>5*1024*1024){brandLogoStatus.textContent='Choose a logo smaller than 5 MB.';brandLogoFile.value='';return;}const url=URL.createObjectURL(file),img=new Image();brandLogoStatus.textContent='Optimizing logo for this device…';img.onload=()=>{URL.revokeObjectURL(url);const max=160,ratio=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight)),w=Math.max(1,Math.round(img.naturalWidth*ratio)),h=Math.max(1,Math.round(img.naturalHeight*ratio)),off=document.createElement('canvas');off.width=w;off.height=h;off.getContext('2d').drawImage(img,0,0,w,h);let data='';try{data=off.toDataURL('image/webp',.78);if(data.length>125000)data=off.toDataURL('image/jpeg',.72);}catch(e){brandLogoStatus.textContent='Could not optimize this logo.';return;}if(data.length>125000){brandLogoStatus.textContent='Logo is still too large after optimization. Choose a simpler/smaller image.';return;}setBrandLogo(data);};img.onerror=()=>{URL.revokeObjectURL(url);brandLogoStatus.textContent='Could not read that logo image.';};img.src=url;});
 brandLogoRemove.addEventListener('click',()=>{brandLogoFile.value='';setBrandLogo('');});
 restoreBrandKit();
+const BRAND_CARDS_STORAGE={introOn:'officerlab-intro-enabled',introDuration:'officerlab-intro-duration',introTitle:'officerlab-intro-title',introSubtitle:'officerlab-intro-subtitle',outroOn:'officerlab-outro-enabled',outroDuration:'officerlab-outro-duration',outroTitle:'officerlab-outro-title',outroSubtitle:'officerlab-outro-subtitle'};
+function saveBrandCardSettings(){
+ try{
+  localStorage.setItem(BRAND_CARDS_STORAGE.introOn,introCardEnabled.checked?'1':'0');localStorage.setItem(BRAND_CARDS_STORAGE.introDuration,introCardDuration.value);localStorage.setItem(BRAND_CARDS_STORAGE.introTitle,introCardTitle.value);localStorage.setItem(BRAND_CARDS_STORAGE.introSubtitle,introCardSubtitle.value);
+  localStorage.setItem(BRAND_CARDS_STORAGE.outroOn,outroCardEnabled.checked?'1':'0');localStorage.setItem(BRAND_CARDS_STORAGE.outroDuration,outroCardDuration.value);localStorage.setItem(BRAND_CARDS_STORAGE.outroTitle,outroCardTitle.value);localStorage.setItem(BRAND_CARDS_STORAGE.outroSubtitle,outroCardSubtitle.value);
+ }catch{}
+}
+function restoreBrandCardSettings(){
+ try{
+  introCardEnabled.checked=localStorage.getItem(BRAND_CARDS_STORAGE.introOn)==='1';outroCardEnabled.checked=localStorage.getItem(BRAND_CARDS_STORAGE.outroOn)==='1';
+  const id=localStorage.getItem(BRAND_CARDS_STORAGE.introDuration),od=localStorage.getItem(BRAND_CARDS_STORAGE.outroDuration);
+  if(['2','3','5'].includes(id))introCardDuration.value=id;if(['2','3','5'].includes(od))outroCardDuration.value=od;
+  const it=localStorage.getItem(BRAND_CARDS_STORAGE.introTitle),is=localStorage.getItem(BRAND_CARDS_STORAGE.introSubtitle),ot=localStorage.getItem(BRAND_CARDS_STORAGE.outroTitle),os=localStorage.getItem(BRAND_CARDS_STORAGE.outroSubtitle);
+  if(it!==null)introCardTitle.value=it;if(is!==null)introCardSubtitle.value=is;if(ot!==null)outroCardTitle.value=ot;if(os!==null)outroCardSubtitle.value=os;
+ }catch{}
+}
+[introCardEnabled,introCardDuration,introCardTitle,introCardSubtitle,outroCardEnabled,outroCardDuration,outroCardTitle,outroCardSubtitle].forEach(el=>el.addEventListener(el.tagName==='INPUT'?'input':'change',saveBrandCardSettings));
+restoreBrandCardSettings();
 try{const savedCaptionLanguage=localStorage.getItem('officerlab-caption-language');if(['gu-IN','en-IN','hi-IN'].includes(savedCaptionLanguage))captionLanguage.value=savedCaptionLanguage;}catch{}
 if(!captionSupportAvailable())updateCaptionStatus('Automatic speech recognition is not available in this browser. Recording continues normally; add a transcript manually.');
 else updateCaptionStatus('Optional live captions. Browser support and language accuracy vary; recognition may use the browser or platform speech service.');
