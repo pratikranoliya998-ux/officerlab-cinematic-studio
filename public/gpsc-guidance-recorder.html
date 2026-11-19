@@ -534,7 +534,7 @@ function drawLowerThird(){
  const maxBoxWidth=W*.58,textWidth=Math.max(nameWidth,subWidth);
  const boxW=Math.min(maxBoxWidth,Math.max(Math.min(W*.25,300*scale),textWidth+pad*2+accent+(logoSize?logoSize+logoGap:0)));
  const textH=(name?nameSize:0)+(name&&subtitle?gap:0)+(subtitle?subSize:0);
- const boxH=textH+pad*2;
+ const boxH=Math.max(textH,logoSize)+pad*2;
  const margin=Math.max(16,Math.round(W*.045));
  let x=margin,y=H-boxH-margin;
  if(lowerThirdPosition.value==='lower-centre')x=(W-boxW)/2;
