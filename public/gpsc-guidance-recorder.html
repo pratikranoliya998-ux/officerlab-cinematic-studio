@@ -463,7 +463,7 @@ function syncStagePresenterDock(){
  });
 }
 function updateControls(){
- const mode=captureMode.value;inkCanvas.style.opacity=recording?'0':'1';captureMode.disabled=recording||recordingStarting;quality.disabled=recording||recordingStarting;outputRatio.disabled=recording||recordingStarting;recordBtn.disabled=recording||recordingStarting||!baseAvailable()||((mode==='screen-camera'||mode==='camera-slides')&&!cameraStream);autoCaptionsEnabled.disabled=recording||recordingStarting;captionLanguage.disabled=recording||recordingStarting;
+ const mode=captureMode.value;inkCanvas.style.opacity=recording?'0':'1';captureMode.disabled=recording||recordingStarting;quality.disabled=recording||recordingStarting;outputRatio.disabled=recording||recordingStarting;recordBtn.disabled=recording||recordingStarting||!baseAvailable()||((mode==='screen-camera'||mode==='camera-slides')&&!cameraStream);autoCaptionsEnabled.disabled=recording||recordingStarting;captionLanguage.disabled=recording||recordingStarting;[introCardEnabled,introCardDuration,introCardTitle,introCardSubtitle,outroCardEnabled,outroCardDuration,outroCardTitle,outroCardSubtitle].forEach(el=>el.disabled=recording||recordingStarting||stoppingRecording);
  cameraBtn.disabled=recording||recordingStarting;micBtn.disabled=recording||recordingStarting;screenBtn.disabled=recording||recordingStarting;$('cameraSwitchBtn').disabled=recording||recordingStarting||!cameraStream;
  $('muteBtn').disabled=!micStream;
  $('cameraBtn').textContent=cameraStream?'⏹ Stop Camera':'📷 Start Camera';
@@ -608,11 +608,11 @@ function drawBrandTitleCard(kind,elapsedMs){
  ctx.restore();
 }
 function drawScene(){
- if(recording&&introCardEnabled.checked&&recordingElapsedMs()<Number(introCardDuration.value)*1000){
-  drawBrandTitleCard('intro',recordingElapsedMs());drawRAF=requestAnimationFrame(drawScene);return;
- }
  if(recording&&stoppingRecording&&outroStartedAt&&outroCardEnabled.checked){
   drawBrandTitleCard('outro',performance.now()-outroStartedAt);drawRAF=requestAnimationFrame(drawScene);return;
+ }
+ if(recording&&introCardEnabled.checked&&recordingElapsedMs()<Number(introCardDuration.value)*1000){
+  drawBrandTitleCard('intro',recordingElapsedMs());drawRAF=requestAnimationFrame(drawScene);return;
  }
  ctx.fillStyle='#05080d';ctx.fillRect(0,0,canvas.width,canvas.height);
  const mode=captureMode.value;
@@ -890,7 +890,11 @@ function stopRecording(){
  if(!recorder||!recording||stoppingRecording)return;
  if(testTimeout){clearTimeout(testTimeout);testTimeout=null;}
  stoppingRecording=true;captionStopAtMs=recordingElapsedMs();
- pauseBtn.disabled=true;stopBtn.disabled=true;syncStagePresenterDock();
+ pauseBtn.disabled=true;stopBtn.disabled=true;
+ if(outroCardEnabled.checked&&recorder.state==='paused'){
+  try{recorder.resume();paused=false;recordSegmentStartedAt=Date.now();pauseBtn.textContent='Ⅱ Pause';}catch(e){showError('Could not resume for closing card: '+e.message);}
+ }
+ syncStagePresenterDock();
  const finish=()=>{clearTimeout(outroTimer);outroTimer=null;if(recorder&&recorder.state!=='inactive')recorder.stop();};
  if(outroCardEnabled.checked){
   outroStartedAt=performance.now();const duration=Math.max(2,Math.min(5,Number(outroCardDuration.value)||3));
