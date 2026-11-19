@@ -1,4 +1,4 @@
-const CACHE_NAME = "gpsc-recorder-v2";
+const CACHE_NAME = "gpsc-recorder-v3";
 const APP_URL = "/gpsc-guidance-recorder.html";
 const ASSETS = [
   APP_URL,
@@ -20,6 +20,57 @@ async function cacheResponse(request, response) {
   }
   return response;
 }
+// Serve byte-range requests from a previously cached same-origin media response.
+// Recordings in IndexedDB are exposed as blob: URLs and are handled natively by
+// the browser; those blob URLs do not pass through this service worker.
+async function cachedMediaRangeResponse(request) {
+  const cache = await caches.open(CACHE_NAME);
+  const cached = await cache.match(new Request(request.url, { method: "GET" }));
+  if (!cached || cached.type === "opaque") {
+    try { return await fetch(request); }
+    catch (error) {
+      return new Response("This media file is not available offline.", {
+        status: 503,
+        headers: { "Content-Type": "text/plain; charset=utf-8" }
+      });
+    }
+  }
+
+  const blob = await cached.blob();
+  const size = blob.size;
+  const rangeHeader = request.headers.get("range") || "";
+  const match = /^bytes=(\d*)-(\d*)$/.exec(rangeHeader);
+  const unsatisfied = () => new Response(null, {
+    status: 416,
+    statusText: "Range Not Satisfiable",
+    headers: { "Content-Range": "bytes */" + size, "Accept-Ranges": "bytes" }
+  });
+  if (!match || (!match[1] && !match[2]) || size <= 0) return unsatisfied();
+
+  let start, end;
+  if (!match[1]) {
+    const suffixLength = Number(match[2]);
+    if (!Number.isSafeInteger(suffixLength) || suffixLength <= 0) return unsatisfied();
+    start = Math.max(0, size - suffixLength);
+    end = size - 1;
+  } else {
+    start = Number(match[1]);
+    end = match[2] ? Number(match[2]) : size - 1;
+  }
+  if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) ||
+      start < 0 || start >= size || end < start) return unsatisfied();
+  end = Math.min(end, size - 1);
+
+  const part = blob.slice(start, end + 1, cached.headers.get("Content-Type") || "application/octet-stream");
+  const headers = new Headers(cached.headers);
+  headers.set("Accept-Ranges", "bytes");
+  headers.set("Content-Range", "bytes " + start + "-" + end + "/" + size);
+  headers.set("Content-Length", String(part.size));
+  headers.delete("Content-Encoding");
+  headers.delete("Transfer-Encoding");
+  return new Response(part, { status: 206, statusText: "Partial Content", headers });
+}
+
 
 self.addEventListener("install", event => {
   event.waitUntil((async () => {
@@ -67,6 +118,13 @@ self.addEventListener("fetch", event => {
   }
 
   if (url.origin !== self.location.origin) return;
+
+  const isMedia = ["audio", "video"].includes(request.destination) ||
+    /\.(mp4|m4v|webm|mp3|m4a|aac|ogg|wav)$/i.test(url.pathname);
+  if (isMedia && request.headers.has("range")) {
+    event.respondWith(cachedMediaRangeResponse(request));
+    return;
+  }
 
   if (request.mode === "navigate") {
     event.respondWith((async () => {
