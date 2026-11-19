@@ -147,6 +147,8 @@ textarea{min-height:150px;resize:vertical;line-height:1.6}
 @media(max-width:520px){.lower-third-fields{grid-template-columns:1fr}}
 .slide-top{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.slide-top input{flex:1;min-width:160px;color:var(--muted);font-size:12px}
 .slide-nav{margin-top:9px}.slide-count{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.slide-mode-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:9px}.slide-mode-row label{font-size:11px;color:var(--muted)}.slide-mode-row select{min-width:220px;max-width:100%;padding:8px 10px;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:9px}
+@media(max-width:520px){.slide-mode-row select{flex:1;min-width:0;width:100%}}
 .error{display:none;background:#f8514920;border:1px solid #f8514980;color:#ffb3ae;border-radius:10px;padding:10px;margin-top:10px;font-size:12px}
 .hint{font-size:11px;color:var(--muted);line-height:1.5;margin:7px 0 0}
 #recList{display:flex;flex-direction:column;gap:9px;max-height:420px;overflow:auto}
@@ -445,7 +447,15 @@ input,select,textarea{border-color:#ffffff20!important;border-radius:9px}button:
     <h2 style="margin-bottom:8px">Presentation slides</h2>
     <div class="slide-top"><input id="slidesInput" type="file" accept="application/pdf,image/*" multiple><span class="small">PDF or image files · PPT/PPTX: export to PDF first</span></div>
     <div class="slide-nav"><span id="slideCount" class="slide-count">No slides loaded</span><button id="clearSlides" disabled>Clear slides</button></div>
-    <p class="hint">Uploaded slides automatically fit completely inside the recording frame without cropping. Different slide/video aspect ratios may leave dark margins. PDF files render one page at a time; image filenames are sorted naturally (slide-1, slide-2, slide-10).</p>
+    <div class="slide-mode-row">
+      <label for="slideDisplayMode">Slide display mode</label>
+      <select id="slideDisplayMode" aria-describedby="slideDisplayHint">
+        <option value="smart" selected>Smart Fit · blurred background</option>
+        <option value="fit">Fit Entire Slide · no crop</option>
+        <option value="fill">Fill Screen · crop edges</option>
+      </select>
+    </div>
+    <p class="hint" id="slideDisplayHint">Smart Fit keeps the complete slide readable and fills spare space with a soft background. Fit Entire Slide adds dark margins when needed. Fill Screen fills the frame but may crop slide edges. PDF files render one page at a time; image filenames are sorted naturally (slide-1, slide-2, slide-10).</p>
   </div>
   <div id="error" class="error" role="alert"></div>
   <p class="screen-note">Screen capture depends on browser support. Camera and microphone permission require HTTPS. Screen sharing must be started by the presenter.</p>
@@ -490,7 +500,8 @@ const inkCanvas=$('annotationCanvas'),ink=inkCanvas.getContext('2d'),stage=$('st
 const captureMode=$('captureMode'),quality=$('quality'),cameraSelect=$('cameraSelect'),micSelect=$('micSelect');
 const cameraBtn=$('cameraBtn'),micBtn=$('micBtn'),screenBtn=$('screenBtn'),recordBtn=$('recordBtn'),pauseBtn=$('pauseBtn'),stopBtn=$('stopBtn');
 const muteBtn=$('muteBtn'),meterFill=$('meterFill'),micStatus=$('micStatus'),badge=$('badge'),timer=$('timer'),countdownLayer=$('countdownLayer'),countdownNumber=$('countdownNumber'),error=$('error');
-const slidesInput=$('slidesInput'),prevSlide=$('prevSlide'),nextSlide=$('nextSlide'),slideCount=$('slideCount'),clearSlides=$('clearSlides'),slideJump=$('slideJump'),slideTotal=$('slideTotal'),goSlide=$('goSlide');
+const slidesInput=$('slidesInput'),slideDisplayMode=$('slideDisplayMode'),prevSlide=$('prevSlide'),nextSlide=$('nextSlide'),slideCount=$('slideCount'),clearSlides=$('clearSlides'),slideJump=$('slideJump'),slideTotal=$('slideTotal'),goSlide=$('goSlide');
+try{const savedSlideMode=localStorage.getItem('officerlab-slide-display-mode');if(['smart','fit','fill'].includes(savedSlideMode))slideDisplayMode.value=savedSlideMode;}catch{}
 const teleprompterOverlay=$('teleprompterOverlay'),teleprompterWindow=$('teleprompterWindow'),teleprompterText=$('teleprompterText'),teleprompterScript=$('teleprompterScript'),teleprompterSettings=$('teleprompterSettings');
 const fsPrevSlide=$('fsPrevSlide'),fsNextSlide=$('fsNextSlide'),fsSlideJump=$('fsSlideJump'),fsSlideTotal=$('fsSlideTotal'),fsGoSlide=$('fsGoSlide'),stageFsSlideNav=$('stageFsSlideNav'),stageFsControlsToggle=$('stageFsControlsToggle');
 const annotationFab=$('annotationFab'),toolTray=$('toolTray'),pipHandle=$('pipHandle'),pipDragBar=$('pipDragBar');
@@ -630,6 +641,39 @@ function fitSlide(ctx,source,x,y,w,h){
  const scale=Math.min(w/sw,h/sh),dw=sw*scale,dh=sh*scale;
  ctx.drawImage(source,x+(w-dw)/2,y+(h-dh)/2,dw,dh);
  ctx.restore();
+}
+// Cached Smart Fit background: build once per current slide and target size, not on every animation frame.
+let smartSlideBackdrop=null,smartSlideBackdropSource=null,smartSlideBackdropSize='';
+function smartFitSlide(ctx,source,x,y,w,h){
+ if(!source)return;
+ const sw=source.videoWidth||source.width||source.naturalWidth,sh=source.videoHeight||source.height||source.naturalHeight;
+ if(!Number.isFinite(sw)||!Number.isFinite(sh)||sw<=0||sh<=0||w<=0||h<=0)return;
+ const bw=Math.max(1,Math.round(w)),bh=Math.max(1,Math.round(h)),key=bw+'x'+bh;
+ if(!smartSlideBackdrop||smartSlideBackdropSource!==source||smartSlideBackdropSize!==key){
+  const back=document.createElement('canvas');back.width=bw;back.height=bh;
+  const bctx=back.getContext('2d'),scale=Math.max(bw/sw,bh/sh),dw=sw*scale,dh=sh*scale,blur=Math.max(14,Math.round(Math.min(bw,bh)*.045));
+  bctx.fillStyle='#09090b';bctx.fillRect(0,0,bw,bh);bctx.save();bctx.filter='blur('+blur+'px)';
+  bctx.drawImage(source,(bw-dw)/2-blur*2,(bh-dh)/2-blur*2,dw+blur*4,dh+blur*4);
+  bctx.filter='none';bctx.fillStyle='rgba(5,8,13,.06)';bctx.fillRect(0,0,bw,bh);bctx.restore();
+  smartSlideBackdrop=back;smartSlideBackdropSource=source;smartSlideBackdropSize=key;
+ }
+ ctx.drawImage(smartSlideBackdrop,x,y,w,h);
+ fitSlide(ctx,source,x,y,w,h);
+}
+function fillSlide(ctx,source,x,y,w,h){
+ if(!source)return;
+ const sw=source.videoWidth||source.width||source.naturalWidth,sh=source.videoHeight||source.height||source.naturalHeight;
+ if(!Number.isFinite(sw)||!Number.isFinite(sh)||sw<=0||sh<=0||w<=0||h<=0)return;
+ const scale=Math.max(w/sw,h/sh),dw=sw*scale,dh=sh*scale;
+ ctx.save();ctx.beginPath();ctx.rect(x,y,w,h);ctx.clip();
+ ctx.imageSmoothingEnabled=true;try{ctx.imageSmoothingQuality='high';}catch{}
+ ctx.drawImage(source,x+(w-dw)/2,y+(h-dh)/2,dw,dh);ctx.restore();
+}
+function drawSlideWithMode(ctx,source,x,y,w,h){
+ const mode=slideDisplayMode.value;
+ if(mode==='fit')fitSlide(ctx,source,x,y,w,h);
+ else if(mode==='fill')fillSlide(ctx,source,x,y,w,h);
+ else smartFitSlide(ctx,source,x,y,w,h);
 }
 // Preserve the complete source while filling unused 16:9 canvas space with a soft, darkened extension.
 function containWithFill(ctx,source,x,y,w,h){
@@ -791,11 +835,11 @@ function drawScene(){
   if(cameraStream)cover(ctx,cameraVideo,0,0,canvas.width,canvas.height,mirrorOutput.checked);
  }else if(layout==='split'&&showCamera){
   ctx.fillStyle='#080b10';ctx.fillRect(0,0,canvas.width,canvas.height);
-  if(source&&source!==cameraVideo){if(source===screenVideo&&screenStream)containScreenWithFill(ctx,source,0,0,canvas.width*.5,canvas.height);else fitSlide(ctx,source,0,0,canvas.width*.5,canvas.height);}
+  if(source&&source!==cameraVideo){if(source===screenVideo&&screenStream)containScreenWithFill(ctx,source,0,0,canvas.width*.5,canvas.height);else drawSlideWithMode(ctx,source,0,0,canvas.width*.5,canvas.height);}
   cover(ctx,cameraVideo,canvas.width*.5,0,canvas.width*.5,canvas.height,mirrorOutput.checked);
  }else{
   if(source===screenVideo&&screenStream)containScreenWithFill(ctx,screenVideo,0,0,canvas.width,canvas.height);
-  else if(source&&source!==cameraVideo)fitSlide(ctx,source,0,0,canvas.width,canvas.height);
+  else if(source&&source!==cameraVideo)drawSlideWithMode(ctx,source,0,0,canvas.width,canvas.height);
   if((mode==='screen-camera'||mode==='camera-slides')&&cameraStream&&layout==='pip'){
    const d=pipDimensions(),w=canvas.width*d.w,hh=canvas.height*d.h;
    drawPip(canvas.width*pip.x,canvas.height*pip.y,w,hh);
@@ -1314,6 +1358,7 @@ cameraSelect.onchange=()=>{if(cameraStream&&!recording){stopCamera();startCamera
 micSelect.onchange=async()=>{if(micStream&&!recording){stopMic();await startMic();}};
 $('includeSystemAudio').onchange=()=>{if(screenStream){showError('To change system audio selection, stop screen sharing and share again.');}};
 slidesInput.onchange=()=>loadSlides(slidesInput.files);
+slideDisplayMode.onchange=()=>{try{localStorage.setItem('officerlab-slide-display-mode',slideDisplayMode.value);}catch{}syncVisuals();};
 prevSlide.onclick=()=>showSlide(slideIndex-1);nextSlide.onclick=()=>showSlide(slideIndex+1);
 clearSlides.onclick=()=>{slidesInput.value='';slides=[];slideSource=null;pdfDoc=null;slideUrls.forEach(URL.revokeObjectURL);slideUrls=[];ink.clearRect(0,0,inkCanvas.width,inkCanvas.height);syncSlideControls();syncVisuals();};
 $('layoutButtons').querySelectorAll('[data-layout]').forEach(b=>b.onclick=()=>setLayout(b.dataset.layout));
