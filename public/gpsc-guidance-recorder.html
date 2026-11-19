@@ -51,7 +51,11 @@ main{max-width:1600px;margin:auto;padding:14px 14px 116px;display:grid;grid-temp
 #stageFsControlsToggle{display:none}
 #stage:fullscreen #stageFsControlsToggle{display:block;position:absolute;right:12px;top:12px;z-index:21;width:42px;height:42px;min-height:42px;padding:0;border-radius:50%;background:rgba(12,18,30,.3);border:1px solid #ffffff48;box-shadow:0 5px 20px #0005;-webkit-backdrop-filter:blur(20px) saturate(150%);backdrop-filter:blur(20px) saturate(150%);font-size:17px}
 .stage-fs-dock{display:none}
-#stage:fullscreen .stage-fs-dock{display:flex;position:absolute;top:50%;transform:translateY(-50%);z-index:24;flex-direction:column;align-items:center;gap:7px;padding:7px;border:1px solid #ffffff42;border-radius:26px;background:rgba(8,14,25,.24);box-shadow:0 8px 28px #0005;-webkit-backdrop-filter:blur(19px) saturate(155%);backdrop-filter:blur(19px) saturate(155%)}
+#stage:fullscreen .stage-fs-dock{display:flex;position:absolute;top:50%;transform:translateY(-50%);z-index:24;flex-direction:column;align-items:center;gap:7px;padding:8px 7px;border:1px solid #ffffff50;border-radius:28px;background:rgba(8,14,25,.38);box-shadow:0 8px 28px #0007;-webkit-backdrop-filter:blur(21px) saturate(160%);backdrop-filter:blur(21px) saturate(160%)}
+.stage-fs-status{display:block;max-width:48px;padding:3px 4px;border-radius:8px;color:#d9e8ff;font-size:8px;font-weight:850;letter-spacing:.08em;text-align:center;line-height:1.2;text-shadow:0 1px 4px #000}
+#stage:fullscreen #stageFsRecordDock .stage-fs-status{color:#b8f4cf}
+#stage:fullscreen #stageFsRecordDock.recording .stage-fs-status{color:#ffb6bd}
+#stage:fullscreen #stageFsRecordDock.paused .stage-fs-status{color:#ffe3a1}
 #stage:fullscreen #stageFsToolDock{left:9px}
 #stage:fullscreen #stageFsRecordDock{right:9px}
 .stage-fs-dock button{display:grid;place-items:center;width:42px;height:42px;min-width:42px;min-height:42px;padding:0;border-radius:50%;font-size:18px;line-height:1;background:rgba(16,25,40,.38);border:1px solid #ffffff50;color:#fff;box-shadow:0 3px 12px #0003;touch-action:manipulation}
@@ -177,6 +181,7 @@ textarea{min-height:150px;resize:vertical;line-height:1.6}
     <div id="stageFsRecordDock" class="stage-fs-dock" role="toolbar" aria-label="Recording controls">
       <button type="button" id="fsRecordToggle" aria-label="Start recording" title="Start recording">●</button>
       <button type="button" id="fsPauseToggle" aria-label="Pause recording" title="Pause recording" disabled>Ⅱ</button>
+      <span id="fsRecordStatus" class="stage-fs-status" aria-live="polite">READY</span>
     </div>
     <div id="stageFsSlideNav" aria-label="Fullscreen slide navigation">
       <button id="fsPrevSlide" type="button" disabled>← Prev</button>
@@ -332,17 +337,22 @@ function modeNeedsCamera(){return captureMode.value==='camera'||captureMode.valu
 function modeNeedsScreen(){return captureMode.value==='screen'||captureMode.value==='screen-camera'}
 function baseAvailable(){const mode=captureMode.value;if(mode==='camera')return !!cameraStream;if(mode==='camera-slides')return !!cameraStream&&slides.length>0;if(mode==='screen-camera')return (!!screenStream||slides.length>0)&&!!cameraStream;return !!screenStream||slides.length>0;}
 function syncStagePresenterDock(){
- const rec=$('fsRecordToggle'),pause=$('fsPauseToggle');
+ const rec=$('fsRecordToggle'),pause=$('fsPauseToggle'),status=$('fsRecordStatus'),dock=$('stageFsRecordDock');
  if(!rec||!pause)return;
  rec.classList.toggle('recording',recording);
  rec.textContent=recording?'■':'●';
  rec.title=recording?'Stop recording':'Start recording';
  rec.setAttribute('aria-label',rec.title);
+ rec.setAttribute('aria-pressed',String(recording));
  rec.disabled=!recording&&recordBtn.disabled;
  pause.disabled=!recording;
  pause.textContent=paused?'▶':'Ⅱ';
  pause.title=paused?'Resume recording':'Pause recording';
  pause.setAttribute('aria-label',pause.title);
+ pause.setAttribute('aria-pressed',String(paused));
+ dock?.classList.toggle('recording',recording&&!paused);
+ dock?.classList.toggle('paused',recording&&paused);
+ if(status)status.textContent=recording?(paused?'PAUSED':'REC'):'READY';
  document.querySelectorAll('[data-stage-tool]').forEach(button=>{
   const selected=button.dataset.stageTool===activeTool;
   button.classList.toggle('active',selected);
