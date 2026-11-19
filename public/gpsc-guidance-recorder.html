@@ -225,6 +225,14 @@ main>section.card{min-width:0}
 }
 @media(prefers-reduced-motion:reduce){#contextPanel{animation:none}}
 
+
+.device-diagnostic{margin-top:12px;border-color:rgba(96,165,250,.22)}
+.device-diagnostic-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.device-diagnostic-actions button{min-height:42px}
+.device-diagnostic-results{white-space:pre-wrap;overflow-wrap:anywhere;margin:10px 0 0;padding:12px;border:1px solid rgba(255,255,255,.09);border-radius:10px;background:rgba(9,9,11,.62);color:#d4d4d8;font:11px/1.65 ui-monospace,SFMono-Regular,Consolas,monospace;max-height:380px;overflow:auto}
+.device-diagnostic-results:empty{display:none}
+@media(max-width:520px){.device-diagnostic-actions button{flex:1}}
+
 </style>
 </head>
 <body>
@@ -424,6 +432,12 @@ main>section.card{min-width:0}
   </div>
   <div id="error" class="error" role="alert"></div>
   <p class="screen-note">Screen capture depends on browser support. Camera and microphone permission require HTTPS. Screen sharing must be started by the presenter.</p>
+  <section class="device-diagnostic card" id="deviceDiagnosticPanel">
+    <h2>Android / Browser Compatibility</h2>
+    <p class="hint">Run this check on the phone/browser used for recording. It checks capabilities without opening the camera or microphone or requesting permissions.</p>
+    <div class="device-diagnostic-actions"><button type="button" id="deviceCheckBtn" class="primary">📱 Run Device Check</button><button type="button" id="deviceCheckCopyBtn" disabled>Copy Report</button></div>
+    <pre id="deviceCheckResults" class="device-diagnostic-results" role="status" aria-live="polite">Not checked yet. Tap “Run Device Check” on your Android phone.</pre>
+  </section>
 </section>
 
 <aside id="contextPanel" class="context-panel" aria-label="Lecture context panel">
@@ -1391,6 +1405,67 @@ restoreBrandCardSettings();
 try{const savedCaptionLanguage=localStorage.getItem('officerlab-caption-language');if(['gu-IN','en-IN','hi-IN'].includes(savedCaptionLanguage))captionLanguage.value=savedCaptionLanguage;}catch{}
 if(!captionSupportAvailable())updateCaptionStatus('Automatic speech recognition is not available in this browser. Recording continues normally; add a transcript manually.');
 else updateCaptionStatus('Optional live captions. Browser support and language accuracy vary; recognition may use the browser or platform speech service.');
+
+const deviceCheckBtn=$('deviceCheckBtn'),deviceCheckCopyBtn=$('deviceCheckCopyBtn'),deviceCheckResults=$('deviceCheckResults');
+let latestDeviceReport='';
+function deviceCheckLine(name,ok,detail='',optional=false){const state=ok?'PASS':optional?'OPTIONAL':'FAIL';return state.padEnd(9)+' '+name+(detail?' — '+detail:'');}
+async function runDeviceCheck(){
+ deviceCheckBtn.disabled=true;deviceCheckCopyBtn.disabled=true;deviceCheckResults.textContent='Checking browser capabilities…';
+ try{
+  const ua=navigator.userAgent||'Unknown';
+  const android=ua.match(/Android\s([\d.]+)/i);
+  const chrome=ua.match(/(?:Chrome|CriOS)\/([\d.]+)/i);
+  const browser=navigator.userAgentData?.brands?.map(x=>x.brand+' '+x.version).join(', ')||(chrome?'Chrome '+chrome[1]:'Browser not identified');
+  const secure=!!window.isSecureContext,media=!!navigator.mediaDevices?.getUserMedia,recorder=!!window.MediaRecorder,canvasCapture=!!HTMLCanvasElement.prototype.captureStream,db=!!window.indexedDB;
+  const candidates=['video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];
+  let supportedMime='';
+  if(recorder&&typeof MediaRecorder.isTypeSupported==='function'){for(const type of candidates){try{if(MediaRecorder.isTypeSupported(type)){supportedMime=type;break;}}catch{}}}
+  const getPermission=async name=>{try{return (await navigator.permissions.query({name})).state;}catch{return 'not exposed by browser';}};
+  const [cameraPermission,micPermission]=await Promise.all([getPermission('camera'),getPermission('microphone')]);
+  let storage='not exposed';try{const est=await navigator.storage?.estimate?.();if(est){const free=Math.max(0,(est.quota||0)-(est.usage||0));storage=(free/1048576).toFixed(0)+' MB estimated free';}}catch{}
+  const audio=!!(window.AudioContext||window.webkitAudioContext),screen=!!navigator.mediaDevices?.getDisplayMedia,fullscreen=!!document.documentElement.requestFullscreen,speech=!!(window.SpeechRecognition||window.webkitSpeechRecognition),sw=('serviceWorker'in navigator);
+  const required=[secure,media,recorder,canvasCapture,db],ready=required.every(Boolean);
+  const rows=[
+   'OFFICERLAB — DEVICE COMPATIBILITY REPORT',
+   'Date: '+new Date().toLocaleString(),
+   'Platform: '+(android?'Android '+android[1]:/iPhone|iPad/i.test(ua)?'iOS / iPadOS':navigator.platform||'Unknown'),
+   'Browser: '+browser,
+   'Viewport: '+window.innerWidth+' × '+window.innerHeight+' CSS px · DPR '+(window.devicePixelRatio||1),
+   '',
+   'CORE RECORDING REQUIREMENTS',
+   deviceCheckLine('Secure HTTPS context',secure,'Required for camera/microphone'),
+   deviceCheckLine('Camera & microphone API',media,'getUserMedia available'),
+   deviceCheckLine('MediaRecorder',recorder,recorder?'Available':'Missing'),
+   deviceCheckLine('Canvas video capture',canvasCapture,'Required for composited lecture recording'),
+   deviceCheckLine('IndexedDB local recovery',db,'Required for local session/chunk storage'),
+   deviceCheckLine('Supported recording format',!!supportedMime||recorder,supportedMime||'Browser default codec will be selected',!supportedMime),
+   '',
+   'OPTIONAL / BROWSER-DEPENDENT FEATURES',
+   deviceCheckLine('Screen sharing',screen,'getDisplayMedia',true),
+   deviceCheckLine('Fullscreen API',fullscreen,'Presentation fullscreen',true),
+   deviceCheckLine('Web Audio',audio,'Microphone waveform/audio mixing',true),
+   deviceCheckLine('Automatic speech captions',speech,'SpeechRecognition API',true),
+   deviceCheckLine('Service Worker / PWA',sw,'Offline shell support',true),
+   '',
+   'PERMISSION STATUS (queried without prompting)',
+   'Camera: '+cameraPermission,
+   'Microphone: '+micPermission,
+   'Estimated free web storage: '+storage,
+   '',
+   'OVERALL: '+(ready?'READY — core browser APIs are available. Run a short recording test to verify camera, microphone and file playback.':'CHECK REQUIRED ITEMS — one or more core APIs are missing. Use current Chrome over HTTPS and rerun.'),
+   'Note: This check does not grant permissions, start recording, or prove actual camera/microphone hardware operation.'
+  ];
+  latestDeviceReport=rows.join('\n');deviceCheckResults.textContent=latestDeviceReport;deviceCheckCopyBtn.disabled=false;
+ }catch(e){latestDeviceReport='Device check error: '+(e?.message||String(e));deviceCheckResults.textContent=latestDeviceReport;}
+ finally{deviceCheckBtn.disabled=false;}
+}
+deviceCheckBtn.addEventListener('click',runDeviceCheck);
+deviceCheckCopyBtn.addEventListener('click',async()=>{
+ if(!latestDeviceReport)return;
+ try{if(navigator.clipboard?.writeText)await navigator.clipboard.writeText(latestDeviceReport);else{const t=document.createElement('textarea');t.value=latestDeviceReport;t.style.position='fixed';t.style.opacity='0';document.body.appendChild(t);t.select();const ok=document.execCommand('copy');t.remove();if(!ok)throw new Error('Copy is not supported');}deviceCheckCopyBtn.textContent='✓ Copied';}
+ catch(e){deviceCheckCopyBtn.textContent='Copy unavailable';}
+});
+
 let noteTimer;
  const contextToggle=$('contextToggle');
  function setContextPanelOpen(open,persist=true){document.body.classList.toggle('context-collapsed',!open);contextToggle.setAttribute('aria-expanded',String(open));contextToggle.textContent=open?'▤ Hide Context':'▤ Show Context';contextToggle.title=open?'Hide context panel':'Show context panel';if(persist){try{localStorage.setItem('officerlab-context-panel',open?'open':'closed');}catch{}}}
