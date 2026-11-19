@@ -96,6 +96,7 @@ textarea{min-height:150px;resize:vertical;line-height:1.6}
 <header>
   <div><h1>🎥 OfficerLab Lecture Studio</h1><div class="brand-sub">GPSC Guidance · Local-first recording</div></div>
   <span class="tag">16:9 · 1080p / 30fps target</span>
+  <span class="tag" id="connectivityStatus" role="status" aria-live="polite">● Checking connection</span>
   <button id="installApp" type="button" hidden style="margin-left:auto;padding:6px 10px;font-size:11px">⬇ Install App</button>
 </header>
 <div class="orientation-hint" id="orientationHint">
@@ -717,6 +718,8 @@ $('fullscreenBtn').onclick=async()=>{
  }catch{showError('Fullscreen is not available here. In Chrome, use the menu and choose Install app for an app-style window.');}
 };
 document.addEventListener('fullscreenchange',()=>{$('fullscreenBtn').textContent=document.fullscreenElement?'⛶ Exit Full Screen':'⛶ Full Screen';});
+function updateConnectionStatus(){const el=$('connectivityStatus');if(!el)return;const online=navigator.onLine;el.textContent=online?'● Online':'● Offline · Local recording available';el.style.borderColor=online?'#3fb950':'#d29922';el.style.color=online?'#7ee787':'#f0c674';}
+window.addEventListener('online',updateConnectionStatus);window.addEventListener('offline',updateConnectionStatus);updateConnectionStatus();
 let installPrompt=null;
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e;$('installApp').hidden=false;});
 $('installApp').onclick=async()=>{if(!installPrompt){showError('In Chrome, open ⋮ and choose Install app or Add to Home screen.');return;}installPrompt.prompt();await installPrompt.userChoice;installPrompt=null;$('installApp').hidden=true;};
