@@ -603,10 +603,15 @@ function contain(ctx,source,x,y,w,h){
 function containWithFill(ctx,source,x,y,w,h){
  if(!source)return;
  const sw=source.videoWidth||source.width||source.naturalWidth,sh=source.videoHeight||source.height||source.naturalHeight;if(!sw||!sh)return;
- const scale=Math.max(w/sw,h/sh),cw=w/scale,ch=h/scale,sx=(sw-cw)/2,sy=(sh-ch)/2,blur=Math.max(12,Math.round(Math.min(w,h)*.035));
- ctx.save();ctx.beginPath();ctx.rect(x,y,w,h);ctx.clip();ctx.filter='blur('+blur+'px)';
- ctx.drawImage(source,sx,sy,cw,ch,x-blur,y-blur,w+blur*2,h+blur*2);ctx.filter='none';
- ctx.fillStyle='rgba(5,8,13,.42)';ctx.fillRect(x,y,w,h);ctx.restore();
+ // Draw a proportional COVER copy behind the complete slide; this guarantees no empty side bands.
+ const scale=Math.max(w/sw,h/sh),dw=sw*scale,dh=sh*scale,blur=Math.max(14,Math.round(Math.min(w,h)*.045));
+ ctx.save();ctx.beginPath();ctx.rect(x,y,w,h);ctx.clip();
+ ctx.filter='blur('+blur+'px)';
+ ctx.drawImage(source,x+(w-dw)/2-blur*2,y+(h-dh)/2-blur*2,dw+blur*4,dh+blur*4);
+ ctx.filter='none';
+ ctx.fillStyle='rgba(5,8,13,.24)';ctx.fillRect(x,y,w,h);
+ ctx.restore();
+ // Keep the complete original slide crisp and uncropped above the blurred background.
  contain(ctx,source,x,y,w,h);
 }
 function roundedPath(c,x,y,w,h,r){r=Math.min(r,w/2,h/2);c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();}
