@@ -164,6 +164,33 @@ textarea{min-height:150px;resize:vertical;line-height:1.6}
 @media(max-width:950px){main{grid-template-columns:1fr}}
 @media(max-width:650px){header{padding:10px 12px}h1{font-size:15px}main{padding:9px 9px 132px;gap:9px}.card{padding:10px}.device-grid{grid-template-columns:1fr}.sticky-controls{width:calc(100% - 10px);bottom:calc(env(safe-area-inset-bottom,0px) + 4px);gap:5px}.sticky-controls button{flex:1;min-width:0;padding:8px 7px;font-size:11px;min-height:49px}.layout-row button{flex:1}.tool-row button{min-width:47px;min-height:47px}.tool-row input[type=range]{height:42px}.rec{grid-template-columns:82px minmax(0,1fr)}.rec video{width:82px}}
 @media(max-height:480px) and (orientation:landscape){main{padding:7px 7px 85px;grid-template-columns:minmax(0,1.55fr) minmax(235px,.65fr);gap:7px}.card{padding:8px}.stage{max-height:calc(100vh - 190px)}.sticky-controls{bottom:3px}.orientation-hint{display:none}}
+
+/* Cinematic Darkroom */
+:root{--bg:#09090b;--panel:rgba(24,24,27,.9);--panel2:rgba(39,39,42,.78);--line:rgba(255,255,255,.11);--text:#f4f4f5;--muted:#a1a1aa;--blue:#2563eb;--red:#dc3b42;--green:#22a06b;--amber:#f59e0b}
+body{background:radial-gradient(ellipse at 50% -18%,rgba(37,99,235,.13),transparent 48%),var(--bg);font-family:Inter,"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",sans-serif}
+header{background:rgba(9,9,11,.86);border-bottom-color:rgba(255,255,255,.09);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px)}
+h1{letter-spacing:-.035em;font-weight:760}
+.tag{background:rgba(39,39,42,.55);border-color:rgba(255,255,255,.1);backdrop-filter:blur(12px)}
+.card{background:linear-gradient(145deg,rgba(39,39,42,.9),rgba(24,24,27,.94));border-color:rgba(255,255,255,.1);box-shadow:0 18px 55px rgba(0,0,0,.25);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+.stage{border:1px solid rgba(255,255,255,.14);box-shadow:inset 0 0 0 1px rgba(255,255,255,.025),0 22px 60px rgba(0,0,0,.48);border-radius:15px}
+button{transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease,background-color .18s ease}
+button:not(:disabled):hover{transform:translateY(-1px);border-color:rgba(96,165,250,.55);box-shadow:0 8px 24px rgba(37,99,235,.13)}
+button:not(:disabled):active{transform:translateY(0) scale(.985)}
+button.primary{background:linear-gradient(135deg,#2563eb,#1d4ed8);box-shadow:0 7px 22px rgba(37,99,235,.22)}
+button.danger{background:linear-gradient(135deg,#dc3b42,#b91c1c)}
+.sticky-controls{background:rgba(24,24,27,.78);border:1px solid rgba(255,255,255,.13);border-radius:20px;padding:9px 11px;box-shadow:0 18px 55px rgba(0,0,0,.55);backdrop-filter:blur(24px) saturate(150%);-webkit-backdrop-filter:blur(24px) saturate(150%)}
+#recordBtn{min-width:190px;position:relative;isolation:isolate}
+#recordBtn.danger{box-shadow:0 0 0 4px rgba(220,59,66,.16),0 0 30px rgba(220,59,66,.24);animation:recordBreath 2.2s ease-in-out infinite}
+@keyframes recordBreath{0%,100%{box-shadow:0 0 0 3px rgba(220,59,66,.13),0 0 18px rgba(220,59,66,.16)}50%{box-shadow:0 0 0 7px rgba(220,59,66,.08),0 0 30px rgba(220,59,66,.27)}}
+.rec-badge{border:1px solid rgba(255,255,255,.18);background:rgba(9,9,11,.65);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);font-family:"Roboto Mono","SFMono-Regular",Consolas,monospace}
+#timer,.tool-val,.slide-count{font-family:"Roboto Mono","SFMono-Regular",Consolas,monospace;font-variant-numeric:tabular-nums}
+.record-countdown{background:rgba(9,9,11,.25);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);animation:countdownFade .2s ease-out}
+#countdownNumber{font-family:"Inter","Plus Jakarta Sans",system-ui,sans-serif;font-weight:350;letter-spacing:-.08em;text-shadow:0 8px 38px rgba(0,0,0,.55),0 0 38px rgba(37,99,235,.18)}
+@keyframes countdownFade{from{opacity:0}to{opacity:1}}
+.meter.waveform{height:34px;min-width:150px;display:flex;align-items:center;justify-content:center;gap:3px;padding:4px 7px;background:rgba(9,9,11,.55);border:1px solid rgba(255,255,255,.09);border-radius:9px;overflow:hidden}
+.wave-bar{display:block;flex:1;height:3px;min-width:2px;max-width:5px;border-radius:5px;background:linear-gradient(180deg,#60a5fa,#2563eb);opacity:.72;transform:scaleY(.35);transform-origin:center;transition:transform .075s linear,opacity .12s linear;box-shadow:0 0 8px rgba(37,99,235,.2)}
+@media(max-width:650px){.sticky-controls{border-radius:17px;padding:6px}.sticky-controls button{border-radius:12px}#recordBtn{min-width:0}}
+@media(prefers-reduced-motion:reduce){button,.rec-badge,#recordBtn.danger,.record-countdown{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
@@ -271,7 +298,7 @@ textarea{min-height:150px;resize:vertical;line-height:1.6}
   </div>
   <div class="audio-panel">
     <span class="small" id="micStatus">Mic: off</span>
-    <div class="meter" role="meter" aria-label="Microphone input level" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="meterFill"></div></div>
+    <div class="meter waveform" role="meter" aria-label="Microphone input level" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><div id="meterFill" hidden></div></div>
     <button id="muteBtn" type="button" disabled>Mute Mic</button>
     <label class="check"><input id="includeSystemAudio" type="checkbox" checked> Include shared screen audio</label>
   </div>
@@ -647,11 +674,12 @@ function syncVisuals(){
  if(!drawRAF)startDraw();
 }
 function drawMicMeter(){
- if(!micAnalyser){meterFill.style.width='0%';meterRAF=requestAnimationFrame(drawMicMeter);return;}
+ if(!micAnalyser){meterFill.parentElement.querySelectorAll('.wave-bar').forEach(bar=>{bar.style.transform='scaleY(.12)';bar.style.opacity='.35';});meterFill.parentElement.setAttribute('aria-valuenow','0');meterRAF=requestAnimationFrame(drawMicMeter);return;}
  const data=new Uint8Array(micAnalyser.fftSize);micAnalyser.getByteTimeDomainData(data);
  let sum=0;for(const v of data){const n=(v-128)/128;sum+=n*n;}
  const rms=Math.sqrt(sum/data.length);const level=Math.min(100,Math.round(rms*260));
- meterFill.style.width=level+'%';meterFill.parentElement.setAttribute('aria-valuenow',String(level));
+ const bars=meterFill.parentElement.querySelectorAll('.wave-bar');if(bars.length){const stride=Math.max(1,Math.floor(data.length/bars.length));bars.forEach((bar,index)=>{let energy=0;for(let j=0;j<stride;j++){const n=(data[index*stride+j]||128)-128;energy+=n*n;}const amplitude=Math.sqrt(energy/stride)/128;const height=Math.max(3,Math.min(27,3+amplitude*145+(level/100)*8));bar.style.transform='scaleY('+(height/27)+')';bar.style.opacity=String(.55+Math.min(.45,amplitude*1.5));});}
+ meterFill.parentElement.setAttribute('aria-valuenow',String(level));
  meterRAF=requestAnimationFrame(drawMicMeter);
 }
 async function createAudioGraph(){
