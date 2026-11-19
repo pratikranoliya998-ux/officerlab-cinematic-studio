@@ -1,5 +1,8 @@
 {
   "rewrites": [
-    { "source": "/((?!api/).*)", "destination": "/" }
+    {
+      "source": "/((?!api/|gpsc-guidance-recorder\\.html$).*)",
+      "destination": "/"
+    }
   ]
 }
