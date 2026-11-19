@@ -119,10 +119,12 @@ textarea{min-height:150px;resize:vertical;line-height:1.6}
   <div class="capture-panel">
     <div class="field"><label for="captureMode">Capture mode</label><select id="captureMode">
       <option value="camera">Camera only</option>
+      <option value="camera-slides">Camera + Slide Overlay</option>
       <option value="screen">Screen / slides only</option>
       <option value="screen-camera" selected>Screen + Face Cam (PiP)</option>
     </select></div>
     <div class="field"><label for="quality">Recording quality</label><select id="quality"><option value="1080">1080p · 30 fps</option><option value="720">720p · 30 fps</option><option value="480">480p · 30 fps</option></select></div>
+    <div class="field"><label for="outputRatio">Output format</label><select id="outputRatio"><option value="landscape">Landscape · 16:9</option><option value="portrait">Portrait · 9:16</option></select></div>
   </div>
   <div class="device-grid">
     <div class="field"><label for="cameraSelect">Camera input</label><select id="cameraSelect"><option value="">Default camera</option></select></div>
@@ -153,8 +155,11 @@ textarea{min-height:150px;resize:vertical;line-height:1.6}
       <label class="check"><input id="mirrorOutput" type="checkbox"> Mirror final camera</label>
     </div>
     <div class="tool-row" style="margin-top:8px">
+      <label for="faceShape">Face Cam shape</label><select id="faceShape"><option value="rounded">Rounded rectangle</option><option value="rectangle">Rectangle</option><option value="circle">Circle (square crop)</option><option value="oval">Oval</option></select>
       <label for="faceSize">Face Cam width <span id="faceSizeVal" class="tool-val">18%</span></label>
-      <input type="range" id="faceSize" min="12" max="32" value="18">
+      <input type="range" id="faceSize" min="12" max="42" value="18">
+      <label for="faceHeight">Face Cam height <span id="faceHeightVal" class="tool-val">18%</span></label>
+      <input type="range" id="faceHeight" min="8" max="45" value="18">
       <label for="faceOpacity">Face Cam opacity <span id="faceOpacityVal" class="tool-val">100%</span></label>
       <input type="range" id="faceOpacity" min="35" max="100" value="100">
     </div>
