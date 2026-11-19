@@ -610,7 +610,7 @@ function containWithFill(ctx,source,x,y,w,h){
  ctx.filter='blur('+blur+'px)';
  ctx.drawImage(source,x+(w-dw)/2-blur*2,y+(h-dh)/2-blur*2,dw+blur*4,dh+blur*4);
  ctx.filter='none';
- ctx.fillStyle='rgba(5,8,13,.24)';ctx.fillRect(x,y,w,h);
+ ctx.fillStyle='rgba(5,8,13,.06)';ctx.fillRect(x,y,w,h);
  ctx.restore();
  // Keep the complete original slide crisp and uncropped above the blurred background.
  contain(ctx,source,x,y,w,h);
