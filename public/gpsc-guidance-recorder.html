@@ -98,13 +98,13 @@ body.presentation-fullscreen>main>section.card>:not(#stage){display:none!importa
 #stageFsSlideNav{display:none}
 #stage:fullscreen #stageFsSlideNav{display:block;position:absolute;inset:0;z-index:30;pointer-events:none;background:transparent;border:0;box-shadow:none;padding:0}
 #stage:fullscreen #stageFsControlsToggle{display:none!important}
-#stageFsSlideNav button{position:absolute;display:grid;place-items:center;pointer-events:auto;width:40px;height:40px;min-width:40px;min-height:40px;padding:0;border-radius:50%;font-size:24px;line-height:1;background:rgba(10,18,30,.38);border:1px solid #ffffff66;color:#fff;box-shadow:0 5px 18px #0005;-webkit-backdrop-filter:blur(18px) saturate(155%);backdrop-filter:blur(18px) saturate(155%);touch-action:manipulation}
-#fsPrevSlide{left:57px;top:50%;transform:translateY(-50%)}
-#fsNextSlide{right:57px;top:50%;transform:translateY(-50%)}
-#stageFsExit{right:9px;top:9px;width:36px;height:36px;min-width:36px;min-height:36px;font-size:22px;background:rgba(150,38,50,.52);border-color:#ff9da588}
+#stageFsSlideNav button{position:absolute;display:grid;place-items:center;pointer-events:auto;width:42px;height:42px;min-width:42px;min-height:42px;padding:0;border-radius:50%;font-size:25px;line-height:1;background:rgba(10,18,30,.28);border:1px solid #ffffff75;color:#fff;box-shadow:0 4px 15px #0004;-webkit-backdrop-filter:blur(20px) saturate(170%);backdrop-filter:blur(20px) saturate(170%);touch-action:manipulation}
+#fsPrevSlide{left:12px;top:12px}
+#fsNextSlide{left:62px;top:12px}
+#stageFsExit{right:12px;top:12px;width:42px;height:42px;min-width:42px;min-height:42px;font-size:25px;background:rgba(150,38,50,.3);border-color:#ff9da588}
 #stageFsSlideNav .fs-jump,#stageFsSlideNav #fsGoSlide{display:none!important}
-#stageFsSlideNav button:disabled{opacity:.28}
-@media(max-width:650px){#fsPrevSlide{left:49px}#fsNextSlide{right:49px}#stageFsExit{right:7px;top:7px;width:34px;height:34px;min-width:34px;min-height:34px}#stageFsSlideNav button{width:38px;height:38px;min-width:38px;min-height:38px;font-size:22px}}
+#stageFsSlideNav button:disabled{opacity:.32}
+@media(max-width:650px){#fsPrevSlide{left:8px;top:8px}#fsNextSlide{left:53px;top:8px}#stageFsExit{right:8px;top:8px;width:38px;height:38px;min-width:38px;min-height:38px}#stageFsSlideNav button{width:38px;height:38px;min-width:38px;min-height:38px;font-size:22px}}
 @media(max-width:650px){.stage-toolbar{gap:5px;padding:7px}.stage-toolbar button{flex:1;min-width:78px}.teleprompter-overlay{left:4%;right:4%;height:32%}.teleprompter-window{font-size:24px}.teleprompter-controls input[type=range]{width:78px}}
 .tool-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:8px}.tool-row:last-child{margin-bottom:0}
 .tool-row button{min-width:44px;min-height:42px;padding:7px 9px;font-size:12px}
@@ -927,8 +927,8 @@ prevSlide.onclick=()=>showSlide(slideIndex-1);
 nextSlide.onclick=()=>showSlide(slideIndex+1);
 goSlide.onclick=()=>{const n=Number(slideJump.value);if(Number.isInteger(n)&&n>=1&&n<=slides.length)showSlide(n-1);else showError('Enter a slide number from 1 to '+slides.length+'.');};
 slideJump.addEventListener('keydown',e=>{if(e.key==='Enter')goSlide.click();});
-fsPrevSlide.onclick=()=>showSlide(slideIndex-1);
-fsNextSlide.onclick=()=>showSlide(slideIndex+1);
+fsPrevSlide.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();if(slideIndex>0)showSlide(slideIndex-1);});
+fsNextSlide.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();if(slideIndex<slides.length-1)showSlide(slideIndex+1);});
 fsGoSlide.onclick=()=>{const n=Number(fsSlideJump.value);if(Number.isInteger(n)&&n>=1&&n<=slides.length)showSlide(n-1);else showError('Enter a slide number from 1 to '+slides.length+'.');};
 fsSlideJump.addEventListener('keydown',e=>{if(e.key==='Enter')fsGoSlide.click();});
 pipDragBar.addEventListener('pointerdown',startDrag);
@@ -1002,6 +1002,10 @@ stageFsControlsToggle.onclick=()=>{
  stageFsControlsToggle.title=open?'Hide presentation controls':'Show presentation controls';
 };
 document.addEventListener('keydown',e=>{
+ if(document.fullscreenElement===stage&&!e.repeat&&(e.key==='ArrowLeft'||e.key==='ArrowRight')&&!/INPUT|TEXTAREA/.test(document.activeElement?.tagName||'')){
+  if(e.key==='ArrowLeft'&&slideIndex>0){e.preventDefault();showSlide(slideIndex-1);}
+  if(e.key==='ArrowRight'&&slideIndex<slides.length-1){e.preventDefault();showSlide(slideIndex+1);}
+ }
  if(e.key==='Escape'&&stageFsSlideNav.classList.contains('open')&&document.fullscreenElement===stage){
   stageFsSlideNav.classList.remove('open');stageFsControlsToggle.setAttribute('aria-expanded','false');
   stageFsControlsToggle.textContent='☰ Controls';stageFsControlsToggle.title='Show presentation controls';
