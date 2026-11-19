@@ -191,6 +191,40 @@ button.danger{background:linear-gradient(135deg,#dc3b42,#b91c1c)}
 .wave-bar{display:block;flex:1;height:3px;min-width:2px;max-width:5px;border-radius:5px;background:linear-gradient(180deg,#60a5fa,#2563eb);opacity:.72;transform:scaleY(.35);transform-origin:center;transition:transform .075s linear,opacity .12s linear;box-shadow:0 0 8px rgba(37,99,235,.2)}
 @media(max-width:650px){.sticky-controls{border-radius:17px;padding:6px}.sticky-controls button{border-radius:12px}#recordBtn{min-width:0}}
 @media(prefers-reduced-motion:reduce){button,.rec-badge,#recordBtn.danger,.record-countdown{animation:none!important;transition:none!important}}
+
+/* Three-zone broadcast workspace: Stage · Context · Floating Deck */
+header{position:sticky;top:0;z-index:45;min-height:64px;gap:10px}
+.context-toggle{margin-left:auto;min-height:38px;padding:7px 11px;font-size:11px;white-space:nowrap;background:rgba(37,99,235,.12);border-color:rgba(96,165,250,.28);color:#cfe1ff}
+.context-panel{display:flex;flex-direction:column;gap:13px;min-width:0;position:sticky;top:78px;align-self:start;max-height:calc(100dvh - 92px);overflow:auto;overscroll-behavior:contain;padding:0 3px 3px 0;scrollbar-width:thin;scrollbar-color:#52525b transparent}
+.context-panel>.card{flex:0 0 auto}
+body.context-collapsed>main{grid-template-columns:minmax(0,1fr)}
+body.context-collapsed>main>#contextPanel{display:none}
+main>section.card{min-width:0}
+#stage{scroll-margin-top:78px}
+.sticky-controls{z-index:60;gap:8px;padding:9px 11px}
+.sticky-controls button{white-space:nowrap;touch-action:manipulation}
+@media(max-width:950px){.context-panel{position:static;max-height:none;overflow:visible;padding:0}}
+@media(max-width:650px){
+ header{position:relative;gap:7px}
+ header>div{flex:1 1 100%}
+ .context-toggle{margin-left:0;min-height:37px;padding:6px 9px}
+ header .tag{font-size:10px}
+ .context-panel{gap:9px}
+ .sticky-controls{left:6px;right:6px;transform:none;width:auto;max-width:none;display:grid;grid-template-columns:.82fr 1.35fr .8fr .75fr .9fr;gap:5px;padding:6px}
+ .sticky-controls button{min-width:0;width:100%;padding:8px 4px;font-size:10px;min-height:46px;white-space:normal;line-height:1.2}
+ #recordBtn{font-size:11px;font-weight:800}
+}
+@media(max-height:480px) and (orientation:landscape){
+ header{position:relative;min-height:48px}
+ .context-panel{position:static;max-height:none}
+ .sticky-controls{left:50%;right:auto;transform:translateX(-50%);width:max-content;max-width:calc(100vw - 12px);display:flex}
+}
+@media(prefers-reduced-motion:no-preference){
+ #contextPanel{animation:contextReveal .22s ease-out}
+ @keyframes contextReveal{from{opacity:.6;transform:translateX(8px)}to{opacity:1;transform:translateX(0)}}
+}
+@media(prefers-reduced-motion:reduce){#contextPanel{animation:none}}
+
 </style>
 </head>
 <body>
@@ -198,6 +232,7 @@ button.danger{background:linear-gradient(135deg,#dc3b42,#b91c1c)}
   <div><h1>🎥 OfficerLab Lecture Studio</h1><div class="brand-sub">GPSC Guidance · Local-first recording</div></div>
   <span class="tag">16:9 · 1080p / 30fps target</span>
   <span class="tag" id="connectivityStatus" role="status" aria-live="polite">● Checking connection</span>
+  <button id="contextToggle" class="context-toggle" type="button" aria-controls="contextPanel" aria-expanded="true" title="Hide context panel">▤ Hide Context</button>
   <button id="installApp" type="button" hidden style="margin-left:auto;padding:6px 10px;font-size:11px">⬇ Install App</button>
 </header>
 <div class="orientation-hint" id="orientationHint">
@@ -391,7 +426,7 @@ button.danger{background:linear-gradient(135deg,#dc3b42,#b91c1c)}
   <p class="screen-note">Screen capture depends on browser support. Camera and microphone permission require HTTPS. Screen sharing must be started by the presenter.</p>
 </section>
 
-<aside style="display:flex;flex-direction:column;gap:13px;min-width:0">
+<aside id="contextPanel" class="context-panel" aria-label="Lecture context panel">
   <section class="card"><h2>Script / Talking Points</h2><textarea id="notes" placeholder="Paste your GPSC lecture outline here…&#10;&#10;1. Introduction&#10;2. Key concepts&#10;3. Examples and diagrams&#10;4. Revision questions"></textarea><p class="hint">Notes auto-save in this browser.</p></section>
   <section class="card"><h2>Recordings & Recovery</h2><div class="download-prefs"><label class="check"><input id="wifiOnlyDownloads" type="checkbox"> Wi-Fi-only downloads</label><span class="small" id="downloadNetworkStatus">Network type: checking…</span></div><p class="hint">Some browsers do not expose Wi-Fi status; when unknown, the app will ask before downloading.</p><div id="recoveryList"></div><div id="recList"><div class="empty" id="empty">No recordings yet.<br>Start a capture source and press Start Recording.</div></div></section>
   <section class="card"><h2>Pre-recording checklist</h2>
@@ -407,7 +442,7 @@ button.danger{background:linear-gradient(135deg,#dc3b42,#b91c1c)}
 </aside>
 </main>
 
-<div class="sticky-controls" id="stickyControls">
+<div class="sticky-controls" id="stickyControls" role="toolbar" aria-label="Floating recording control deck">
   <button id="testBtn">🧪 30s Test</button>
   <button id="recordBtn" class="primary" disabled>⏺ Start Recording</button>
   <button id="pauseBtn" disabled>Ⅱ Pause</button>
@@ -1356,7 +1391,11 @@ restoreBrandCardSettings();
 try{const savedCaptionLanguage=localStorage.getItem('officerlab-caption-language');if(['gu-IN','en-IN','hi-IN'].includes(savedCaptionLanguage))captionLanguage.value=savedCaptionLanguage;}catch{}
 if(!captionSupportAvailable())updateCaptionStatus('Automatic speech recognition is not available in this browser. Recording continues normally; add a transcript manually.');
 else updateCaptionStatus('Optional live captions. Browser support and language accuracy vary; recognition may use the browser or platform speech service.');
-let noteTimer;$('notes').oninput=()=>{clearTimeout(noteTimer);noteTimer=setTimeout(()=>{try{localStorage.setItem('officerlab-lecture-notes',$('notes').value);}catch{}},350);};
+let noteTimer;
+ const contextToggle=$('contextToggle');
+ function setContextPanelOpen(open,persist=true){document.body.classList.toggle('context-collapsed',!open);contextToggle.setAttribute('aria-expanded',String(open));contextToggle.textContent=open?'▤ Hide Context':'▤ Show Context';contextToggle.title=open?'Hide context panel':'Show context panel';if(persist){try{localStorage.setItem('officerlab-context-panel',open?'open':'closed');}catch{}}}
+ contextToggle.addEventListener('click',()=>setContextPanelOpen(document.body.classList.contains('context-collapsed')));
+ try{setContextPanelOpen(localStorage.getItem('officerlab-context-panel')!=='closed',false);}catch{setContextPanelOpen(true,false);}$('notes').oninput=()=>{clearTimeout(noteTimer);noteTimer=setTimeout(()=>{try{localStorage.setItem('officerlab-lecture-notes',$('notes').value);}catch{}},350);};
 window.addEventListener('beforeunload',e=>{if(recording){e.preventDefault();e.returnValue='';}});
 window.addEventListener('pagehide',()=>{stopDraw();stopTeleprompterScroll();if(cameraStream)cameraStream.getTracks().forEach(t=>t.stop());if(micStream)micStream.getTracks().forEach(t=>t.stop());if(screenStream)screenStream.getTracks().forEach(t=>t.stop());if(audioContext)audioContext.close().catch(()=>{});saved.forEach(r=>URL.revokeObjectURL(r.url));slideUrls.forEach(URL.revokeObjectURL);});
 async function init(){
