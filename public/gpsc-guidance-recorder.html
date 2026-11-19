@@ -125,6 +125,8 @@ textarea{min-height:150px;resize:vertical;line-height:1.6}
 .device-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px}
 .device-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}.device-actions button{flex:1}
 .audio-panel{display:flex;align-items:center;gap:9px;margin-top:10px;padding:9px 10px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;flex-wrap:wrap}
+.caption-options{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:9px;padding:10px;background:var(--panel2);border:1px solid var(--line);border-radius:10px}.caption-options select{width:auto;min-width:150px;max-width:100%}.caption-options .caption-status{flex:1 1 100%;font-size:10px;color:var(--muted);line-height:1.5}.caption-options input{width:17px;height:17px;accent-color:var(--blue)}
+.caption-export{margin-top:8px;padding:9px;border:1px solid var(--line);border-radius:9px;background:#0d141e}.caption-export .small{display:block;margin-bottom:7px}.caption-export button{min-height:34px;padding:6px 9px;font-size:11px}
 .meter{height:9px;min-width:90px;flex:1;border-radius:10px;background:#080d14;overflow:hidden;border:1px solid #ffffff12}
 #meterFill{height:100%;width:0;background:linear-gradient(90deg,#3fb950 0%,#d29922 72%,#f85149 95%);transition:width .08s}
 .small{font-size:11px;color:var(--muted)}
@@ -269,6 +271,16 @@ textarea{min-height:150px;resize:vertical;line-height:1.6}
     <button id="muteBtn" type="button" disabled>Mute Mic</button>
     <label class="check"><input id="includeSystemAudio" type="checkbox" checked> Include shared screen audio</label>
   </div>
+  <div class="caption-options" id="autoCaptionControls">
+    <label class="check"><input id="autoCaptionsEnabled" type="checkbox"> 🎞 Automatic captions during recording</label>
+    <label class="small" for="captionLanguage">Language</label>
+    <select id="captionLanguage" aria-label="Automatic caption language">
+      <option value="gu-IN">Gujarati (India)</option>
+      <option value="en-IN">English (India)</option>
+      <option value="hi-IN">Hindi (India)</option>
+    </select>
+    <span class="caption-status" id="captionStatus" role="status">Optional. Uses the browser's speech-recognition service when supported. Recognition may require internet and separate microphone permission; check your browser privacy settings.</span>
+  </div>
   <div class="layout-panel">
     <div class="field-label">Switch layout during recording</div>
     <div class="layout-row" id="layoutButtons">
@@ -356,12 +368,14 @@ const faceSize=$('faceSize'),faceHeight=$('faceHeight'),faceShape=$('faceShape')
 const lowerThirdName=$('lowerThirdName'),lowerThirdTitle=$('lowerThirdTitle'),lowerThirdPosition=$('lowerThirdPosition'),lowerThirdEnabled=$('lowerThirdEnabled');
 const recList=$('recList'),empty=$('empty'),recoveryList=$('recoveryList');
 const dataSaver=$('dataSaver'),wifiOnlyDownloads=$('wifiOnlyDownloads');
+const autoCaptionsEnabled=$('autoCaptionsEnabled'),captionLanguage=$('captionLanguage'),captionStatus=$('captionStatus');
 let cameraStream=null,micStream=null,screenStream=null,recorder=null,recordTimer=null,meterRAF=0,drawRAF=0,preferredFacing='user';
 let audioContext=null,audioDestination=null,micGain=null,screenGain=null,micAnalyser=null,micSource=null,screenAudioSource=null;
 let layout='pip',pip={x:.77,y:.73},activeTool='pen',drawing=false,slides=[],slideIndex=0,pdfDoc=null,slideSource=null,slideUrls=[],presentationSavedOutputRatio=null;
 let sessionId=null,chunkIndex=0,writeQueue=Promise.resolve(),localChunks=[],recording=false,paused=false,recordingStarting=false,startedAt=0,recordElapsedMs=0,recordSegmentStartedAt=0,testTimeout=null;
 let saved=[],recoveryItems=[],activeMediaElement=null,mediaSessionReady=false;
 let teleprompterRAF=0,teleprompterLastFrame=0,lastInkPoint=null,lastInkPointerId=null,lowerThirdStartedAt=0;
+let captionRecognition=null,captionDesired=false,captionSuspended=false,captionRestartTimer=null,captionStopResolver=null,captionSaveQueue=Promise.resolve(),activeCaptionSession=null,captionCues=[],captionLastCueEnd=0,captionStopAtMs=null;
 const showError=message=>{error.textContent=message;error.style.display='block'};
 const clearError=()=>{error.textContent='';error.style.display='none'};
 const clock=ms=>{const sec=Math.max(0,Math.floor(ms/1000));return String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0')};
@@ -409,7 +423,7 @@ function syncStagePresenterDock(){
  });
 }
 function updateControls(){
- const mode=captureMode.value;inkCanvas.style.opacity=recording?'0':'1';captureMode.disabled=recording||recordingStarting;quality.disabled=recording||recordingStarting;outputRatio.disabled=recording||recordingStarting;recordBtn.disabled=recording||recordingStarting||!baseAvailable()||((mode==='screen-camera'||mode==='camera-slides')&&!cameraStream);
+ const mode=captureMode.value;inkCanvas.style.opacity=recording?'0':'1';captureMode.disabled=recording||recordingStarting;quality.disabled=recording||recordingStarting;outputRatio.disabled=recording||recordingStarting;recordBtn.disabled=recording||recordingStarting||!baseAvailable()||((mode==='screen-camera'||mode==='camera-slides')&&!cameraStream);autoCaptionsEnabled.disabled=recording||recordingStarting;captionLanguage.disabled=recording||recordingStarting;
  cameraBtn.disabled=recording||recordingStarting;micBtn.disabled=recording||recordingStarting;screenBtn.disabled=recording||recordingStarting;$('cameraSwitchBtn').disabled=recording||recordingStarting||!cameraStream;
  $('muteBtn').disabled=!micStream;
  $('cameraBtn').textContent=cameraStream?'⏹ Stop Camera':'📷 Start Camera';
@@ -769,7 +783,7 @@ async function startRecording(isTest=false){
  const h=selectedOutputQuality(),isAppleMobile=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1),lowData=dataSaver.checked||!!navigator.connection?.saveData,videoBits=(isAppleMobile||lowData)?1200000:(h===1080?6500000:h===720?4000000:2200000);
  try{recorder=mime?new MediaRecorder(output,{mimeType:mime,videoBitsPerSecond:videoBits,audioBitsPerSecond:160000}):new MediaRecorder(output,{videoBitsPerSecond:videoBits,audioBitsPerSecond:160000});}
  catch(e){recordingStarting=false;videoCapture.getTracks().forEach(t=>t.stop());updateControls();showError('Recorder could not start: '+e.message);return;}
- sessionId=requestId();chunkIndex=0;localChunks=[];writeQueue=Promise.resolve();const session={id:sessionId,name:'officerlab-lecture-'+stamp()+(mime&&mime.includes('mp4')?'.mp4':'.webm'),status:'recording',mime:mime||'video/webm',quality:h,createdAt:Date.now(),duration:0,transcript:''};
+ sessionId=requestId();chunkIndex=0;localChunks=[];writeQueue=Promise.resolve();const session={id:sessionId,name:'officerlab-lecture-'+stamp()+(mime&&mime.includes('mp4')?'.mp4':'.webm'),status:'recording',mime:mime||'video/webm',quality:h,createdAt:Date.now(),duration:0,transcript:'',captions:[]};captionCues=[];captionLastCueEnd=0;captionSaveQueue=Promise.resolve();activeCaptionSession=session;captionStopAtMs=null;
  try{await putSession(session);}catch(e){recordingStarting=false;showError('Local recovery storage could not be initialized: '+e.message);recorder=null;videoCapture.getTracks().forEach(t=>t.stop());updateControls();return;}
  recorder.ondataavailable=e=>{
   if(!e.data||!e.data.size)return;
@@ -779,10 +793,10 @@ async function startRecording(isTest=false){
  };
  recorder.onerror=e=>showError('Recording error: '+(e.error?.message||'unknown'));
  recorder.onstop=async()=>{
-  const finalDuration=recordingElapsedMs();recordElapsedMs=finalDuration;recordSegmentStartedAt=0;
+  const finalDuration=recordingElapsedMs();recordElapsedMs=finalDuration;recordSegmentStartedAt=0;captionStopAtMs=finalDuration;
   clearInterval(recordTimer);recordTimer=null;
   try{
-   await writeQueue;
+   await stopCaptionCapture();await captionSaveQueue;await writeQueue;
    const type=recorder?.mimeType||mime||'video/webm',persisted=await getAllChunks().catch(()=>[]),allParts=[...persisted.filter(p=>p.sessionId===sessionId).map(p=>({index:p.index,blob:p.blob})),...localChunks].sort((a,b)=>a.index-b.index),blob=new Blob(allParts.map(p=>p.blob),{type}),duration=finalDuration;
    const ext=type.includes('mp4')?'mp4':'webm',name='officerlab-lecture-'+stamp()+'.'+ext;
    if(blob.size){
@@ -790,13 +804,14 @@ async function startRecording(isTest=false){
     await putSession(row);await addSaved(row);
     for(let i=0;i<chunkIndex;i++)await deleteChunk(sessionId,i);
    }
-  }catch(e){showError('Recording finished, but it could not be saved to local recovery storage: '+e.message);if(localChunks.length){const parts=localChunks.sort((a,b)=>a.index-b.index);const blob=new Blob(parts.map(p=>p.blob),{type:mime||'video/webm'});await addSaved({id:sessionId,name:session.name,status:'complete',mime:blob.type,duration:finalDuration,blob});}}
-  localChunks=[];if(recorder&&recorder.stream)recorder.stream.getTracks().forEach(t=>{if(t.kind==='video'&&t.label.includes('Canvas'))t.stop()});recorder=null;recording=false;paused=false;recordingStarting=false;recordElapsedMs=0;recordSegmentStartedAt=0;sessionId=null;
+  }catch(e){showError('Recording finished, but it could not be saved to local recovery storage: '+e.message);if(localChunks.length){const parts=localChunks.sort((a,b)=>a.index-b.index);const blob=new Blob(parts.map(p=>p.blob),{type:mime||'video/webm'});await addSaved({id:sessionId,name:session.name,status:'complete',mime:blob.type,duration:finalDuration,blob,captions:captionCues.map(c=>({...c}))});}}
+  localChunks=[];if(recorder&&recorder.stream)recorder.stream.getTracks().forEach(t=>{if(t.kind==='video'&&t.label.includes('Canvas'))t.stop()});recorder=null;recording=false;paused=false;recordingStarting=false;recordElapsedMs=0;recordSegmentStartedAt=0;sessionId=null;activeCaptionSession=null;captionRecognition=null;captionCues=[];captionLastCueEnd=0;captionStopAtMs=null;
   recordBtn.textContent='⏺ Start Recording';recordBtn.classList.remove('danger');recordBtn.classList.add('primary');pauseBtn.textContent='Ⅱ Pause';pauseBtn.disabled=true;stopBtn.disabled=true;cameraBtn.disabled=false;micBtn.disabled=false;screenBtn.disabled=false;cameraSelect.disabled=!cameraStream;micSelect.disabled=!micStream;badge.classList.remove('on');updateControls();restorePresentationOutputRatio();
  };
  recorder.start(3000);startedAt=Date.now();recordElapsedMs=0;recordSegmentStartedAt=startedAt;recording=true;paused=false;if(lowerThirdEnabled.checked)lowerThirdStartedAt=performance.now();
  recordBtn.textContent='● Recording';recordBtn.classList.add('danger');pauseBtn.disabled=false;stopBtn.disabled=false;cameraBtn.disabled=true;micBtn.disabled=true;screenBtn.disabled=true;cameraSelect.disabled=true;micSelect.disabled=true;badge.classList.add('on');timer.textContent='00:00';
  recordTimer=setInterval(()=>{timer.textContent=clock(recordingElapsedMs())},250);
+ if(autoCaptionsEnabled.checked)startCaptionCapture();
  if(isTest){testTimeout=setTimeout(()=>{if(recording)stopRecording();},30000);}
  updateControls();
 }
@@ -810,9 +825,86 @@ function pauseRecording(){
  if(!paused&&recorder.state==='recording'){recordElapsedMs=recordingElapsedMs();recordSegmentStartedAt=0;recorder.pause();paused=true;timer.textContent=clock(recordElapsedMs);pauseBtn.textContent='▶ Resume';}
  else if(paused&&recorder.state==='paused'){recorder.resume();recordSegmentStartedAt=Date.now();paused=false;pauseBtn.textContent='Ⅱ Pause';}
  syncStagePresenterDock();
+ if(paused)suspendCaptionCapture();else resumeCaptionCapture();
 }
 async function addSaved(row){
  const url=URL.createObjectURL(row.blob);saved.unshift({...row,url});renderRecordings();
+}
+function formatCaptionTimestamp(seconds,separator=','){
+ const ms=Math.max(0,Math.round((Number(seconds)||0)*1000)),hours=Math.floor(ms/3600000),minutes=Math.floor(ms%3600000/60000),secs=Math.floor(ms%60000/1000),milli=ms%1000;
+ return String(hours).padStart(2,'0')+':'+String(minutes).padStart(2,'0')+':'+String(secs).padStart(2,'0')+separator+String(milli).padStart(3,'0');
+}
+function captionsToSRT(cues){
+ return cues.map((cue,index)=>(index+1)+'\n'+formatCaptionTimestamp(cue.start,',')+' --> '+formatCaptionTimestamp(cue.end,',')+'\n'+cue.text).join('\n\n')+'\n';
+}
+function captionsToVTT(cues){
+ return 'WEBVTT\n\n'+cues.map(cue=>formatCaptionTimestamp(cue.start,'.')+' --> '+formatCaptionTimestamp(cue.end,'.')+'\n'+cue.text).join('\n\n')+'\n';
+}
+function downloadCaptionFile(recording,format){
+ const cues=Array.isArray(recording.captions)?recording.captions:[];
+ if(!cues.length){showError('No automatic caption cues are available for this recording.');return;}
+ const body=format==='srt'?captionsToSRT(cues):captionsToVTT(cues),blob=new Blob([body],{type:format==='srt'?'application/x-subrip;charset=utf-8':'text/vtt;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+ a.href=url;a.download=(recording.name||'officerlab-lecture').replace(/\.[^.]+$/,'')+'.'+format;a.click();setTimeout(()=>URL.revokeObjectURL(url),1200);
+}
+function updateCaptionStatus(message){if(captionStatus)captionStatus.textContent=message;}
+function captionSupportAvailable(){return !!(window.SpeechRecognition||window.webkitSpeechRecognition);}
+function persistCaptionCues(){
+ if(!activeCaptionSession)return;
+ activeCaptionSession.captions=captionCues.map(c=>({...c}));
+ captionSaveQueue=captionSaveQueue.then(()=>putSession({...activeCaptionSession,captions:activeCaptionSession.captions})).catch(e=>updateCaptionStatus('Captions captured in memory, but local cue saving failed: '+e.message));
+}
+function addCaptionBatch(texts){
+ const cleaned=texts.map(t=>String(t||'').replace(/\s+/g,' ').trim()).filter(Boolean);
+ if(!cleaned.length)return;
+ const limitMs=captionStopAtMs===null?recordingElapsedMs():Math.min(recordingElapsedMs(),captionStopAtMs);
+ const now=Math.max(0,limitMs/1000),durations=cleaned.map(t=>Math.max(1.1,Math.min(5.5,t.split(/\s+/).length/2.7)));
+ const total=durations.reduce((a,b)=>a+b,0);let cursor=Math.max(captionLastCueEnd,now-total);
+ for(let i=0;i<cleaned.length;i++){const start=cursor,end=cursor+durations[i];captionCues.push({start,end,text:cleaned[i]});cursor=end;}
+ captionLastCueEnd=cursor;persistCaptionCues();
+ updateCaptionStatus('Capturing captions · '+captionCues.length+' phrases saved. Timing is approximate at phrase level.');
+}
+function launchCaptionRecognition(){
+ if(!captionDesired||captionSuspended||!recording||captionRecognition)return;
+ const Ctor=window.SpeechRecognition||window.webkitSpeechRecognition;if(!Ctor){captionDesired=false;updateCaptionStatus('Speech recognition is unavailable in this browser. Recording continues without automatic captions.');return;}
+ let recognition;
+ try{recognition=new Ctor();}catch(e){captionDesired=false;updateCaptionStatus('Could not initialize captions: '+e.message);return;}
+ recognition.lang=captionLanguage.value||'en-IN';recognition.continuous=true;recognition.interimResults=false;recognition.maxAlternatives=1;captionRecognition=recognition;
+ recognition.onresult=event=>{const texts=[];for(let i=event.resultIndex;i<event.results.length;i++){const result=event.results[i];if(result.isFinal&&result[0]?.transcript)texts.push(result[0].transcript);}if(texts.length)addCaptionBatch(texts);};
+ recognition.onerror=event=>{
+  const fatal=['not-allowed','service-not-allowed','language-not-supported','audio-capture','network'].includes(event.error);
+  if(fatal){captionDesired=false;updateCaptionStatus('Automatic captions stopped ('+event.error+'). Recording is continuing; you can add a transcript manually.');}
+  else if(event.error==='no-speech')updateCaptionStatus('Waiting for speech…');
+ };
+ recognition.onend=()=>{
+  if(captionRecognition===recognition)captionRecognition=null;
+  if(captionStopResolver){const finish=captionStopResolver;captionStopResolver=null;finish();}
+  if(captionDesired&&!captionSuspended&&recording){clearTimeout(captionRestartTimer);captionRestartTimer=setTimeout(launchCaptionRecognition,500);}
+ };
+ try{recognition.start();updateCaptionStatus('Starting speech recognition · '+captionLanguage.options[captionLanguage.selectedIndex].text+'.');}
+ catch(e){captionRecognition=null;captionDesired=false;updateCaptionStatus('Could not start captions: '+e.message+'. Recording continues normally.');}
+}
+function startCaptionCapture(){
+ if(!autoCaptionsEnabled.checked)return;
+ if(!captionSupportAvailable()){updateCaptionStatus('This browser does not support automatic speech recognition. Recording continues normally; use the Transcript tab to add text manually.');return;}
+ captionDesired=true;captionSuspended=false;captionStopAtMs=null;launchCaptionRecognition();
+}
+function suspendCaptionCapture(){
+ if(!captionDesired)return;
+ captionSuspended=true;clearTimeout(captionRestartTimer);if(captionRecognition){try{captionRecognition.stop();}catch{}}
+ updateCaptionStatus('Captions paused with the recording.');
+}
+function resumeCaptionCapture(){
+ if(!captionDesired)return;
+ captionSuspended=false;if(!captionRecognition)captionRestartTimer=setTimeout(launchCaptionRecognition,350);
+}
+function stopCaptionCapture(){
+ captionDesired=false;captionSuspended=true;clearTimeout(captionRestartTimer);
+ const current=captionRecognition;if(!current)return Promise.resolve();
+ return new Promise(resolve=>{
+  let settled=false;const finish=()=>{if(settled)return;settled=true;clearTimeout(timer);resolve();};
+  const timer=setTimeout(finish,1400);captionStopResolver=finish;
+  try{current.stop();}catch{captionStopResolver=null;finish();}
+ });
 }
 function resumeKey(id){return 'officerlab-resume-'+id;}
 function networkConnection(){return navigator.connection||navigator.mozConnection||navigator.webkitConnection||null;}
@@ -878,7 +970,7 @@ function renderRecordings(){
   const timeRow=document.createElement('div');timeRow.className='quiz-form-grid';const timeField=document.createElement('div');timeField.append(timeLabel,timeInput);timeRow.append(timeField,useTime);
   quizBuilder.append(quizTitle,quizHelp,timeRow,questionInput,optionsInput,correctSelect,addQuiz,questionList);
 
-  const transcriptPanel=document.createElement('div');transcriptPanel.className='recording-panel';transcriptPanel.hidden=true;const transcript=document.createElement('textarea');transcript.className='transcript-input';transcript.rows=3;transcript.placeholder='Paste or type the lecture transcript here. Transcript is saved locally; automatic speech-to-text is not enabled.';transcript.value=r.transcript||'';const transcriptActions=document.createElement('div');transcriptActions.className='transcript-actions';const exportBtn=document.createElement('button');exportBtn.type='button';exportBtn.textContent='⬇ Export TXT';exportBtn.onclick=()=>{if(!transcript.value.trim()){showError('Add transcript text before exporting.');return;}const blob=new Blob([transcript.value],{type:'text/plain;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=r.name.replace(/\.[^.]+$/,'')+'.txt';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};const saveNote=document.createElement('span');saveNote.className='transcript-save-note';saveNote.textContent='Saved locally in this browser.';transcriptActions.append(exportBtn,saveNote);transcriptPanel.append(transcript,transcriptActions);
+  const transcriptPanel=document.createElement('div');transcriptPanel.className='recording-panel';transcriptPanel.hidden=true;const transcript=document.createElement('textarea');transcript.className='transcript-input';transcript.rows=3;transcript.placeholder='Paste or type the lecture transcript here. Automatic caption text is shown here when available.';transcript.value=r.transcript||((Array.isArray(r.captions)?r.captions:[]).map(c=>c.text).join(' '));const transcriptActions=document.createElement('div');transcriptActions.className='transcript-actions';const exportBtn=document.createElement('button');exportBtn.type='button';exportBtn.textContent='⬇ Export TXT';exportBtn.onclick=()=>{if(!transcript.value.trim()){showError('Add transcript text before exporting.');return;}const blob=new Blob([transcript.value],{type:'text/plain;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=r.name.replace(/\.[^.]+$/,'')+'.txt';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};const saveNote=document.createElement('span');saveNote.className='transcript-save-note';saveNote.textContent='Saved locally in this browser.';transcriptActions.append(exportBtn,saveNote);const cueCount=Array.isArray(r.captions)?r.captions.length:0;const captionExport=document.createElement('div');captionExport.className='caption-export';const captionExportNote=document.createElement('span');captionExportNote.className='small';captionExportNote.textContent=cueCount?cueCount+' timestamped caption phrases · approximate phrase-level timing':'No automatic caption cues saved for this recording.';const srtBtn=document.createElement('button');srtBtn.type='button';srtBtn.textContent='⬇ SRT';srtBtn.disabled=!cueCount;srtBtn.onclick=()=>downloadCaptionFile(r,'srt');const vttBtn=document.createElement('button');vttBtn.type='button';vttBtn.textContent='⬇ VTT';vttBtn.disabled=!cueCount;vttBtn.onclick=()=>downloadCaptionFile(r,'vtt');captionExport.append(captionExportNote,srtBtn,vttBtn);transcriptPanel.append(transcript,transcriptActions,captionExport);
 
   const quizItems=Array.isArray(r.quiz)?r.quiz:[];let activeQuiz=null;const answeredQuiz=new Set(Array.isArray(r.quizCompletedIds)?r.quizCompletedIds:[]);
   const persistQuiz=async()=>{r.quiz=quizItems;r.quizCompletedIds=[...answeredQuiz];const {url,...stored}=r;await putSession({...stored,quiz:quizItems,quizCompletedIds:r.quizCompletedIds});};
@@ -955,6 +1047,8 @@ $('muteBtn').onclick=()=>setMute($('muteBtn').dataset.muted!=='true');
 recordBtn.onclick=()=>recording?stopRecording():startRecording();
 pauseBtn.onclick=pauseRecording;stopBtn.onclick=stopRecording;
 $('testBtn').onclick=()=>startRecording(true);
+autoCaptionsEnabled.addEventListener('change',()=>{if(autoCaptionsEnabled.checked&&!captionSupportAvailable())updateCaptionStatus('This browser does not expose speech recognition. Recording will still work; captions can be typed in the Transcript tab.');else updateCaptionStatus(autoCaptionsEnabled.checked?'Automatic captions are enabled for the next recording. Your browser may use its platform speech service.':'Automatic captions are off.');});
+captionLanguage.addEventListener('change',()=>{try{localStorage.setItem('officerlab-caption-language',captionLanguage.value);}catch{}});
 captureMode.onchange=()=>{if(captureMode.value==='camera')setLayout('face');else if(layout==='face')setLayout('pip');updateControls();};
 quality.onchange=()=>{if(!recording){setCanvasQuality();syncVisuals();}};
 dataSaver.onchange=()=>{if(!recording){setCanvasQuality();updatePipHandle();syncVisuals();}};
@@ -1123,6 +1217,9 @@ function restoreLowerThirdSettings(){
 lowerThirdPosition.addEventListener('change',()=>{saveLowerThirdSettings();if(lowerThirdEnabled.checked)lowerThirdStartedAt=performance.now();});
 lowerThirdEnabled.addEventListener('change',()=>{lowerThirdStartedAt=lowerThirdEnabled.checked?performance.now():0;saveLowerThirdSettings();});
 restoreLowerThirdSettings();
+try{const savedCaptionLanguage=localStorage.getItem('officerlab-caption-language');if(['gu-IN','en-IN','hi-IN'].includes(savedCaptionLanguage))captionLanguage.value=savedCaptionLanguage;}catch{}
+if(!captionSupportAvailable())updateCaptionStatus('Automatic speech recognition is not available in this browser. Recording continues normally; add a transcript manually.');
+else updateCaptionStatus('Optional live captions. Browser support and language accuracy vary; recognition may use the browser or platform speech service.');
 let noteTimer;$('notes').oninput=()=>{clearTimeout(noteTimer);noteTimer=setTimeout(()=>{try{localStorage.setItem('officerlab-lecture-notes',$('notes').value);}catch{}},350);};
 window.addEventListener('beforeunload',e=>{if(recording){e.preventDefault();e.returnValue='';}});
 window.addEventListener('pagehide',()=>{stopDraw();stopTeleprompterScroll();if(cameraStream)cameraStream.getTracks().forEach(t=>t.stop());if(micStream)micStream.getTracks().forEach(t=>t.stop());if(screenStream)screenStream.getTracks().forEach(t=>t.stop());if(audioContext)audioContext.close().catch(()=>{});saved.forEach(r=>URL.revokeObjectURL(r.url));slideUrls.forEach(URL.revokeObjectURL);});
