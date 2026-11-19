@@ -2,11 +2,11 @@
   "id": "/gpsc-guidance-recorder.html",
   "name": "OfficerLab GPSC Face Cam Recorder",
   "short_name": "GPSC Recorder",
-  "description": "Landscape slide presentation, teaching annotations and face camera recording.",
+  "description": "Portrait and landscape lecture recording with slides, face camera, annotations and local playback recovery.",
   "start_url": "/gpsc-guidance-recorder.html",
   "scope": "/",
   "display": "standalone",
-  "orientation": "landscape",
+  "orientation": "any",
   "background_color": "#0d1117",
   "theme_color": "#0d1117",
   "icons": [
