@@ -486,6 +486,7 @@ const recList=$('recList'),empty=$('empty'),recoveryList=$('recoveryList');
 const dataSaver=$('dataSaver'),wifiOnlyDownloads=$('wifiOnlyDownloads');
 const autoCaptionsEnabled=$('autoCaptionsEnabled'),captionLanguage=$('captionLanguage'),captionStatus=$('captionStatus');
 let cameraStream=null,micStream=null,screenStream=null,recorder=null,recordTimer=null,meterRAF=0,drawRAF=0,preferredFacing='user';
+let screenCropSource=null,screenCropResult=null,screenCropResolved=false,screenCropChecks=0;
 let audioContext=null,audioDestination=null,micGain=null,screenGain=null,micAnalyser=null,micSource=null,screenAudioSource=null;
 let layout='pip',pip={x:.77,y:.73},activeTool='pen',drawing=false,slides=[],slideIndex=0,pdfDoc=null,slideSource=null,slideUrls=[],presentationSavedOutputRatio=null;
 let sessionId=null,chunkIndex=0,writeQueue=Promise.resolve(),localChunks=[],recording=false,paused=false,recordingStarting=false,stoppingRecording=false,startedAt=0,recordElapsedMs=0,recordSegmentStartedAt=0,testTimeout=null,outroStartedAt=0,outroTimer=null;
@@ -614,6 +615,50 @@ function containWithFill(ctx,source,x,y,w,h){
  // Keep the complete original slide crisp and uncropped above the blurred background.
  contain(ctx,source,x,y,w,h);
 }
+function resetScreenCropDetection(){screenCropSource=null;screenCropResult=null;screenCropResolved=false;screenCropChecks=0;}
+function detectCenteredScreenContent(source){
+ if(source!==screenCropSource){screenCropSource=source;screenCropResult=null;screenCropResolved=false;screenCropChecks=0;}
+ if(screenCropResolved)return screenCropResult;
+ const sw=source.videoWidth||source.width||source.naturalWidth,sh=source.videoHeight||source.height||source.naturalHeight;
+ if(!sw||!sh||screenCropChecks>=15){screenCropResolved=true;return null;}
+ screenCropChecks++;
+ try{
+  const probe=document.createElement('canvas');probe.width=128;probe.height=72;
+  const pc=probe.getContext('2d',{willReadFrequently:true});pc.drawImage(source,0,0,128,72);
+  const data=pc.getImageData(0,0,128,72).data,cols=[];
+  for(let x=0;x<128;x++){
+   const r=[],g=[],b=[];
+   for(let y=12;y<60;y+=2){const k=(y*128+x)*4;r.push(data[k]);g.push(data[k+1]);b.push(data[k+2]);}
+   const med=a=>{a.sort((m,n)=>m-n);return a[Math.floor(a.length/2)];};
+   cols.push([med(r),med(g),med(b)]);
+  }
+  const avg=(a,b)=>[0,1,2].map(k=>{let n=0;for(let i=a;i<b;i++)n+=cols[i][k];return n/(b-a);});
+  const leftEdge=avg(0,4),rightEdge=avg(124,128),dist=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1],a[2]-b[2]);
+  if(dist(leftEdge,rightEdge)>42)return null;
+  let left=5,right=123;
+  while(left<60&&dist(cols[left],leftEdge)<42)left++;
+  while(right>68&&dist(cols[right],rightEdge)<42)right--;
+  const lm=left/128,rm=(127-right)/128,crop=(right-left)/128;
+  if(lm<.045||rm<.045||lm>.22||rm>.22||Math.abs(lm-rm)>.075||crop<.56||crop>.92)return null;
+  let vals=[];
+  for(let x=0;x<left;x++)for(let y=12;y<60;y+=3){const k=(y*128+x)*4;vals.push(.2126*data[k]+.7152*data[k+1]+.0722*data[k+2]);}
+  for(let x=right+1;x<128;x++)for(let y=12;y<60;y+=3){const k=(y*128+x)*4;vals.push(.2126*data[k]+.7152*data[k+1]+.0722*data[k+2]);}
+  const mean=vals.reduce((a,b)=>a+b,0)/Math.max(1,vals.length),variance=vals.reduce((a,b)=>a+(b-mean)**2,0)/Math.max(1,vals.length);
+  if(Math.sqrt(variance)>30)return null;
+  const px=Math.max(0,left-1),pr=Math.min(128,right+2);
+  screenCropResult={sx:sw*px/128,sy:0,sw:sw*(pr-px)/128,sh};
+  screenCropResolved=true;return screenCropResult;
+ }catch(e){screenCropResolved=true;return null;}
+}
+function containScreenWithFill(ctx,source,x,y,w,h){
+ const crop=detectCenteredScreenContent(source);
+ if(!crop){containWithFill(ctx,source,x,y,w,h);return;}
+ const {sx,sy,sw,sh}=crop,scale=Math.min(w/sw,h/sh),dw=sw*scale,dh=sh*scale,bgScale=Math.max(w/sw,h/sh),bw=sw*bgScale,bh=sh*bgScale,blur=Math.max(14,Math.round(Math.min(w,h)*.028));
+ ctx.save();ctx.beginPath();ctx.rect(x,y,w,h);ctx.clip();ctx.filter='blur('+blur+'px)';
+ ctx.drawImage(source,sx,sy,sw,sh,x+(w-bw)/2-blur,y+(h-bh)/2-blur,bw+blur*2,bh+blur*2);
+ ctx.filter='none';ctx.fillStyle='rgba(15,23,42,.12)';ctx.fillRect(x,y,w,h);ctx.restore();
+ ctx.drawImage(source,sx,sy,sw,sh,x+(w-dw)/2,y+(h-dh)/2,dw,dh);
+}
 function roundedPath(c,x,y,w,h,r){r=Math.min(r,w/2,h/2);c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();}
 function drawPip(x,y,w,h){
  if(!cameraStream||!cameraVideo.videoWidth)return;
@@ -713,10 +758,10 @@ function drawScene(){
   if(cameraStream)cover(ctx,cameraVideo,0,0,canvas.width,canvas.height,mirrorOutput.checked);
  }else if(layout==='split'&&showCamera){
   ctx.fillStyle='#080b10';ctx.fillRect(0,0,canvas.width,canvas.height);
-  if(source&&source!==cameraVideo)containWithFill(ctx,source,0,0,canvas.width*.5,canvas.height);
+  if(source&&source!==cameraVideo){if(source===screenVideo&&screenStream)containScreenWithFill(ctx,source,0,0,canvas.width*.5,canvas.height);else containWithFill(ctx,source,0,0,canvas.width*.5,canvas.height);}
   cover(ctx,cameraVideo,canvas.width*.5,0,canvas.width*.5,canvas.height,mirrorOutput.checked);
  }else{
-  if(source===screenVideo&&screenStream)containWithFill(ctx,screenVideo,0,0,canvas.width,canvas.height);
+  if(source===screenVideo&&screenStream)containScreenWithFill(ctx,screenVideo,0,0,canvas.width,canvas.height);
   else if(source&&source!==cameraVideo)containWithFill(ctx,source,0,0,canvas.width,canvas.height);
   if((mode==='screen-camera'||mode==='camera-slides')&&cameraStream&&layout==='pip'){
    const d=pipDimensions(),w=canvas.width*d.w,hh=canvas.height*d.h;
@@ -809,7 +854,8 @@ async function startScreen(){
  clearError();if(screenStream)return;
  if(!navigator.mediaDevices?.getDisplayMedia){showError('Screen capture is not available in this browser. Use Chrome on HTTPS or use uploaded PDF slides.');return;}
  try{
-  screenStream=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:{ideal:30,max:30}},audio:$('includeSystemAudio').checked});
+  resetScreenCropDetection();
+   screenStream=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:{ideal:30,max:30}},audio:$('includeSystemAudio').checked});
   screenVideo.srcObject=screenStream;await screenVideo.play().catch(()=>{});
   screenStream.getVideoTracks()[0].addEventListener('ended',()=>{stopScreen();});
   if(screenStream.getAudioTracks().length)await connectScreenAudio();
@@ -817,6 +863,7 @@ async function startScreen(){
  }catch(e){screenStream=null;if(e.name!=='NotAllowedError')showError('Could not share screen: '+e.message);}
 }
 function stopScreen(){
+  resetScreenCropDetection();
  if(screenStream)screenStream.getTracks().forEach(t=>t.stop());screenStream=null;screenVideo.srcObject=null;
  if(screenAudioSource){try{screenAudioSource.disconnect()}catch{}screenAudioSource=null;}if(screenGain){try{screenGain.disconnect()}catch{}screenGain=null;}
  screenBtn.textContent='🖥 Share Screen';syncVisuals();
