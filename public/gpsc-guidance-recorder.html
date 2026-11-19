@@ -65,6 +65,12 @@ main{max-width:1600px;margin:auto;padding:14px 14px 116px;display:grid;grid-temp
 .teleprompter-overlay header button{pointer-events:auto;min-height:30px;padding:2px 9px;font-size:11px}
 .teleprompter-window{height:calc(100% - 28px);overflow:hidden;white-space:pre-wrap;overflow-wrap:anywhere;color:#fff;font-size:28px;line-height:1.55;font-weight:650;text-shadow:0 2px 5px #000}
 #stage:fullscreen .teleprompter-overlay{bottom:9%;height:38%}
+#stageFsSlideNav{display:none}
+#stage:fullscreen #stageFsSlideNav{display:flex;position:absolute;left:12px;right:12px;top:58px;z-index:19;align-items:center;justify-content:center;gap:7px;flex-wrap:wrap;padding:8px;background:#0b111ddd;border:1px solid #ffffff50;border-radius:11px;backdrop-filter:blur(10px)}
+#stageFsSlideNav button{min-height:38px;padding:6px 10px;font-size:12px}
+#stageFsSlideNav .fs-jump{display:flex;align-items:center;gap:5px;color:#d7e2f1;font-size:11px}
+#stageFsSlideNav input{width:58px;min-height:36px;padding:5px;text-align:center;border:1px solid #718096;border-radius:7px;background:#111923;color:#fff}
+@media(max-width:650px){#stage:fullscreen #stageFsSlideNav{left:6px;right:6px;top:52px;gap:4px;padding:5px}#stageFsSlideNav button{min-height:36px;padding:5px 7px;font-size:11px}}
 @media(max-width:650px){.stage-toolbar{gap:5px;padding:7px}.stage-toolbar button{flex:1;min-width:78px}.teleprompter-overlay{left:4%;right:4%;height:32%}.teleprompter-window{font-size:24px}.teleprompter-controls input[type=range]{width:78px}}
 .tool-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:8px}.tool-row:last-child{margin-bottom:0}
 .tool-row button{min-width:44px;min-height:42px;padding:7px 9px;font-size:12px}
@@ -141,6 +147,12 @@ textarea{min-height:150px;resize:vertical;line-height:1.6}
     <div class="stage-placeholder" id="placeholder">Choose a capture mode, start the required source,<br>and your lecture preview will appear here.</div>
     <div class="rec-badge" id="badge"><span class="rec-dot"></span>REC <span id="timer">00:00</span><span id="recResolution">1920×1080</span></div>
     <button type="button" id="stageFsExit">✕ Exit Presentation Full Screen</button>
+    <div id="stageFsSlideNav" aria-label="Fullscreen slide navigation">
+      <button id="fsPrevSlide" type="button" disabled>← Prev</button>
+      <label class="fs-jump">Slide <input id="fsSlideJump" type="number" min="1" step="1" inputmode="numeric" aria-label="Fullscreen slide number"> / <b id="fsSlideTotal">0</b></label>
+      <button id="fsGoSlide" type="button" disabled>Go</button>
+      <button id="fsNextSlide" type="button" disabled>Next →</button>
+    </div>
     <div class="teleprompter-overlay" id="teleprompterOverlay" hidden>
       <header><span>LIVE TELEPROMPTER</span><button type="button" id="teleprompterClose">Hide</button></header>
       <div class="teleprompter-window" id="teleprompterWindow"><div id="teleprompterText"></div></div>
@@ -266,6 +278,7 @@ const cameraBtn=$('cameraBtn'),micBtn=$('micBtn'),screenBtn=$('screenBtn'),recor
 const muteBtn=$('muteBtn'),meterFill=$('meterFill'),micStatus=$('micStatus'),badge=$('badge'),timer=$('timer'),error=$('error');
 const slidesInput=$('slidesInput'),prevSlide=$('prevSlide'),nextSlide=$('nextSlide'),slideCount=$('slideCount'),clearSlides=$('clearSlides'),slideJump=$('slideJump'),slideTotal=$('slideTotal'),goSlide=$('goSlide');
 const teleprompterOverlay=$('teleprompterOverlay'),teleprompterWindow=$('teleprompterWindow'),teleprompterText=$('teleprompterText'),teleprompterScript=$('teleprompterScript'),teleprompterSettings=$('teleprompterSettings');
+const fsPrevSlide=$('fsPrevSlide'),fsNextSlide=$('fsNextSlide'),fsSlideJump=$('fsSlideJump'),fsSlideTotal=$('fsSlideTotal'),fsGoSlide=$('fsGoSlide');
 const annotationFab=$('annotationFab'),toolTray=$('toolTray'),pipHandle=$('pipHandle'),pipDragBar=$('pipDragBar');
 const faceSize=$('faceSize'),faceHeight=$('faceHeight'),faceShape=$('faceShape'),faceOpacity=$('faceOpacity'),safeGuides=$('safeGuides'),mirrorOutput=$('mirrorOutput'),outputRatio=$('outputRatio');
 const recList=$('recList'),empty=$('empty'),recoveryList=$('recoveryList');
@@ -511,6 +524,9 @@ function syncSlideControls(){
  slideCount.textContent=slides.length?'Slide '+(slideIndex+1)+' / '+slides.length:'No slides loaded';
  slideJump.max=String(Math.max(1,slides.length));slideJump.value=slides.length?String(slideIndex+1):'';
  slideTotal.textContent=String(slides.length);goSlide.disabled=!slides.length;
+ fsSlideJump.max=String(Math.max(1,slides.length));fsSlideJump.value=slides.length?String(slideIndex+1):'';
+ fsSlideTotal.textContent=String(slides.length);fsGoSlide.disabled=!slides.length;
+ fsPrevSlide.disabled=!slides.length||slideIndex===0;fsNextSlide.disabled=!slides.length||slideIndex===slides.length-1;
  prevSlide.disabled=!slides.length||slideIndex===0;nextSlide.disabled=!slides.length||slideIndex===slides.length-1;clearSlides.disabled=!slides.length;
 }
 function setLayout(name){
@@ -803,6 +819,10 @@ prevSlide.onclick=()=>showSlide(slideIndex-1);
 nextSlide.onclick=()=>showSlide(slideIndex+1);
 goSlide.onclick=()=>{const n=Number(slideJump.value);if(Number.isInteger(n)&&n>=1&&n<=slides.length)showSlide(n-1);else showError('Enter a slide number from 1 to '+slides.length+'.');};
 slideJump.addEventListener('keydown',e=>{if(e.key==='Enter')goSlide.click();});
+fsPrevSlide.onclick=()=>showSlide(slideIndex-1);
+fsNextSlide.onclick=()=>showSlide(slideIndex+1);
+fsGoSlide.onclick=()=>{const n=Number(fsSlideJump.value);if(Number.isInteger(n)&&n>=1&&n<=slides.length)showSlide(n-1);else showError('Enter a slide number from 1 to '+slides.length+'.');};
+fsSlideJump.addEventListener('keydown',e=>{if(e.key==='Enter')fsGoSlide.click();});
 pipDragBar.addEventListener('pointerdown',startDrag);
 $('dismissOrientation').onclick=()=>$('orientationHint').remove();
 function updateTeleprompterText(){teleprompterText.textContent=teleprompterScript.value.trim()||'Enter your lecture script in the teleprompter panel.';}
@@ -815,15 +835,37 @@ function teleprompterFrame(now){
  teleprompterRAF=requestAnimationFrame(teleprompterFrame);
 }
 $('teleprompterToggle').onclick=()=>{teleprompterSettings.hidden=!teleprompterSettings.hidden;};
-$('teleprompterScript').addEventListener('input',updateTeleprompterText);
+const PROMPTER_STORAGE={script:'officerlab-teleprompter-script',speed:'officerlab-teleprompter-speed',font:'officerlab-teleprompter-font'};
+function saveTeleprompterSettings(){
+ try{
+  localStorage.setItem(PROMPTER_STORAGE.script,teleprompterScript.value);
+  localStorage.setItem(PROMPTER_STORAGE.speed,String($('teleprompterSpeed').value));
+  localStorage.setItem(PROMPTER_STORAGE.font,String($('teleprompterFont').value));
+ }catch{}
+}
+function restoreTeleprompterSettings(){
+ try{
+  const script=localStorage.getItem(PROMPTER_STORAGE.script);
+  const speed=Number(localStorage.getItem(PROMPTER_STORAGE.speed));
+  const font=Number(localStorage.getItem(PROMPTER_STORAGE.font));
+  if(script!==null)teleprompterScript.value=script;
+  if(Number.isFinite(speed)&&speed>=5&&speed<=100)$('teleprompterSpeed').value=String(speed);
+  if(Number.isFinite(font)&&font>=18&&font<=48)$('teleprompterFont').value=String(font);
+ }catch{}
+ $('teleprompterSpeedValue').textContent=$('teleprompterSpeed').value;
+ $('teleprompterFontValue').textContent=$('teleprompterFont').value+'px';
+ teleprompterWindow.style.fontSize=$('teleprompterFont').value+'px';
+ updateTeleprompterText();
+}
+$('teleprompterScript').addEventListener('input',()=>{updateTeleprompterText();saveTeleprompterSettings();});
 $('teleprompterShow').onclick=()=>{updateTeleprompterText();teleprompterOverlay.hidden=!teleprompterOverlay.hidden;$('teleprompterShow').textContent=teleprompterOverlay.hidden?'Show on Preview':'Hide from Preview';};
 $('teleprompterClose').onclick=()=>{teleprompterOverlay.hidden=true;$('teleprompterShow').textContent='Show on Preview';stopTeleprompterScroll();};
 $('teleprompterPlay').onclick=()=>{updateTeleprompterText();teleprompterOverlay.hidden=false;$('teleprompterShow').textContent='Hide from Preview';if(!teleprompterScript.value.trim()){showError('Enter or paste your lecture script first.');return;}if(!teleprompterRAF){teleprompterLastFrame=0;teleprompterRAF=requestAnimationFrame(teleprompterFrame);}};
 $('teleprompterPause').onclick=stopTeleprompterScroll;
 $('teleprompterReset').onclick=()=>{stopTeleprompterScroll();teleprompterWindow.scrollTop=0;};
-$('teleprompterSpeed').oninput=()=>$('teleprompterSpeedValue').textContent=$('teleprompterSpeed').value;
-$('teleprompterFont').oninput=()=>{$('teleprompterFontValue').textContent=$('teleprompterFont').value+'px';teleprompterWindow.style.fontSize=$('teleprompterFont').value+'px';};
-$('teleprompterUseNotes').onclick=()=>{teleprompterScript.value=$('notes').value;updateTeleprompterText();};
+$('teleprompterSpeed').oninput=()=>{$('teleprompterSpeedValue').textContent=$('teleprompterSpeed').value;saveTeleprompterSettings();};
+$('teleprompterFont').oninput=()=>{$('teleprompterFontValue').textContent=$('teleprompterFont').value+'px';teleprompterWindow.style.fontSize=$('teleprompterFont').value+'px';saveTeleprompterSettings();};
+$('teleprompterUseNotes').onclick=()=>{teleprompterScript.value=$('notes').value;updateTeleprompterText();saveTeleprompterSettings();};
 document.addEventListener('visibilitychange',()=>{if(document.hidden)stopTeleprompterScroll();});
 window.addEventListener('orientationchange',()=>{if(screen.orientation?.type?.startsWith('landscape'))$('orientationHint').style.display='none';});
 async function toggleStageFullscreen(){
@@ -851,6 +893,7 @@ window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installProm
 $('installApp').onclick=async()=>{if(!installPrompt){showError('In Chrome, open ⋮ and choose Install app or Add to Home screen.');return;}installPrompt.prompt();await installPrompt.userChoice;installPrompt=null;$('installApp').hidden=true;};
 window.addEventListener('appinstalled',()=>$('installApp').hidden=true);
 try{$('notes').value=localStorage.getItem('officerlab-lecture-notes')||'';}catch{}
+restoreTeleprompterSettings();
 let noteTimer;$('notes').oninput=()=>{clearTimeout(noteTimer);noteTimer=setTimeout(()=>{try{localStorage.setItem('officerlab-lecture-notes',$('notes').value);}catch{}},350);};
 window.addEventListener('beforeunload',e=>{if(recording){e.preventDefault();e.returnValue='';}});
 window.addEventListener('pagehide',()=>{stopDraw();stopTeleprompterScroll();if(cameraStream)cameraStream.getTracks().forEach(t=>t.stop());if(micStream)micStream.getTracks().forEach(t=>t.stop());if(screenStream)screenStream.getTracks().forEach(t=>t.stop());if(audioContext)audioContext.close().catch(()=>{});saved.forEach(r=>URL.revokeObjectURL(r.url));slideUrls.forEach(URL.revokeObjectURL);});
