@@ -136,7 +136,9 @@ textarea{min-height:150px;resize:vertical;line-height:1.6}
 .layout-row,.slide-nav{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
 .layout-row button,.slide-nav button{padding:7px 10px;min-height:38px;font-size:12px}
 .layout-row button.active{background:var(--blue);border-color:var(--blue)}
-.lower-third-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:9px}.lower-third-fields .field{min-width:0}.lower-third-fields input,.lower-third-fields select{min-width:0}.lower-third-enable{margin-top:9px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}.lower-third-enable input{width:18px;height:18px;accent-color:var(--blue)}
+.lower-third-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:9px}
+.brand-kit{margin-top:10px;padding:10px;background:#0d141e;border:1px solid var(--line);border-radius:10px}.brand-kit-title{font-size:11px;font-weight:800;letter-spacing:.06em;color:#b9d7ff;text-transform:uppercase;margin-bottom:8px}.brand-kit-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.brand-kit-fields .field{min-width:0}.brand-kit-fields input[type=color]{width:100%;height:40px;padding:3px;border:1px solid var(--line);border-radius:8px;background:var(--panel2)}.brand-logo-row{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-top:9px}.brand-logo-row input[type=file]{flex:1;min-width:150px;max-width:100%;font-size:11px}.brand-logo-row button{min-height:34px;padding:5px 9px;font-size:11px}.brand-logo-status{display:block;margin-top:6px;color:var(--muted);font-size:10px;line-height:1.4}
+@media(max-width:520px){.lower-third-fields,.brand-kit-fields{grid-template-columns:1fr}}.lower-third-fields .field{min-width:0}.lower-third-fields input,.lower-third-fields select{min-width:0}.lower-third-enable{margin-top:9px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}.lower-third-enable input{width:18px;height:18px;accent-color:var(--blue)}
 @media(max-width:520px){.lower-third-fields{grid-template-columns:1fr}}
 .slide-top{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.slide-top input{flex:1;min-width:160px;color:var(--muted);font-size:12px}
 .slide-nav{margin-top:9px}.slide-count{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
@@ -313,6 +315,19 @@ textarea{min-height:150px;resize:vertical;line-height:1.6}
       <div class="field"><label for="lowerThirdTitle">Designation / subject</label><input id="lowerThirdTitle" type="text" maxlength="64" placeholder="Agriculture Officer · GPSC Mentor"></div>
       <div class="field"><label for="lowerThirdPosition">Position</label><select id="lowerThirdPosition"><option value="lower-left">Lower left</option><option value="lower-centre">Lower centre</option><option value="top-right">Top right corner</option></select></div>
     </div>
+    <div class="brand-kit" id="brandKitPanel">
+      <div class="brand-kit-title">🎨 OfficerLab Brand Kit</div>
+      <div class="brand-kit-fields">
+        <div class="field"><label for="brandAccent">Brand accent colour</label><input id="brandAccent" type="color" value="#55a3ff"></div>
+        <div class="field"><label for="brandPanel">Graphic background</label><input id="brandPanel" type="color" value="#050c18"></div>
+        <div class="field"><label for="brandFont">Brand font</label><select id="brandFont"><option value="system">Modern sans</option><option value="rounded">Rounded</option><option value="serif">Editorial serif</option><option value="mono">Technical mono</option></select></div>
+      </div>
+      <div class="brand-logo-row">
+        <input id="brandLogoFile" type="file" accept="image/png,image/jpeg,image/webp" aria-label="Upload brand logo">
+        <button type="button" id="brandLogoRemove">Remove logo</button>
+      </div>
+      <span class="brand-logo-status" id="brandLogoStatus" role="status">Optional logo · saved on this device · raster images only.</span>
+    </div>
     <label class="check lower-third-enable"><input id="lowerThirdEnabled" type="checkbox"> Show on preview and include in recording</label>
     <p class="hint">The name/title graphic slides into the frame when enabled and animates again when recording starts. Leave it unchecked for a clean video.</p>
   </div>
@@ -366,6 +381,8 @@ const fsPrevSlide=$('fsPrevSlide'),fsNextSlide=$('fsNextSlide'),fsSlideJump=$('f
 const annotationFab=$('annotationFab'),toolTray=$('toolTray'),pipHandle=$('pipHandle'),pipDragBar=$('pipDragBar');
 const faceSize=$('faceSize'),faceHeight=$('faceHeight'),faceShape=$('faceShape'),faceOpacity=$('faceOpacity'),fsCameraOpacity=$('fsCameraOpacity'),fsCameraOpacityToggle=$('fsCameraOpacityToggle'),fsCameraOpacityPanel=$('fsCameraOpacityPanel'),fsCameraOpacityValue=$('fsCameraOpacityValue'),safeGuides=$('safeGuides'),mirrorOutput=$('mirrorOutput'),outputRatio=$('outputRatio');
 const lowerThirdName=$('lowerThirdName'),lowerThirdTitle=$('lowerThirdTitle'),lowerThirdPosition=$('lowerThirdPosition'),lowerThirdEnabled=$('lowerThirdEnabled');
+const brandAccent=$('brandAccent'),brandPanel=$('brandPanel'),brandFont=$('brandFont'),brandLogoFile=$('brandLogoFile'),brandLogoRemove=$('brandLogoRemove'),brandLogoStatus=$('brandLogoStatus');
+let brandLogoDataUrl='',brandLogoImage=null,brandLogoVersion=0;
 const recList=$('recList'),empty=$('empty'),recoveryList=$('recoveryList');
 const dataSaver=$('dataSaver'),wifiOnlyDownloads=$('wifiOnlyDownloads');
 const autoCaptionsEnabled=$('autoCaptionsEnabled'),captionLanguage=$('captionLanguage'),captionStatus=$('captionStatus');
@@ -505,14 +522,17 @@ function drawLowerThird(){
  const W=canvas.width,H=canvas.height,scale=W/1920;
  const pad=Math.max(13,Math.round(W*.018)),accent=Math.max(4,Math.round(W*.004));
  const nameSize=Math.max(20,Math.round(W*.024)),subSize=Math.max(14,Math.round(W*.015));
+ const fontStack=brandFont.value==='serif'?'Georgia,"Times New Roman",serif':brandFont.value==='mono'?'ui-monospace,SFMono-Regular,Consolas,monospace':brandFont.value==='rounded'?'system-ui,"Trebuchet MS",sans-serif':'system-ui,-apple-system,"Segoe UI",sans-serif';
+ const logoSize=brandLogoImage&&brandLogoImage.complete&&brandLogoImage.naturalWidth?Math.min(Math.round(H*.07),Math.round(W*.06)):0;
+ const logoGap=logoSize?Math.round(pad*.55):0;
  const gap=Math.max(5,Math.round(H*.008));
  ctx.save();
- ctx.font='750 '+nameSize+'px system-ui,-apple-system,"Segoe UI",sans-serif';
+ ctx.font='750 '+nameSize+'px '+fontStack;
  const nameWidth=name?ctx.measureText(name).width:0;
- ctx.font='550 '+subSize+'px system-ui,-apple-system,"Segoe UI",sans-serif';
+ ctx.font='550 '+subSize+'px '+fontStack;
  const subWidth=subtitle?ctx.measureText(subtitle).width:0;
  const maxBoxWidth=W*.58,textWidth=Math.max(nameWidth,subWidth);
- const boxW=Math.min(maxBoxWidth,Math.max(Math.min(W*.25,300*scale),textWidth+pad*2+accent));
+ const boxW=Math.min(maxBoxWidth,Math.max(Math.min(W*.25,300*scale),textWidth+pad*2+accent+(logoSize?logoSize+logoGap:0)));
  const textH=(name?nameSize:0)+(name&&subtitle?gap:0)+(subtitle?subSize:0);
  const boxH=textH+pad*2;
  const margin=Math.max(16,Math.round(W*.045));
@@ -528,14 +548,15 @@ function drawLowerThird(){
  else x-=travel;
  ctx.globalAlpha=eased;
  roundedPath(ctx,x,y,boxW,boxH,Math.max(9,Math.round(12*scale)));
- ctx.fillStyle='rgba(5,12,24,.86)';ctx.fill();
+ const panelHex=brandPanel.value||'#050c18';ctx.fillStyle=panelHex+'e0';ctx.fill();
  ctx.strokeStyle='rgba(255,255,255,.22)';ctx.lineWidth=Math.max(1,scale*1.5);ctx.stroke();
- ctx.fillStyle='#55a3ff';
- roundedPath(ctx,x+pad*.35,y+pad*.55,accent,boxH-pad*1.1,Math.max(2,accent/2));ctx.fill();
- const tx=x+pad+accent+pad*.45;
+ ctx.fillStyle=brandAccent.value||'#55a3ff';
+ if(logoSize){const lx=x+pad,ly=y+(boxH-logoSize)/2;ctx.save();roundedPath(ctx,lx,ly,logoSize,logoSize,Math.max(5,logoSize*.16));ctx.clip();ctx.drawImage(brandLogoImage,lx,ly,logoSize,logoSize);ctx.restore();}
+ else{roundedPath(ctx,x+pad*.35,y+pad*.55,accent,boxH-pad*1.1,Math.max(2,accent/2));ctx.fill();}
+ const tx=x+pad+accent+pad*.45+(logoSize?logoSize+logoGap:0);
  let ty=y+pad;
- if(name){ctx.font='750 '+nameSize+'px system-ui,-apple-system,"Segoe UI",sans-serif';ctx.fillStyle='#ffffff';ctx.textBaseline='top';ctx.fillText(name,tx,ty,Math.max(20,boxW-(tx-x)-pad));ty+=nameSize+(subtitle?gap:0);}
- if(subtitle){ctx.font='550 '+subSize+'px system-ui,-apple-system,"Segoe UI",sans-serif';ctx.fillStyle='#b8d7ff';ctx.textBaseline='top';ctx.fillText(subtitle,tx,ty,Math.max(20,boxW-(tx-x)-pad));}
+ if(name){ctx.font='750 '+nameSize+'px '+fontStack;ctx.fillStyle='#ffffff';ctx.textBaseline='top';ctx.fillText(name,tx,ty,Math.max(20,boxW-(tx-x)-pad));ty+=nameSize+(subtitle?gap:0);}
+ if(subtitle){ctx.font='550 '+subSize+'px '+fontStack;ctx.fillStyle=brandAccent.value||'#b8d7ff';ctx.textBaseline='top';ctx.fillText(subtitle,tx,ty,Math.max(20,boxW-(tx-x)-pad));}
  ctx.restore();
 }
 function drawGuides(){
@@ -1201,6 +1222,10 @@ window.addEventListener('appinstalled',()=>$('installApp').hidden=true);
 try{$('notes').value=localStorage.getItem('officerlab-lecture-notes')||'';}catch{}
 restoreTeleprompterSettings();
 const LOWER_THIRD_STORAGE={name:'officerlab-lower-third-name',title:'officerlab-lower-third-title',position:'officerlab-lower-third-position',enabled:'officerlab-lower-third-enabled'};
+const BRAND_KIT_STORAGE={accent:'officerlab-brand-accent',panel:'officerlab-brand-panel',font:'officerlab-brand-font',logo:'officerlab-brand-logo'};
+function saveBrandKit(){try{localStorage.setItem(BRAND_KIT_STORAGE.accent,brandAccent.value);localStorage.setItem(BRAND_KIT_STORAGE.panel,brandPanel.value);localStorage.setItem(BRAND_KIT_STORAGE.font,brandFont.value);if(brandLogoDataUrl)localStorage.setItem(BRAND_KIT_STORAGE.logo,brandLogoDataUrl);else localStorage.removeItem(BRAND_KIT_STORAGE.logo);brandLogoStatus.textContent=brandLogoDataUrl?'Logo and brand settings saved on this device.':'Brand settings saved on this device.';}catch(e){brandLogoStatus.textContent='Browser storage is full; logo could not be saved. Try a smaller image.';}}
+function setBrandLogo(dataUrl){brandLogoVersion++;const version=brandLogoVersion;brandLogoDataUrl=dataUrl||'';brandLogoImage=null;if(!dataUrl){brandLogoStatus.textContent='No logo selected. Brand colours and font are still active.';saveBrandKit();return;}const img=new Image();img.onload=()=>{if(version!==brandLogoVersion)return;brandLogoImage=img;brandLogoStatus.textContent='Logo ready · '+img.naturalWidth+' × '+img.naturalHeight+' px.';saveBrandKit();};img.onerror=()=>{if(version!==brandLogoVersion)return;brandLogoDataUrl='';brandLogoImage=null;brandLogoStatus.textContent='This logo could not be loaded. Choose a PNG, JPG or WebP image.';saveBrandKit();};img.src=dataUrl;}
+function restoreBrandKit(){try{const accent=localStorage.getItem(BRAND_KIT_STORAGE.accent),panel=localStorage.getItem(BRAND_KIT_STORAGE.panel),font=localStorage.getItem(BRAND_KIT_STORAGE.font),logo=localStorage.getItem(BRAND_KIT_STORAGE.logo);if(/^#[0-9a-f]{6}$/i.test(accent||''))brandAccent.value=accent;if(/^#[0-9a-f]{6}$/i.test(panel||''))brandPanel.value=panel;if(['system','rounded','serif','mono'].includes(font))brandFont.value=font;if(logo)setBrandLogo(logo);}catch(e){brandLogoStatus.textContent='Could not restore brand settings from browser storage.';}}
 function saveLowerThirdSettings(){
  try{localStorage.setItem(LOWER_THIRD_STORAGE.name,lowerThirdName.value);localStorage.setItem(LOWER_THIRD_STORAGE.title,lowerThirdTitle.value);localStorage.setItem(LOWER_THIRD_STORAGE.position,lowerThirdPosition.value);localStorage.setItem(LOWER_THIRD_STORAGE.enabled,lowerThirdEnabled.checked?'1':'0');}catch{}
 }
@@ -1217,6 +1242,10 @@ function restoreLowerThirdSettings(){
 lowerThirdPosition.addEventListener('change',()=>{saveLowerThirdSettings();if(lowerThirdEnabled.checked)lowerThirdStartedAt=performance.now();});
 lowerThirdEnabled.addEventListener('change',()=>{lowerThirdStartedAt=lowerThirdEnabled.checked?performance.now():0;saveLowerThirdSettings();});
 restoreLowerThirdSettings();
+[brandAccent,brandPanel,brandFont].forEach(el=>el.addEventListener('input',saveBrandKit));
+brandLogoFile.addEventListener('change',()=>{const file=brandLogoFile.files&&brandLogoFile.files[0];if(!file)return;if(!/^image\/(png|jpeg|webp)$/.test(file.type)){brandLogoStatus.textContent='Choose a PNG, JPG or WebP logo.';brandLogoFile.value='';return;}if(file.size>5*1024*1024){brandLogoStatus.textContent='Choose a logo smaller than 5 MB.';brandLogoFile.value='';return;}const url=URL.createObjectURL(file),img=new Image();brandLogoStatus.textContent='Optimizing logo for this device…';img.onload=()=>{URL.revokeObjectURL(url);const max=160,ratio=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight)),w=Math.max(1,Math.round(img.naturalWidth*ratio)),h=Math.max(1,Math.round(img.naturalHeight*ratio)),off=document.createElement('canvas');off.width=w;off.height=h;off.getContext('2d').drawImage(img,0,0,w,h);let data='';try{data=off.toDataURL('image/webp',.78);if(data.length>125000)data=off.toDataURL('image/jpeg',.72);}catch(e){brandLogoStatus.textContent='Could not optimize this logo.';return;}if(data.length>125000){brandLogoStatus.textContent='Logo is still too large after optimization. Choose a simpler/smaller image.';return;}setBrandLogo(data);};img.onerror=()=>{URL.revokeObjectURL(url);brandLogoStatus.textContent='Could not read that logo image.';};img.src=url;});
+brandLogoRemove.addEventListener('click',()=>{brandLogoFile.value='';setBrandLogo('');});
+restoreBrandKit();
 try{const savedCaptionLanguage=localStorage.getItem('officerlab-caption-language');if(['gu-IN','en-IN','hi-IN'].includes(savedCaptionLanguage))captionLanguage.value=savedCaptionLanguage;}catch{}
 if(!captionSupportAvailable())updateCaptionStatus('Automatic speech recognition is not available in this browser. Recording continues normally; add a transcript manually.');
 else updateCaptionStatus('Optional live captions. Browser support and language accuracy vary; recognition may use the browser or platform speech service.');
