@@ -43,8 +43,29 @@ main{max-width:1600px;margin:auto;padding:14px 14px 116px;display:grid;grid-temp
 #pipHandle{position:absolute;z-index:6;display:none;aspect-ratio:16/9;border:2px solid #ffffffb0;border-radius:10px;box-shadow:0 3px 16px #0009;pointer-events:none}
 #pipHandle .drag-bar{position:absolute;left:0;right:0;top:0;height:27px;background:#06101dcc;border-radius:7px 7px 0 0;display:flex;align-items:center;justify-content:center;font-size:11px;color:white;pointer-events:auto;touch-action:none;cursor:move}
 #annotationFab{position:absolute;left:10px;bottom:10px;z-index:8;width:48px;height:48px;border-radius:50%;padding:0;display:none;align-items:center;justify-content:center;background:var(--blue);color:#fff;border:2px solid #ffffff80;font-size:22px;box-shadow:0 5px 20px #0008}
-#toolTray{position:absolute;left:10px;bottom:66px;z-index:10;width:min(330px,calc(100% - 20px));padding:10px;border-radius:12px;background:#111923f2;border:1px solid #ffffff35;box-shadow:0 8px 28px #0009;backdrop-filter:blur(12px)}
+#toolTray{position:absolute;left:10px;bottom:66px;z-index:14;width:min(360px,calc(100% - 20px));padding:10px;border-radius:12px;background:#111923f2;border:1px solid #ffffff55;box-shadow:0 8px 28px #0009;backdrop-filter:blur(12px)}
 #toolTray[hidden]{display:none}
+#annotationCanvas.enabled{pointer-events:auto;touch-action:none;cursor:crosshair}
+#stage:fullscreen{width:100vw;height:100vh;height:100dvh;max-height:none;aspect-ratio:auto;border-radius:0}
+#stage:fullscreen #compositeCanvas,#stage:fullscreen #annotationCanvas{width:100%;height:100%;object-fit:contain}
+#stageFsExit{display:none;position:absolute;right:12px;top:12px;z-index:18;background:#101722e8}
+#stage:fullscreen #stageFsExit{display:block}
+.stage-toolbar{display:flex;gap:7px;align-items:center;justify-content:center;flex-wrap:wrap;margin:8px 0;padding:9px;background:var(--panel2);border:1px solid var(--line);border-radius:10px}
+.stage-toolbar button{min-height:40px;padding:7px 11px;font-size:12px}
+.stage-toolbar .slide-jump{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)}
+.stage-toolbar input{width:68px;min-height:38px;padding:6px;text-align:center;border-radius:8px;border:1px solid var(--line);background:#0d141e;color:var(--text)}
+.teleprompter-settings{margin:8px 0 12px;padding:10px;background:var(--panel2);border:1px solid var(--line);border-radius:10px}
+.teleprompter-settings[hidden],.teleprompter-overlay[hidden]{display:none}
+.teleprompter-settings textarea{width:100%;min-height:105px;height:105px;margin:7px 0;resize:vertical}
+.teleprompter-controls{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.teleprompter-controls label{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)}
+.teleprompter-controls input[type=range]{width:95px;accent-color:var(--blue)}
+.teleprompter-overlay{position:absolute;left:7%;right:7%;bottom:5%;height:34%;z-index:13;overflow:hidden;padding:10px 14px;background:#05080ddd;border:1px solid #ffffff55;border-radius:12px;box-shadow:0 8px 28px #0009;pointer-events:none}
+.teleprompter-overlay header{display:flex;justify-content:space-between;align-items:center;padding:0 0 6px;border:0;color:#b8d2fa;font-size:10px;letter-spacing:.08em;font-weight:800}
+.teleprompter-overlay header button{pointer-events:auto;min-height:30px;padding:2px 9px;font-size:11px}
+.teleprompter-window{height:calc(100% - 28px);overflow:hidden;white-space:pre-wrap;overflow-wrap:anywhere;color:#fff;font-size:28px;line-height:1.55;font-weight:650;text-shadow:0 2px 5px #000}
+#stage:fullscreen .teleprompter-overlay{bottom:9%;height:38%}
+@media(max-width:650px){.stage-toolbar{gap:5px;padding:7px}.stage-toolbar button{flex:1;min-width:78px}.teleprompter-overlay{left:4%;right:4%;height:32%}.teleprompter-window{font-size:24px}.teleprompter-controls input[type=range]{width:78px}}
 .tool-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:8px}.tool-row:last-child{margin-bottom:0}
 .tool-row button{min-width:44px;min-height:42px;padding:7px 9px;font-size:12px}
 .tool-row button.active{background:var(--blue);border-color:var(--blue)}
@@ -114,12 +135,39 @@ textarea{min-height:150px;resize:vertical;line-height:1.6}
     <div id="pipHandle"><div class="drag-bar" id="pipDragBar">⠿ Drag Face Cam</div></div>
     <button id="annotationFab" type="button" aria-label="Open teaching tools" title="Teaching tools">✎</button>
     <div id="toolTray" hidden>
-      <div class="tool-row"><button type="button" data-tool="pen" class="active">✎ Pen</button><button type="button" data-tool="eraser">⌫ Eraser</button><button type="button" data-tool="text">T Text</button><button type="button" id="clearInk">Clear</button></div>
-      <div class="tool-row"><label for="inkColor">Pen colour</label><input type="color" id="inkColor" value="#ff3b30"><label for="inkWidth">Pen thickness</label><input type="range" id="inkWidth" min="3" max="32" value="9"><span class="tool-val" id="inkWidthVal">9 px</span></div>
+      <div class="tool-row"><button type="button" data-tool="pen" class="active" aria-pressed="true">✎ Pen</button><button type="button" data-tool="highlighter" aria-pressed="false">🖍 Highlighter</button><button type="button" data-tool="eraser" aria-pressed="false">⌫ Eraser</button><button type="button" data-tool="text" aria-pressed="false">T Text</button><button type="button" id="clearInk">Clear</button></div>
+      <div class="tool-row"><label for="inkColor">Pen colour</label><input type="color" id="inkColor" value="#ff3b30"><label for="inkWidth">Pen thickness</label><input type="range" id="inkWidth" min="2" max="32" value="5"><span class="tool-val" id="inkWidthVal">5 px</span><span class="small">Highlighter uses transparent yellow ink.</span></div>
     </div>
     <div class="stage-placeholder" id="placeholder">Choose a capture mode, start the required source,<br>and your lecture preview will appear here.</div>
     <div class="rec-badge" id="badge"><span class="rec-dot"></span>REC <span id="timer">00:00</span><span id="recResolution">1920×1080</span></div>
+    <button type="button" id="stageFsExit">✕ Exit Presentation Full Screen</button>
+    <div class="teleprompter-overlay" id="teleprompterOverlay" hidden>
+      <header><span>LIVE TELEPROMPTER</span><button type="button" id="teleprompterClose">Hide</button></header>
+      <div class="teleprompter-window" id="teleprompterWindow"><div id="teleprompterText"></div></div>
+    </div>
   </div>
+  <div class="stage-toolbar" id="stageToolbar">
+    <button id="prevSlide" type="button" disabled>← Previous</button>
+    <label class="slide-jump">Slide <input id="slideJump" type="number" min="1" step="1" inputmode="numeric" aria-label="Go to slide number"> of <b id="slideTotal">0</b></label>
+    <button id="goSlide" type="button" disabled>Go</button>
+    <button id="nextSlide" type="button" disabled>Next →</button>
+    <button id="stageFullscreenBtn" type="button">⛶ Presentation Full Screen</button>
+    <button id="teleprompterToggle" type="button">📜 Live Teleprompter</button>
+  </div>
+  <section class="teleprompter-settings" id="teleprompterSettings" hidden>
+    <label class="field-label" for="teleprompterScript">Live teleprompter script</label>
+    <textarea id="teleprompterScript" placeholder="Paste or type the lecture script here. Press Start to scroll it over the presentation preview."></textarea>
+    <div class="teleprompter-controls">
+      <button id="teleprompterUseNotes" type="button">Use Script / Talking Points</button>
+      <button id="teleprompterShow" type="button">Show on Preview</button>
+      <button id="teleprompterPlay" class="primary" type="button">▶ Start Scroll</button>
+      <button id="teleprompterPause" type="button">Ⅱ Pause</button>
+      <button id="teleprompterReset" type="button">↺ Reset</button>
+      <label>Speed <input id="teleprompterSpeed" type="range" min="5" max="100" step="1" value="28"><span id="teleprompterSpeedValue">28</span></label>
+      <label>Text <input id="teleprompterFont" type="range" min="18" max="48" step="1" value="28"><span id="teleprompterFontValue">28px</span></label>
+    </div>
+    <p class="hint">The scrolling script is a presenter-only overlay; it is not burned into the recorded lecture video.</p>
+  </section>
 
   <div class="capture-panel">
     <div class="field"><label for="captureMode">Capture mode</label><select id="captureMode">
@@ -176,7 +224,7 @@ textarea{min-height:150px;resize:vertical;line-height:1.6}
   <div class="slide-panel">
     <h2 style="margin-bottom:8px">Presentation slides</h2>
     <div class="slide-top"><input id="slidesInput" type="file" accept="application/pdf,image/*" multiple><span class="small">PDF or image files · PPT/PPTX: export to PDF first</span></div>
-    <div class="slide-nav"><button id="prevSlide" disabled>← Previous</button><span id="slideCount" class="slide-count">No slides loaded</span><button id="nextSlide" disabled>Next →</button><button id="clearSlides" disabled>Clear slides</button></div>
+    <div class="slide-nav"><span id="slideCount" class="slide-count">No slides loaded</span><button id="clearSlides" disabled>Clear slides</button></div>
     <p class="hint">PDF files render one page at a time. Image filenames are sorted naturally (slide-1, slide-2, slide-10).</p>
   </div>
   <div id="error" class="error" role="alert"></div>
@@ -216,7 +264,8 @@ const inkCanvas=$('annotationCanvas'),ink=inkCanvas.getContext('2d'),stage=$('st
 const captureMode=$('captureMode'),quality=$('quality'),cameraSelect=$('cameraSelect'),micSelect=$('micSelect');
 const cameraBtn=$('cameraBtn'),micBtn=$('micBtn'),screenBtn=$('screenBtn'),recordBtn=$('recordBtn'),pauseBtn=$('pauseBtn'),stopBtn=$('stopBtn');
 const muteBtn=$('muteBtn'),meterFill=$('meterFill'),micStatus=$('micStatus'),badge=$('badge'),timer=$('timer'),error=$('error');
-const slidesInput=$('slidesInput'),prevSlide=$('prevSlide'),nextSlide=$('nextSlide'),slideCount=$('slideCount'),clearSlides=$('clearSlides');
+const slidesInput=$('slidesInput'),prevSlide=$('prevSlide'),nextSlide=$('nextSlide'),slideCount=$('slideCount'),clearSlides=$('clearSlides'),slideJump=$('slideJump'),slideTotal=$('slideTotal'),goSlide=$('goSlide');
+const teleprompterOverlay=$('teleprompterOverlay'),teleprompterWindow=$('teleprompterWindow'),teleprompterText=$('teleprompterText'),teleprompterScript=$('teleprompterScript'),teleprompterSettings=$('teleprompterSettings');
 const annotationFab=$('annotationFab'),toolTray=$('toolTray'),pipHandle=$('pipHandle'),pipDragBar=$('pipDragBar');
 const faceSize=$('faceSize'),faceHeight=$('faceHeight'),faceShape=$('faceShape'),faceOpacity=$('faceOpacity'),safeGuides=$('safeGuides'),mirrorOutput=$('mirrorOutput'),outputRatio=$('outputRatio');
 const recList=$('recList'),empty=$('empty'),recoveryList=$('recoveryList');
@@ -226,6 +275,7 @@ let audioContext=null,audioDestination=null,micGain=null,screenGain=null,micAnal
 let layout='pip',pip={x:.77,y:.73},activeTool='pen',drawing=false,slides=[],slideIndex=0,pdfDoc=null,slideSource=null,slideUrls=[];
 let sessionId=null,chunkIndex=0,writeQueue=Promise.resolve(),localChunks=[],recording=false,paused=false,startedAt=0,testTimeout=null;
 let saved=[],recoveryItems=[],activeMediaElement=null,mediaSessionReady=false;
+let teleprompterRAF=0,teleprompterLastFrame=0,lastInkPoint=null;
 const showError=message=>{error.textContent=message;error.style.display='block'};
 const clearError=()=>{error.textContent='';error.style.display='none'};
 const clock=ms=>{const sec=Math.max(0,Math.floor(ms/1000));return String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0')};
@@ -459,6 +509,8 @@ async function showSlide(index){
 }
 function syncSlideControls(){
  slideCount.textContent=slides.length?'Slide '+(slideIndex+1)+' / '+slides.length:'No slides loaded';
+ slideJump.max=String(Math.max(1,slides.length));slideJump.value=slides.length?String(slideIndex+1):'';
+ slideTotal.textContent=String(slides.length);goSlide.disabled=!slides.length;
  prevSlide.disabled=!slides.length||slideIndex===0;nextSlide.disabled=!slides.length||slideIndex===slides.length-1;clearSlides.disabled=!slides.length;
 }
 function setLayout(name){
@@ -478,17 +530,29 @@ function startDrag(e){
  pipDragBar.addEventListener('pointermove',move);pipDragBar.addEventListener('pointerup',end);pipDragBar.addEventListener('pointercancel',end);
 }
 function getInkPoint(e){const r=inkCanvas.getBoundingClientRect();return{x:(e.clientX-r.left)*inkCanvas.width/r.width,y:(e.clientY-r.top)*inkCanvas.height/r.height};}
+function inkStyle(){
+ ink.lineCap='round';ink.lineJoin='round';
+ ink.lineWidth=activeTool==='highlighter'?Math.max(22,Number($('inkWidth').value)*4):Number($('inkWidth').value);
+ ink.globalCompositeOperation=activeTool==='eraser'?'destination-out':'source-over';
+ ink.globalAlpha=activeTool==='highlighter'?.34:1;
+ ink.strokeStyle=activeTool==='highlighter'?'#ffeb3b':$('inkColor').value;
+}
 function inkStart(e){
- if(toolTray.hidden===false)return;
+ if(toolTray.contains(e.target))return;
  if(activeTool==='text'){
-  const text=prompt('Enter text to place on this slide:');if(text){const p=getInkPoint(e);ink.save();ink.fillStyle=$('inkColor').value;ink.font='bold '+Math.round(canvas.width/48)+'px system-ui';ink.shadowColor='#000';ink.shadowBlur=5;ink.fillText(text,p.x,p.y);ink.restore();}return;
+  e.preventDefault();const text=prompt('Enter text to place on this slide:');
+  if(text){const p=getInkPoint(e);ink.save();ink.globalAlpha=1;ink.fillStyle=$('inkColor').value;ink.font='bold '+Math.round(canvas.width/48)+'px system-ui';ink.shadowColor='#000';ink.shadowBlur=5;ink.fillText(text,p.x,p.y);ink.restore();}return;
  }
- drawing=true;const p=getInkPoint(e);inkCanvas.setPointerCapture(e.pointerId);ink.beginPath();ink.moveTo(p.x,p.y);
+ e.preventDefault();drawing=true;try{inkCanvas.setPointerCapture(e.pointerId);}catch{}
+ const p=getInkPoint(e);lastInkPoint=p;inkStyle();ink.beginPath();ink.moveTo(p.x,p.y);ink.lineTo(p.x+.2,p.y+.2);ink.stroke();lastInkPoint=p;
 }
 function inkMove(e){
- if(!drawing)return;const p=getInkPoint(e);ink.save();ink.lineCap='round';ink.lineJoin='round';ink.lineWidth=Number($('inkWidth').value);ink.globalCompositeOperation=activeTool==='eraser'?'destination-out':'source-over';ink.strokeStyle=$('inkColor').value;ink.lineTo(p.x,p.y);ink.stroke();ink.restore();
+ if(!drawing||!lastInkPoint)return;
+ const coalesced=typeof e.getCoalescedEvents==='function'?e.getCoalescedEvents():[];
+ const events=coalesced.length?coalesced:[e];inkStyle();
+ for(const point of events){const p=getInkPoint(point);ink.beginPath();ink.moveTo(lastInkPoint.x,lastInkPoint.y);ink.lineTo(p.x,p.y);ink.stroke();lastInkPoint=p;}
 }
-function inkEnd(){if(drawing){drawing=false;ink.closePath();}}
+function inkEnd(){if(drawing){drawing=false;ink.closePath();}lastInkPoint=null;ink.globalAlpha=1;ink.globalCompositeOperation='source-over';}
 async function makeAudioTrack(){
  const tracks=[];
  if(audioDestination)audioDestination.stream.getAudioTracks().forEach(t=>tracks.push(t));
@@ -712,21 +776,56 @@ faceSize.oninput=()=>{ $('faceSizeVal').textContent=faceSize.value+'%';updatePip
 faceHeight.oninput=()=>{ $('faceHeightVal').textContent=faceHeight.value+'%';updatePipHandle();};
 faceShape.onchange=()=>{updatePipHandle();};
 faceOpacity.oninput=()=>$('faceOpacityVal').textContent=faceOpacity.value+'%';
-annotationFab.onclick=()=>{toolTray.hidden=!toolTray.hidden;};
-document.querySelectorAll('[data-tool]').forEach(b=>b.onclick=()=>{activeTool=b.dataset.tool;document.querySelectorAll('[data-tool]').forEach(x=>x.classList.toggle('active',x===b));toolTray.hidden=true;inkCanvas.classList.add('enabled');});
-inkCanvas.addEventListener('pointerdown',inkStart);inkCanvas.addEventListener('pointermove',inkMove);inkCanvas.addEventListener('pointerup',inkEnd);inkCanvas.addEventListener('pointercancel',inkEnd);inkCanvas.addEventListener('pointerleave',inkEnd);
+annotationFab.onclick=()=>{toolTray.hidden=!toolTray.hidden;inkCanvas.classList.add('enabled');};
+document.querySelectorAll('[data-tool]').forEach(b=>b.onclick=()=>{activeTool=b.dataset.tool;document.querySelectorAll('[data-tool]').forEach(x=>{const selected=x===b;x.classList.toggle('active',selected);x.setAttribute('aria-pressed',selected?'true':'false');});toolTray.hidden=true;inkCanvas.classList.add('enabled');});
+inkCanvas.addEventListener('pointerdown',inkStart,{passive:false});inkCanvas.addEventListener('pointermove',inkMove,{passive:false});inkCanvas.addEventListener('pointerup',inkEnd);inkCanvas.addEventListener('pointercancel',inkEnd);inkCanvas.addEventListener('lostpointercapture',inkEnd);
 $('clearInk').onclick=()=>{ink.clearRect(0,0,inkCanvas.width,inkCanvas.height);toolTray.hidden=true;};
 $('inkWidth').oninput=()=>$('inkWidthVal').textContent=$('inkWidth').value+' px';
+prevSlide.onclick=()=>showSlide(slideIndex-1);
+nextSlide.onclick=()=>showSlide(slideIndex+1);
+goSlide.onclick=()=>{const n=Number(slideJump.value);if(Number.isInteger(n)&&n>=1&&n<=slides.length)showSlide(n-1);else showError('Enter a slide number from 1 to '+slides.length+'.');};
+slideJump.addEventListener('keydown',e=>{if(e.key==='Enter')goSlide.click();});
 pipDragBar.addEventListener('pointerdown',startDrag);
 $('dismissOrientation').onclick=()=>$('orientationHint').remove();
+function updateTeleprompterText(){teleprompterText.textContent=teleprompterScript.value.trim()||'Enter your lecture script in the teleprompter panel.';}
+function stopTeleprompterScroll(){if(teleprompterRAF)cancelAnimationFrame(teleprompterRAF);teleprompterRAF=0;teleprompterLastFrame=0;}
+function teleprompterFrame(now){
+ if(!teleprompterRAF)return;
+ if(teleprompterLastFrame){const dt=Math.min(50,now-teleprompterLastFrame);teleprompterWindow.scrollTop+=(dt/1000)*Number($('teleprompterSpeed').value);}
+ teleprompterLastFrame=now;
+ if(teleprompterWindow.scrollTop+teleprompterWindow.clientHeight>=teleprompterWindow.scrollHeight-2){stopTeleprompterScroll();return;}
+ teleprompterRAF=requestAnimationFrame(teleprompterFrame);
+}
+$('teleprompterToggle').onclick=()=>{teleprompterSettings.hidden=!teleprompterSettings.hidden;};
+$('teleprompterScript').addEventListener('input',updateTeleprompterText);
+$('teleprompterShow').onclick=()=>{updateTeleprompterText();teleprompterOverlay.hidden=!teleprompterOverlay.hidden;$('teleprompterShow').textContent=teleprompterOverlay.hidden?'Show on Preview':'Hide from Preview';};
+$('teleprompterClose').onclick=()=>{teleprompterOverlay.hidden=true;$('teleprompterShow').textContent='Show on Preview';stopTeleprompterScroll();};
+$('teleprompterPlay').onclick=()=>{updateTeleprompterText();teleprompterOverlay.hidden=false;$('teleprompterShow').textContent='Hide from Preview';if(!teleprompterScript.value.trim()){showError('Enter or paste your lecture script first.');return;}if(!teleprompterRAF){teleprompterLastFrame=0;teleprompterRAF=requestAnimationFrame(teleprompterFrame);}};
+$('teleprompterPause').onclick=stopTeleprompterScroll;
+$('teleprompterReset').onclick=()=>{stopTeleprompterScroll();teleprompterWindow.scrollTop=0;};
+$('teleprompterSpeed').oninput=()=>$('teleprompterSpeedValue').textContent=$('teleprompterSpeed').value;
+$('teleprompterFont').oninput=()=>{$('teleprompterFontValue').textContent=$('teleprompterFont').value+'px';teleprompterWindow.style.fontSize=$('teleprompterFont').value+'px';};
+$('teleprompterUseNotes').onclick=()=>{teleprompterScript.value=$('notes').value;updateTeleprompterText();};
+document.addEventListener('visibilitychange',()=>{if(document.hidden)stopTeleprompterScroll();});
 window.addEventListener('orientationchange',()=>{if(screen.orientation?.type?.startsWith('landscape'))$('orientationHint').style.display='none';});
-$('fullscreenBtn').onclick=async()=>{
+async function toggleStageFullscreen(){
  try{
-  if(!document.fullscreenElement){await document.documentElement.requestFullscreen({navigationUI:'hide'});if(screen.orientation?.lock){try{await screen.orientation.lock('landscape')}catch{showError('Fullscreen enabled. Rotate your phone manually to Landscape.');}}}
-  else{await document.exitFullscreen();screen.orientation?.unlock?.();}
- }catch{showError('Fullscreen is not available here. In Chrome, use the menu and choose Install app for an app-style window.');}
+  if(document.fullscreenElement===stage){await document.exitFullscreen();screen.orientation?.unlock?.();}
+  else{if(document.fullscreenElement)await document.exitFullscreen();if(!stage.requestFullscreen)throw new Error('Presentation full screen is not supported by this browser.');await stage.requestFullscreen({navigationUI:'hide'});if(screen.orientation?.lock){try{await screen.orientation.lock('landscape');}catch{}}}
+ }catch(e){showError('Presentation full screen unavailable: '+(e.message||'Use Chrome and allow fullscreen mode.'));}
+}
+$('stageFullscreenBtn').onclick=toggleStageFullscreen;
+$('stageFsExit').onclick=()=>{if(document.fullscreenElement===stage)document.exitFullscreen().catch(()=>{});};
+$('fullscreenBtn').onclick=async()=>{
+ try{if(!document.fullscreenElement){await document.documentElement.requestFullscreen({navigationUI:'hide'});if(screen.orientation?.lock){try{await screen.orientation.lock('landscape')}catch{showError('Fullscreen enabled. Rotate your phone manually to Landscape.');}}}else{await document.exitFullscreen();screen.orientation?.unlock?.();}}
+ catch{showError('Fullscreen is not available here. In Chrome, use the menu and choose Install app for an app-style window.');}
 };
-document.addEventListener('fullscreenchange',()=>{$('fullscreenBtn').textContent=document.fullscreenElement?'⛶ Exit Full Screen':'⛶ Full Screen';});
+document.addEventListener('fullscreenchange',()=>{
+ const onStage=document.fullscreenElement===stage;
+ $('fullscreenBtn').textContent=document.fullscreenElement?'⛶ Exit Full Screen':'⛶ Full Screen';
+ $('stageFullscreenBtn').textContent=onStage?'✕ Exit Presentation Full Screen':'⛶ Presentation Full Screen';
+ $('stageFsExit').hidden=!onStage;
+});
 function updateConnectionStatus(){const el=$('connectivityStatus');if(!el)return;const online=navigator.onLine;el.textContent=online?'● Online':'● Offline · Local recording available';el.style.borderColor=online?'#3fb950':'#d29922';el.style.color=online?'#7ee787':'#f0c674';}
 window.addEventListener('online',updateConnectionStatus);window.addEventListener('offline',updateConnectionStatus);updateConnectionStatus();
 let installPrompt=null;
@@ -736,7 +835,7 @@ window.addEventListener('appinstalled',()=>$('installApp').hidden=true);
 try{$('notes').value=localStorage.getItem('officerlab-lecture-notes')||'';}catch{}
 let noteTimer;$('notes').oninput=()=>{clearTimeout(noteTimer);noteTimer=setTimeout(()=>{try{localStorage.setItem('officerlab-lecture-notes',$('notes').value);}catch{}},350);};
 window.addEventListener('beforeunload',e=>{if(recording){e.preventDefault();e.returnValue='';}});
-window.addEventListener('pagehide',()=>{stopDraw();if(cameraStream)cameraStream.getTracks().forEach(t=>t.stop());if(micStream)micStream.getTracks().forEach(t=>t.stop());if(screenStream)screenStream.getTracks().forEach(t=>t.stop());if(audioContext)audioContext.close().catch(()=>{});saved.forEach(r=>URL.revokeObjectURL(r.url));slideUrls.forEach(URL.revokeObjectURL);});
+window.addEventListener('pagehide',()=>{stopDraw();stopTeleprompterScroll();if(cameraStream)cameraStream.getTracks().forEach(t=>t.stop());if(micStream)micStream.getTracks().forEach(t=>t.stop());if(screenStream)screenStream.getTracks().forEach(t=>t.stop());if(audioContext)audioContext.close().catch(()=>{});saved.forEach(r=>URL.revokeObjectURL(r.url));slideUrls.forEach(URL.revokeObjectURL);});
 async function init(){
  try{dataSaver.checked=!!navigator.connection?.saveData;}catch{}updateDownloadNetworkStatus();networkConnection()?.addEventListener?.('change',updateDownloadNetworkStatus);
  setCanvasQuality();syncSlideControls();updateControls();startDraw();drawMicMeter();await refreshDevices();await loadLocalRecordings();
