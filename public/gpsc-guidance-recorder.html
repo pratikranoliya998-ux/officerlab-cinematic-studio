@@ -346,10 +346,18 @@ const fileSize=bytes=>bytes<1024?bytes+' B':bytes<1048576?(bytes/1024).toFixed(1
 const stamp=()=>{const d=new Date(),p=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'_'+p(d.getHours())+p(d.getMinutes())+p(d.getSeconds())};
 function selectedOutputQuality(){const requested=Number(quality.value);return dataSaver.checked?Math.min(requested,720):requested;}
 function setCanvasQuality(){const h=selectedOutputQuality(),w=h===1080?1920:h===720?1280:854,hh=h===1080?1080:h===720?720:480;const portrait=outputRatio.value==='portrait';canvas.width=portrait?hh:w;canvas.height=portrait?w:hh;inkCanvas.width=canvas.width;inkCanvas.height=canvas.height;stage.style.aspectRatio=portrait?'9 / 16':'16 / 9';$('recResolution').textContent=canvas.width+'×'+canvas.height;}
+function changePresentationOutputRatio(ratio){
+ const snapshot=document.createElement('canvas');
+ snapshot.width=inkCanvas.width;snapshot.height=inkCanvas.height;
+ if(snapshot.width&&snapshot.height)snapshot.getContext('2d').drawImage(inkCanvas,0,0);
+ outputRatio.value=ratio;setCanvasQuality();
+ if(snapshot.width&&snapshot.height)ink.drawImage(snapshot,0,0,inkCanvas.width,inkCanvas.height);
+ updatePipHandle();syncVisuals();
+}
 function restorePresentationOutputRatio(){
  if(presentationSavedOutputRatio===null||recording||document.fullscreenElement)return;
  const previous=presentationSavedOutputRatio;presentationSavedOutputRatio=null;
- if(outputRatio.value!==previous){outputRatio.value=previous;setCanvasQuality();updatePipHandle();syncVisuals();}
+ if(outputRatio.value!==previous)changePresentationOutputRatio(previous);
 }
 function modeNeedsCamera(){return captureMode.value==='camera'||captureMode.value==='screen-camera'}
 function modeNeedsScreen(){return captureMode.value==='screen'||captureMode.value==='screen-camera'}
@@ -972,7 +980,7 @@ async function toggleStageFullscreen(){
    if(document.fullscreenElement)await document.exitFullscreen();
    if(!stage.requestFullscreen)throw new Error('Presentation full screen is not supported by this browser.');
    if(!recording&&outputRatio.value!=='landscape'){
-    presentationSavedOutputRatio=outputRatio.value;outputRatio.value='landscape';setCanvasQuality();updatePipHandle();syncVisuals();
+    presentationSavedOutputRatio=outputRatio.value;changePresentationOutputRatio('landscape');
    }
    await stage.requestFullscreen({navigationUI:'hide'});
    if(screen.orientation?.lock){try{await screen.orientation.lock('landscape');}catch{}}
