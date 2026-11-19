@@ -49,7 +49,7 @@ main{max-width:1600px;margin:auto;padding:14px 14px 116px;display:grid;grid-temp
 #stage:fullscreen{width:100vw;height:100vh;height:100dvh;max-height:none;aspect-ratio:auto;border-radius:0}
 #stage:fullscreen #compositeCanvas,#stage:fullscreen #annotationCanvas{width:100%;height:100%;object-fit:contain}
 #stageFsExit{display:none;position:absolute;right:12px;top:12px;z-index:18;background:#101722e8}
-#stage:fullscreen #stageFsExit{display:block}
+#stage:fullscreen #stageFsExit{display:block;background:rgba(16,23,34,.48);border-color:#ffffff55;box-shadow:0 6px 24px #0006;-webkit-backdrop-filter:blur(18px) saturate(150%);backdrop-filter:blur(18px) saturate(150%)}
 .stage-toolbar{display:flex;gap:7px;align-items:center;justify-content:center;flex-wrap:wrap;margin:8px 0;padding:9px;background:var(--panel2);border:1px solid var(--line);border-radius:10px}
 .stage-toolbar button{min-height:40px;padding:7px 11px;font-size:12px}
 .stage-toolbar .slide-jump{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)}
@@ -61,12 +61,12 @@ main{max-width:1600px;margin:auto;padding:14px 14px 116px;display:grid;grid-temp
 .teleprompter-controls label{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)}
 .teleprompter-controls input[type=range]{width:95px;accent-color:var(--blue)}
 .teleprompter-overlay{position:absolute;left:7%;right:7%;bottom:5%;height:34%;z-index:13;overflow:hidden;padding:10px 14px;background:#05080ddd;border:1px solid #ffffff55;border-radius:12px;box-shadow:0 8px 28px #0009;pointer-events:none}
-.teleprompter-overlay header{display:flex;justify-content:space-between;align-items:center;padding:0 0 6px;border:0;color:#b8d2fa;font-size:10px;letter-spacing:.08em;font-weight:800}
+.teleprompter-overlay header{display:flex;justify-content:space-between;align-items:center;padding:5px 8px;margin:-2px -4px 6px;border:1px solid #ffffff24;border-radius:8px;color:#d9e8ff;font-size:10px;letter-spacing:.08em;font-weight:800;background:rgba(15,23,38,.42);-webkit-backdrop-filter:blur(16px) saturate(150%);backdrop-filter:blur(16px) saturate(150%)}
 .teleprompter-overlay header button{pointer-events:auto;min-height:30px;padding:2px 9px;font-size:11px}
 .teleprompter-window{height:calc(100% - 28px);overflow:hidden;white-space:pre-wrap;overflow-wrap:anywhere;color:#fff;font-size:28px;line-height:1.55;font-weight:650;text-shadow:0 2px 5px #000}
 #stage:fullscreen .teleprompter-overlay{bottom:9%;height:38%}
 #stageFsSlideNav{display:none}
-#stage:fullscreen #stageFsSlideNav{display:flex;position:absolute;left:12px;right:12px;top:58px;z-index:19;align-items:center;justify-content:center;gap:7px;flex-wrap:wrap;padding:8px;background:#0b111ddd;border:1px solid #ffffff50;border-radius:11px;backdrop-filter:blur(10px)}
+#stage:fullscreen #stageFsSlideNav{display:flex;position:absolute;left:12px;right:12px;top:58px;z-index:19;align-items:center;justify-content:center;gap:7px;flex-wrap:wrap;padding:8px;background:rgba(11,17,29,.48);border:1px solid #ffffff55;border-radius:11px;box-shadow:0 8px 30px #0005;-webkit-backdrop-filter:blur(22px) saturate(160%);backdrop-filter:blur(22px) saturate(160%)}
 #stageFsSlideNav button{min-height:38px;padding:6px 10px;font-size:12px}
 #stageFsSlideNav .fs-jump{display:flex;align-items:center;gap:5px;color:#d7e2f1;font-size:11px}
 #stageFsSlideNav input{width:58px;min-height:36px;padding:5px;text-align:center;border:1px solid #718096;border-radius:7px;background:#111923;color:#fff}
