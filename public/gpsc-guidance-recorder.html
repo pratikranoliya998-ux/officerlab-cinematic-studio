@@ -50,6 +50,18 @@ main{max-width:1600px;margin:auto;padding:14px 14px 116px;display:grid;grid-temp
 #stage:fullscreen #compositeCanvas,#stage:fullscreen #annotationCanvas{width:100%;height:100%;object-fit:contain}
 #stageFsControlsToggle{display:none}
 #stage:fullscreen #stageFsControlsToggle{display:block;position:absolute;right:12px;top:12px;z-index:21;width:42px;height:42px;min-height:42px;padding:0;border-radius:50%;background:rgba(12,18,30,.3);border:1px solid #ffffff48;box-shadow:0 5px 20px #0005;-webkit-backdrop-filter:blur(20px) saturate(150%);backdrop-filter:blur(20px) saturate(150%);font-size:17px}
+.stage-fs-dock{display:none}
+#stage:fullscreen .stage-fs-dock{display:flex;position:absolute;top:50%;transform:translateY(-50%);z-index:24;flex-direction:column;align-items:center;gap:7px;padding:7px;border:1px solid #ffffff42;border-radius:26px;background:rgba(8,14,25,.24);box-shadow:0 8px 28px #0005;-webkit-backdrop-filter:blur(19px) saturate(155%);backdrop-filter:blur(19px) saturate(155%)}
+#stage:fullscreen #stageFsToolDock{left:9px}
+#stage:fullscreen #stageFsRecordDock{right:9px}
+.stage-fs-dock button{display:grid;place-items:center;width:42px;height:42px;min-width:42px;min-height:42px;padding:0;border-radius:50%;font-size:18px;line-height:1;background:rgba(16,25,40,.38);border:1px solid #ffffff50;color:#fff;box-shadow:0 3px 12px #0003;touch-action:manipulation}
+.stage-fs-dock button.active{background:rgba(47,129,247,.68);border-color:#91c1ff;box-shadow:0 0 0 2px #2f81f744}
+.stage-fs-dock button:disabled{opacity:.32}
+#stage:fullscreen #fsRecordToggle{background:rgba(40,166,96,.52);border-color:#78e0a2}
+#stage:fullscreen #fsRecordToggle.recording{background:rgba(210,48,62,.76);border-color:#ff9da5;animation:recordPulse 1.8s ease-in-out infinite}
+#stage:fullscreen #fsPauseToggle{background:rgba(160,112,25,.48)}
+@keyframes recordPulse{50%{box-shadow:0 0 0 5px #ff536033,0 3px 12px #0003}}
+@media(max-width:650px){#stage:fullscreen .stage-fs-dock{gap:5px;padding:5px}#stage:fullscreen .stage-fs-dock button{width:38px;height:38px;min-width:38px;min-height:38px;font-size:16px}#stage:fullscreen #stageFsToolDock{left:5px}#stage:fullscreen #stageFsRecordDock{right:5px}}
 body.presentation-fullscreen>header,body.presentation-fullscreen>.orientation-hint,body.presentation-fullscreen>.sticky-controls{display:none!important}
 body.presentation-fullscreen>main{display:block!important;width:100vw;height:100vh;height:100dvh;max-width:none;margin:0;padding:0!important}
 body.presentation-fullscreen>main>aside{display:none!important}
@@ -155,6 +167,17 @@ textarea{min-height:150px;resize:vertical;line-height:1.6}
     <div class="stage-placeholder" id="placeholder">Choose a capture mode, start the required source,<br>and your lecture preview will appear here.</div>
     <div class="rec-badge" id="badge"><span class="rec-dot"></span>REC <span id="timer">00:00</span><span id="recResolution">1920×1080</span></div>
     <button type="button" id="stageFsControlsToggle" aria-controls="stageFsSlideNav" aria-expanded="false" title="Show presentation controls">☰ Controls</button>
+    <div id="stageFsToolDock" class="stage-fs-dock" role="toolbar" aria-label="Presentation annotation tools">
+      <button type="button" data-stage-tool="pen" aria-label="Pen" title="Pen">✎</button>
+      <button type="button" data-stage-tool="highlighter" aria-label="Highlighter" title="Highlighter">🖍</button>
+      <button type="button" data-stage-tool="eraser" aria-label="Eraser" title="Eraser">⌫</button>
+      <button type="button" data-stage-tool="text" aria-label="Add text" title="Add text">T</button>
+      <button type="button" id="fsClearInk" aria-label="Clear annotations" title="Clear annotations">↺</button>
+    </div>
+    <div id="stageFsRecordDock" class="stage-fs-dock" role="toolbar" aria-label="Recording controls">
+      <button type="button" id="fsRecordToggle" aria-label="Start recording" title="Start recording">●</button>
+      <button type="button" id="fsPauseToggle" aria-label="Pause recording" title="Pause recording" disabled>Ⅱ</button>
+    </div>
     <div id="stageFsSlideNav" aria-label="Fullscreen slide navigation">
       <button id="fsPrevSlide" type="button" disabled>← Prev</button>
       <label class="fs-jump">Slide <input id="fsSlideJump" type="number" min="1" step="1" inputmode="numeric" aria-label="Fullscreen slide number"> / <b id="fsSlideTotal">0</b></label>
@@ -308,6 +331,24 @@ function setCanvasQuality(){const h=selectedOutputQuality(),w=h===1080?1920:h===
 function modeNeedsCamera(){return captureMode.value==='camera'||captureMode.value==='screen-camera'}
 function modeNeedsScreen(){return captureMode.value==='screen'||captureMode.value==='screen-camera'}
 function baseAvailable(){const mode=captureMode.value;if(mode==='camera')return !!cameraStream;if(mode==='camera-slides')return !!cameraStream&&slides.length>0;if(mode==='screen-camera')return (!!screenStream||slides.length>0)&&!!cameraStream;return !!screenStream||slides.length>0;}
+function syncStagePresenterDock(){
+ const rec=$('fsRecordToggle'),pause=$('fsPauseToggle');
+ if(!rec||!pause)return;
+ rec.classList.toggle('recording',recording);
+ rec.textContent=recording?'■':'●';
+ rec.title=recording?'Stop recording':'Start recording';
+ rec.setAttribute('aria-label',rec.title);
+ rec.disabled=!recording&&recordBtn.disabled;
+ pause.disabled=!recording;
+ pause.textContent=paused?'▶':'Ⅱ';
+ pause.title=paused?'Resume recording':'Pause recording';
+ pause.setAttribute('aria-label',pause.title);
+ document.querySelectorAll('[data-stage-tool]').forEach(button=>{
+  const selected=button.dataset.stageTool===activeTool;
+  button.classList.toggle('active',selected);
+  button.setAttribute('aria-pressed',selected?'true':'false');
+ });
+}
 function updateControls(){
  const mode=captureMode.value;captureMode.disabled=recording;quality.disabled=recording;outputRatio.disabled=recording;recordBtn.disabled=recording||!baseAvailable()||((mode==='screen-camera'||mode==='camera-slides')&&!cameraStream);
  cameraBtn.disabled=recording;micBtn.disabled=recording;screenBtn.disabled=recording;$('cameraSwitchBtn').disabled=recording||!cameraStream;
@@ -320,6 +361,7 @@ function updateControls(){
  pipHandle.style.display=((captureMode.value==='screen-camera'||captureMode.value==='camera-slides')&&cameraStream&&layout==='pip')?'block':'none';
  $('layoutButtons').querySelectorAll('[data-layout]').forEach(b=>b.classList.toggle('active',b.dataset.layout===layout));
  updatePipHandle();
+ syncStagePresenterDock();
 }
 function pipDimensions(){let w=Number(faceSize.value)/100,h=Number(faceHeight.value)/100;if(faceShape.value==='circle')h=w*canvas.width/canvas.height;return {w,h};}
 function updatePipHandle(){
@@ -657,6 +699,7 @@ function pauseRecording(){
  if(!recorder||!recording)return;
  if(!paused&&recorder.state==='recording'){recorder.pause();paused=true;pauseBtn.textContent='▶ Resume';}
  else if(paused&&recorder.state==='paused'){recorder.resume();paused=false;pauseBtn.textContent='Ⅱ Pause';}
+ syncStagePresenterDock();
 }
 async function addSaved(row){
  const url=URL.createObjectURL(row.blob);saved.unshift({...row,url});renderRecordings();
@@ -820,7 +863,11 @@ faceHeight.oninput=()=>{ $('faceHeightVal').textContent=faceHeight.value+'%';upd
 faceShape.onchange=()=>{updatePipHandle();};
 faceOpacity.oninput=()=>$('faceOpacityVal').textContent=faceOpacity.value+'%';
 annotationFab.onclick=()=>{toolTray.hidden=!toolTray.hidden;inkCanvas.classList.add('enabled');};
-document.querySelectorAll('[data-tool]').forEach(b=>b.onclick=()=>{activeTool=b.dataset.tool;document.querySelectorAll('[data-tool]').forEach(x=>{const selected=x===b;x.classList.toggle('active',selected);x.setAttribute('aria-pressed',selected?'true':'false');});toolTray.hidden=true;inkCanvas.classList.add('enabled');});
+document.querySelectorAll('[data-tool]').forEach(b=>b.onclick=()=>{activeTool=b.dataset.tool;document.querySelectorAll('[data-tool]').forEach(x=>{const selected=x===b;x.classList.toggle('active',selected);x.setAttribute('aria-pressed',selected?'true':'false');});toolTray.hidden=true;inkCanvas.classList.add('enabled');syncStagePresenterDock();});
+document.querySelectorAll('[data-stage-tool]').forEach(b=>b.onclick=()=>{const tool=document.querySelector('[data-tool="'+b.dataset.stageTool+'"]');if(tool)tool.click();});
+$('fsClearInk').onclick=()=>$('clearInk').click();
+$('fsRecordToggle').onclick=()=>{if(recording)stopBtn.click();else recordBtn.click();syncStagePresenterDock();};
+$('fsPauseToggle').onclick=()=>{if(recording)pauseBtn.click();syncStagePresenterDock();};
 inkCanvas.addEventListener('pointerdown',inkStart,{passive:false});inkCanvas.addEventListener('pointermove',inkMove,{passive:false});inkCanvas.addEventListener('pointerup',inkEnd);inkCanvas.addEventListener('pointercancel',inkEnd);inkCanvas.addEventListener('lostpointercapture',inkEnd);
 $('clearInk').onclick=()=>{ink.clearRect(0,0,inkCanvas.width,inkCanvas.height);toolTray.hidden=true;};
 $('inkWidth').oninput=()=>$('inkWidthVal').textContent=$('inkWidth').value+' px';
