@@ -228,7 +228,7 @@ function modeNeedsCamera(){return captureMode.value==='camera'||captureMode.valu
 function modeNeedsScreen(){return captureMode.value==='screen'||captureMode.value==='screen-camera'}
 function baseAvailable(){const mode=captureMode.value;if(mode==='camera')return !!cameraStream;if(mode==='camera-slides')return !!cameraStream&&slides.length>0;if(mode==='screen-camera')return (!!screenStream||slides.length>0)&&!!cameraStream;return !!screenStream||slides.length>0;}
 function updateControls(){
- const mode=captureMode.value;captureMode.disabled=recording;quality.disabled=recording;recordBtn.disabled=recording||!baseAvailable()||((mode==='screen-camera'||mode==='camera-slides')&&!cameraStream);
+ const mode=captureMode.value;captureMode.disabled=recording;quality.disabled=recording;outputRatio.disabled=recording;recordBtn.disabled=recording||!baseAvailable()||((mode==='screen-camera'||mode==='camera-slides')&&!cameraStream);
  cameraBtn.disabled=recording;micBtn.disabled=recording;screenBtn.disabled=recording;
  $('muteBtn').disabled=!micStream;
  $('cameraBtn').textContent=cameraStream?'⏹ Stop Camera':'📷 Start Camera';
@@ -236,7 +236,7 @@ function updateControls(){
  $('screenBtn').textContent=screenStream?'⏹ Stop Sharing':'🖥 Share Screen';
  cameraSelect.disabled=!cameraStream||recording;micSelect.disabled=!micStream||recording;
  const hasBase=baseAvailable();placeholder.style.display=hasBase?'none':'flex';
- pipHandle.style.display=(captureMode.value==='screen-camera'&&cameraStream&&layout==='pip')?'block':'none';
+ pipHandle.style.display=((captureMode.value==='screen-camera'||captureMode.value==='camera-slides')&&cameraStream&&layout==='pip')?'block':'none';
  $('layoutButtons').querySelectorAll('[data-layout]').forEach(b=>b.classList.toggle('active',b.dataset.layout===layout));
  updatePipHandle();
 }
@@ -458,13 +458,13 @@ function setLayout(name){
  updateControls();
 }
 function movePip(position){
- const w=Number(faceSize.value)/100,h=w*9/16,g=.03;const map={br:[1-w-g,1-h-g],bl:[g,1-h-g],tr:[1-w-g,g],tl:[g,g]};
+ const d=pipDimensions(),g=.03;const map={br:[1-d.w-g,1-d.h-g],bl:[g,1-d.h-g],tr:[1-d.w-g,g],tl:[g,g]};
  if(map[position])pip={x:map[position][0],y:map[position][1]};updatePipHandle();
 }
 function startDrag(e){
  if(!cameraStream)return;e.preventDefault();pipDragBar.setPointerCapture(e.pointerId);
  const rect=stage.getBoundingClientRect(),startX=e.clientX,startY=e.clientY,start={...pip};
- const move=ev=>{const dx=(ev.clientX-startX)/rect.width,dy=(ev.clientY-startY)/rect.height;const w=Number(faceSize.value)/100,h=w*9/16;pip.x=Math.max(0,Math.min(1-w,start.x+dx));pip.y=Math.max(0,Math.min(1-h,start.y+dy));updatePipHandle();};
+ const move=ev=>{const dx=(ev.clientX-startX)/rect.width,dy=(ev.clientY-startY)/rect.height;const d=pipDimensions();pip.x=Math.max(0,Math.min(1-d.w,start.x+dx));pip.y=Math.max(0,Math.min(1-d.h,start.y+dy));updatePipHandle();};
  const end=()=>{pipDragBar.removeEventListener('pointermove',move);pipDragBar.removeEventListener('pointerup',end);pipDragBar.removeEventListener('pointercancel',end);};
  pipDragBar.addEventListener('pointermove',move);pipDragBar.addEventListener('pointerup',end);pipDragBar.addEventListener('pointercancel',end);
 }
