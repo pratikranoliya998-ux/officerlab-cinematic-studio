@@ -620,7 +620,7 @@ function detectCenteredScreenContent(source){
  if(source!==screenCropSource){screenCropSource=source;screenCropResult=null;screenCropResolved=false;screenCropChecks=0;}
  if(screenCropResolved)return screenCropResult;
  const sw=source.videoWidth||source.width||source.naturalWidth,sh=source.videoHeight||source.height||source.naturalHeight;
- if(!sw||!sh||screenCropChecks>=15){screenCropResolved=true;return null;}
+ if(!sw||!sh||screenCropChecks>=60){screenCropResolved=true;return null;}
  screenCropChecks++;
  try{
   const probe=document.createElement('canvas');probe.width=128;probe.height=72;
