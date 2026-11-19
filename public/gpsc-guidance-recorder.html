@@ -223,7 +223,7 @@ function modeNeedsCamera(){return captureMode.value==='camera'||captureMode.valu
 function modeNeedsScreen(){return captureMode.value==='screen'||captureMode.value==='screen-camera'}
 function baseAvailable(){return captureMode.value==='camera'?!!cameraStream:(!!screenStream||slides.length>0)}
 function updateControls(){
- const mode=captureMode.value;recordBtn.disabled=recording||!baseAvailable()||(mode==='screen-camera'&&!cameraStream);
+ const mode=captureMode.value;captureMode.disabled=recording;quality.disabled=recording;recordBtn.disabled=recording||!baseAvailable()||(mode==='screen-camera'&&!cameraStream);
  cameraBtn.disabled=recording;micBtn.disabled=recording;screenBtn.disabled=recording;
  $('muteBtn').disabled=!micStream;
  $('cameraBtn').textContent=cameraStream?'⏹ Stop Camera':'📷 Start Camera';
