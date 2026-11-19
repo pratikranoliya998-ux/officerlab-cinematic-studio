@@ -132,6 +132,7 @@ textarea{min-height:150px;resize:vertical;line-height:1.6}
   </div>
   <div class="device-actions">
     <button id="cameraBtn">📷 Start Camera</button>
+    <button id="cameraSwitchBtn" disabled>🔄 Switch Front / Rear</button>
     <button id="micBtn">🎙 Enable Microphone</button>
     <button id="screenBtn">🖥 Share Screen</button>
   </div>
@@ -213,7 +214,7 @@ const slidesInput=$('slidesInput'),prevSlide=$('prevSlide'),nextSlide=$('nextSli
 const annotationFab=$('annotationFab'),toolTray=$('toolTray'),pipHandle=$('pipHandle'),pipDragBar=$('pipDragBar');
 const faceSize=$('faceSize'),faceHeight=$('faceHeight'),faceShape=$('faceShape'),faceOpacity=$('faceOpacity'),safeGuides=$('safeGuides'),mirrorOutput=$('mirrorOutput'),outputRatio=$('outputRatio');
 const recList=$('recList'),empty=$('empty'),recoveryList=$('recoveryList');
-let cameraStream=null,micStream=null,screenStream=null,recorder=null,recordTimer=null,meterRAF=0,drawRAF=0;
+let cameraStream=null,micStream=null,screenStream=null,recorder=null,recordTimer=null,meterRAF=0,drawRAF=0,preferredFacing='user';
 let audioContext=null,audioDestination=null,micGain=null,screenGain=null,micAnalyser=null,micSource=null,screenAudioSource=null;
 let layout='pip',pip={x:.77,y:.73},activeTool='pen',drawing=false,slides=[],slideIndex=0,pdfDoc=null,slideSource=null,slideUrls=[];
 let sessionId=null,chunkIndex=0,writeQueue=Promise.resolve(),localChunks=[],recording=false,paused=false,startedAt=0,testTimeout=null;
@@ -223,13 +224,13 @@ const clearError=()=>{error.textContent='';error.style.display='none'};
 const clock=ms=>{const sec=Math.max(0,Math.floor(ms/1000));return String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0')};
 const fileSize=bytes=>bytes<1024?bytes+' B':bytes<1048576?(bytes/1024).toFixed(1)+' KB':(bytes/1048576).toFixed(1)+' MB';
 const stamp=()=>{const d=new Date(),p=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'_'+p(d.getHours())+p(d.getMinutes())+p(d.getSeconds())};
-function setCanvasQuality(){const h=Number(quality.value),w=h===1080?1920:h===720?1280:854,hh=h===1080?1080:h===720?720:480;const portrait=outputRatio.value==='portrait';canvas.width=portrait?hh:w;canvas.height=portrait?w:hh;inkCanvas.width=canvas.width;inkCanvas.height=canvas.height;}
+function setCanvasQuality(){const h=Number(quality.value),w=h===1080?1920:h===720?1280:854,hh=h===1080?1080:h===720?720:480;const portrait=outputRatio.value==='portrait';canvas.width=portrait?hh:w;canvas.height=portrait?w:hh;inkCanvas.width=canvas.width;inkCanvas.height=canvas.height;stage.style.aspectRatio=portrait?'9 / 16':'16 / 9';$('recResolution').textContent=canvas.width+'×'+canvas.height;}
 function modeNeedsCamera(){return captureMode.value==='camera'||captureMode.value==='screen-camera'}
 function modeNeedsScreen(){return captureMode.value==='screen'||captureMode.value==='screen-camera'}
 function baseAvailable(){const mode=captureMode.value;if(mode==='camera')return !!cameraStream;if(mode==='camera-slides')return !!cameraStream&&slides.length>0;if(mode==='screen-camera')return (!!screenStream||slides.length>0)&&!!cameraStream;return !!screenStream||slides.length>0;}
 function updateControls(){
  const mode=captureMode.value;captureMode.disabled=recording;quality.disabled=recording;outputRatio.disabled=recording;recordBtn.disabled=recording||!baseAvailable()||((mode==='screen-camera'||mode==='camera-slides')&&!cameraStream);
- cameraBtn.disabled=recording;micBtn.disabled=recording;screenBtn.disabled=recording;
+ cameraBtn.disabled=recording;micBtn.disabled=recording;screenBtn.disabled=recording;$('cameraSwitchBtn').disabled=recording||!cameraStream;
  $('muteBtn').disabled=!micStream;
  $('cameraBtn').textContent=cameraStream?'⏹ Stop Camera':'📷 Start Camera';
  $('micBtn').textContent=micStream?'✓ Microphone Ready':'🎙 Enable Microphone';
@@ -372,7 +373,7 @@ async function startCamera(){
  clearError();if(cameraStream)return;
  if(!navigator.mediaDevices?.getUserMedia){showError('Camera access requires a secure HTTPS page and a supported browser.');return;}
  const h=Number(quality.value),v={width:{ideal:h===1080?1920:h===720?1280:854},height:{ideal:h},frameRate:{ideal:30,max:30}};
- if(cameraSelect.value)v.deviceId={exact:cameraSelect.value};else v.facingMode='user';
+ if(cameraSelect.value)v.deviceId={exact:cameraSelect.value};else v.facingMode={ideal:preferredFacing};
  try{cameraStream=await navigator.mediaDevices.getUserMedia({video:v,audio:false});cameraVideo.srcObject=cameraStream;await cameraVideo.play().catch(()=>{});cameraBtn.textContent='⏹ Stop Camera';cameraSelect.disabled=false;await refreshDevices();syncVisuals();}catch(e){cameraStream=null;showError(cameraError(e));}
 }
 function stopCamera(){
@@ -578,6 +579,7 @@ function setMute(muted){
  micStatus.textContent=micStream?(muted?'Mic: muted':'Mic: live'):'Mic: off';
 }
 cameraBtn.onclick=()=>cameraStream?stopCamera():startCamera();
+$('cameraSwitchBtn').onclick=async()=>{if(!cameraStream||recording)return;const devices=await navigator.mediaDevices.enumerateDevices().catch(()=>[]),cams=devices.filter(d=>d.kind==='videoinput');if(cams.length>1){const idx=cams.findIndex(d=>d.deviceId===cameraSelect.value),next=cams[(idx+1+cams.length)%cams.length];cameraSelect.value=next.deviceId;preferredFacing='user';stopCamera();await startCamera();}else{preferredFacing=preferredFacing==='user'?'environment':'user';cameraSelect.value='';stopCamera();await startCamera();}};
 micBtn.onclick=()=>startMic();
 screenBtn.onclick=()=>screenStream?stopScreen():startScreen();
 $('muteBtn').onclick=()=>setMute($('muteBtn').dataset.muted!=='true');
@@ -586,6 +588,7 @@ pauseBtn.onclick=pauseRecording;stopBtn.onclick=stopRecording;
 $('testBtn').onclick=()=>startRecording(true);
 captureMode.onchange=()=>{if(captureMode.value==='camera')setLayout('face');else if(layout==='face')setLayout('pip');updateControls();};
 quality.onchange=()=>{if(!recording){setCanvasQuality();syncVisuals();}};
+outputRatio.onchange=()=>{if(!recording){setCanvasQuality();updatePipHandle();syncVisuals();}};
 cameraSelect.onchange=()=>{if(cameraStream&&!recording){stopCamera();startCamera();}};
 micSelect.onchange=async()=>{if(micStream&&!recording){stopMic();await startMic();}};
 $('includeSystemAudio').onchange=()=>{if(screenStream){showError('To change system audio selection, stop screen sharing and share again.');}};
@@ -595,6 +598,8 @@ clearSlides.onclick=()=>{slidesInput.value='';slides=[];slideSource=null;pdfDoc=
 $('layoutButtons').querySelectorAll('[data-layout]').forEach(b=>b.onclick=()=>setLayout(b.dataset.layout));
 document.querySelectorAll('[data-position]').forEach(b=>b.onclick=()=>movePip(b.dataset.position));
 faceSize.oninput=()=>{ $('faceSizeVal').textContent=faceSize.value+'%';updatePipHandle();};
+faceHeight.oninput=()=>{ $('faceHeightVal').textContent=faceHeight.value+'%';updatePipHandle();};
+faceShape.onchange=()=>{updatePipHandle();};
 faceOpacity.oninput=()=>$('faceOpacityVal').textContent=faceOpacity.value+'%';
 annotationFab.onclick=()=>{toolTray.hidden=!toolTray.hidden;};
 document.querySelectorAll('[data-tool]').forEach(b=>b.onclick=()=>{activeTool=b.dataset.tool;document.querySelectorAll('[data-tool]').forEach(x=>x.classList.toggle('active',x===b));toolTray.hidden=true;inkCanvas.classList.add('enabled');});
