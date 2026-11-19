@@ -236,6 +236,7 @@ function updateControls(){
  updatePipHandle();
 }
 function updatePipHandle(){
+ const w=Number(faceSize.value)/100,h=w*9/16;pip.x=Math.max(0,Math.min(1-w,pip.x));pip.y=Math.max(0,Math.min(1-h,pip.y));
  pipHandle.style.left=(pip.x*100)+'%';pipHandle.style.top=(pip.y*100)+'%';pipHandle.style.width=faceSize.value+'%';
 }
 function requestId(){return (crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+'-'+Math.random().toString(36).slice(2));}
@@ -439,7 +440,7 @@ function setLayout(name){
  updateControls();
 }
 function movePip(position){
- const map={br:[.77,.73],bl:[.03,.73],tr:[.77,.03],tl:[.03,.03]};
+ const w=Number(faceSize.value)/100,h=w*9/16,g=.03;const map={br:[1-w-g,1-h-g],bl:[g,1-h-g],tr:[1-w-g,g],tl:[g,g]};
  if(map[position])pip={x:map[position][0],y:map[position][1]};updatePipHandle();
 }
 function startDrag(e){
@@ -502,7 +503,7 @@ async function startRecording(isTest=false){
    }
   }catch(e){showError('Recording finished, but it could not be saved to local recovery storage: '+e.message);if(localChunks.length){const blob=new Blob(localChunks,{type:mime||'video/webm'});await addSaved({id:sessionId,name:session.name,status:'complete',mime:blob.type,duration:Date.now()-startedAt,blob});}}
   localChunks=[];if(recorder&&recorder.stream)recorder.stream.getTracks().forEach(t=>{if(t.kind==='video'&&t.label.includes('Canvas'))t.stop()});recorder=null;recording=false;paused=false;sessionId=null;
-  recordBtn.textContent='⏺ Start Recording';recordBtn.classList.add('primary');pauseBtn.disabled=true;stopBtn.disabled=true;cameraBtn.disabled=false;micBtn.disabled=false;screenBtn.disabled=false;cameraSelect.disabled=!cameraStream;micSelect.disabled=!micStream;badge.classList.remove('on');updateControls();
+  recordBtn.textContent='⏺ Start Recording';recordBtn.classList.remove('danger');recordBtn.classList.add('primary');pauseBtn.textContent='Ⅱ Pause';pauseBtn.disabled=true;stopBtn.disabled=true;cameraBtn.disabled=false;micBtn.disabled=false;screenBtn.disabled=false;cameraSelect.disabled=!cameraStream;micSelect.disabled=!micStream;badge.classList.remove('on');updateControls();
  };
  recorder.start(2000);startedAt=Date.now();recording=true;paused=false;
  recordBtn.textContent='● Recording';recordBtn.classList.add('danger');pauseBtn.disabled=false;stopBtn.disabled=false;cameraBtn.disabled=true;micBtn.disabled=true;screenBtn.disabled=true;cameraSelect.disabled=true;micSelect.disabled=true;badge.classList.add('on');timer.textContent='00:00';
@@ -553,7 +554,7 @@ async function loadLocalRecordings(){
 }
 function setMute(muted){
  $('muteBtn').dataset.muted=muted?'true':'false';muteBtn.textContent=muted?'Unmute Mic':'Mute Mic';
- if(micGain&&audioContext)micGain.gain.setTargetAtTime(muted?0:1,audioContext.currentTime,.015);
+ if(micGain&&audioContext)micGain.gain.setTargetAtTime(muted?0:1,audioContext.currentTime,.015);else if(micStream)micStream.getAudioTracks().forEach(t=>t.enabled=!muted);
  micStatus.textContent=micStream?(muted?'Mic: muted':'Mic: live'):'Mic: off';
 }
 cameraBtn.onclick=()=>cameraStream?stopCamera():startCamera();
