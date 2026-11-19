@@ -218,14 +218,14 @@ const clearError=()=>{error.textContent='';error.style.display='none'};
 const clock=ms=>{const sec=Math.max(0,Math.floor(ms/1000));return String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0')};
 const fileSize=bytes=>bytes<1024?bytes+' B':bytes<1048576?(bytes/1024).toFixed(1)+' KB':(bytes/1048576).toFixed(1)+' MB';
 const stamp=()=>{const d=new Date(),p=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'_'+p(d.getHours())+p(d.getMinutes())+p(d.getSeconds())};
-function setCanvasQuality(){const h=Number(quality.value);canvas.width=h===1080?1920:h===720?1280:854;canvas.height=h===1080?1080:h===720?720:480;inkCanvas.width=canvas.width;inkCanvas.height=canvas.height;}
+function setCanvasQuality(){const h=Number(quality.value);canvas.width=h===1080?1920:h===720?1280:854;canvas.height=h===1080?1080:h===720?720:480;}
 function modeNeedsCamera(){return captureMode.value==='camera'||captureMode.value==='screen-camera'}
 function modeNeedsScreen(){return captureMode.value==='screen'||captureMode.value==='screen-camera'}
 function baseAvailable(){return captureMode.value==='camera'?!!cameraStream:(!!screenStream||slides.length>0)}
 function updateControls(){
  const mode=captureMode.value;recordBtn.disabled=recording||!baseAvailable()||(mode==='screen-camera'&&!cameraStream);
  cameraBtn.disabled=recording;micBtn.disabled=recording;screenBtn.disabled=recording;
- $('muteBtn').disabled=!micStream||recording;
+ $('muteBtn').disabled=!micStream;
  $('cameraBtn').textContent=cameraStream?'⏹ Stop Camera':'📷 Start Camera';
  $('micBtn').textContent=micStream?'✓ Microphone Ready':'🎙 Enable Microphone';
  $('screenBtn').textContent=screenStream?'⏹ Stop Sharing':'🖥 Share Screen';
@@ -290,10 +290,11 @@ function drawGuides(){
 function drawScene(){
  ctx.fillStyle='#05080d';ctx.fillRect(0,0,canvas.width,canvas.height);
  const mode=captureMode.value;
+ const showCamera=mode!=='screen'&&!!cameraStream;
  const source=mode==='camera'?cameraVideo:(screenStream?screenVideo:slideSource);
- if(layout==='face'||mode==='camera'){
+ if(mode==='camera'||(layout==='face'&&showCamera)){
   if(cameraStream)cover(ctx,cameraVideo,0,0,canvas.width,canvas.height,mirrorOutput.checked);
- }else if(layout==='split'&&cameraStream){
+ }else if(layout==='split'&&showCamera){
   ctx.fillStyle='#080b10';ctx.fillRect(0,0,canvas.width,canvas.height);
   if(source&&source!==cameraVideo)contain(ctx,source,0,0,canvas.width*.5,canvas.height);
   cover(ctx,cameraVideo,canvas.width*.5,0,canvas.width*.5,canvas.height,mirrorOutput.checked);
@@ -305,8 +306,7 @@ function drawScene(){
    drawPip(canvas.width*pip.x,canvas.height*pip.y,w,h);
   }
  }
- if(slides.length&&captureMode.value!=='camera'&&inkCanvas.style.display!=='none')ctx.drawImage(inkCanvas,0,0,canvas.width,canvas.height);
- if(layout==='pip'&&mode==='screen-camera'&&cameraStream&&slides.length===0&&screenStream&&inkCanvas.style.display!=='none')ctx.drawImage(inkCanvas,0,0,canvas.width,canvas.height);
+ if(inkCanvas.style.display!=='none'&&mode!=='camera')ctx.drawImage(inkCanvas,0,0,canvas.width,canvas.height);
  drawGuides();
  drawRAF=requestAnimationFrame(drawScene);
 }
