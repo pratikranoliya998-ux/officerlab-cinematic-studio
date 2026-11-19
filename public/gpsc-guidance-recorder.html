@@ -275,7 +275,7 @@ let audioContext=null,audioDestination=null,micGain=null,screenGain=null,micAnal
 let layout='pip',pip={x:.77,y:.73},activeTool='pen',drawing=false,slides=[],slideIndex=0,pdfDoc=null,slideSource=null,slideUrls=[];
 let sessionId=null,chunkIndex=0,writeQueue=Promise.resolve(),localChunks=[],recording=false,paused=false,startedAt=0,testTimeout=null;
 let saved=[],recoveryItems=[],activeMediaElement=null,mediaSessionReady=false;
-let teleprompterRAF=0,teleprompterLastFrame=0,lastInkPoint=null;
+let teleprompterRAF=0,teleprompterLastFrame=0,lastInkPoint=null,lastInkPointerId=null;
 const showError=message=>{error.textContent=message;error.style.display='block'};
 const clearError=()=>{error.textContent='';error.style.display='none'};
 const clock=ms=>{const sec=Math.max(0,Math.floor(ms/1000));return String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0')};
@@ -531,28 +531,46 @@ function startDrag(e){
 }
 function getInkPoint(e){const r=inkCanvas.getBoundingClientRect();return{x:(e.clientX-r.left)*inkCanvas.width/r.width,y:(e.clientY-r.top)*inkCanvas.height/r.height};}
 function inkStyle(){
- ink.lineCap='round';ink.lineJoin='round';
+ ink.lineCap=activeTool==='highlighter'?'butt':'round';
+ ink.lineJoin='round';
  ink.lineWidth=activeTool==='highlighter'?Math.max(22,Number($('inkWidth').value)*4):Number($('inkWidth').value);
  ink.globalCompositeOperation=activeTool==='eraser'?'destination-out':'source-over';
  ink.globalAlpha=activeTool==='highlighter'?.34:1;
  ink.strokeStyle=activeTool==='highlighter'?'#ffeb3b':$('inkColor').value;
 }
 function inkStart(e){
- if(toolTray.contains(e.target))return;
+ if(toolTray.contains(e.target)||drawing)return;
  if(activeTool==='text'){
   e.preventDefault();const text=prompt('Enter text to place on this slide:');
   if(text){const p=getInkPoint(e);ink.save();ink.globalAlpha=1;ink.fillStyle=$('inkColor').value;ink.font='bold '+Math.round(canvas.width/48)+'px system-ui';ink.shadowColor='#000';ink.shadowBlur=5;ink.fillText(text,p.x,p.y);ink.restore();}return;
  }
- e.preventDefault();drawing=true;try{inkCanvas.setPointerCapture(e.pointerId);}catch{}
- const p=getInkPoint(e);lastInkPoint=p;inkStyle();ink.beginPath();ink.moveTo(p.x,p.y);ink.lineTo(p.x+.2,p.y+.2);ink.stroke();lastInkPoint=p;
+ e.preventDefault();drawing=true;lastInkPointerId=e.pointerId;
+ try{inkCanvas.setPointerCapture(e.pointerId);}catch{}
+ const p=getInkPoint(e);lastInkPoint=p;inkStyle();
+ // One single dab on pointer-down; do not paint an extra zero-length stroke.
+ ink.beginPath();ink.arc(p.x,p.y,Math.max(1,ink.lineWidth/2),0,Math.PI*2);ink.fillStyle=ink.strokeStyle;ink.fill();
 }
 function inkMove(e){
- if(!drawing||!lastInkPoint)return;
+ if(!drawing||!lastInkPoint||e.pointerId!==lastInkPointerId)return;
  const coalesced=typeof e.getCoalescedEvents==='function'?e.getCoalescedEvents():[];
  const events=coalesced.length?coalesced:[e];inkStyle();
- for(const point of events){const p=getInkPoint(point);ink.beginPath();ink.moveTo(lastInkPoint.x,lastInkPoint.y);ink.lineTo(p.x,p.y);ink.stroke();lastInkPoint=p;}
+ ink.beginPath();ink.moveTo(lastInkPoint.x,lastInkPoint.y);
+ let moved=false;
+ for(const point of events){
+  const p=getInkPoint(point);
+  const dx=p.x-lastInkPoint.x,dy=p.y-lastInkPoint.y;
+  // Ignore duplicate/coalesced samples so the same touch position is never painted twice.
+  if(dx*dx+dy*dy<0.75*0.75)continue;
+  ink.lineTo(p.x,p.y);lastInkPoint=p;moved=true;
+ }
+ if(moved)ink.stroke();
 }
-function inkEnd(){if(drawing){drawing=false;ink.closePath();}lastInkPoint=null;ink.globalAlpha=1;ink.globalCompositeOperation='source-over';}
+function inkEnd(e){
+ if(!drawing)return;
+ if(e&&e.pointerId!==undefined&&e.pointerId!==lastInkPointerId)return;
+ drawing=false;lastInkPoint=null;lastInkPointerId=null;
+ ink.globalAlpha=1;ink.globalCompositeOperation='source-over';
+}
 async function makeAudioTrack(){
  const tracks=[];
  if(audioDestination)audioDestination.stream.getAudioTracks().forEach(t=>tracks.push(t));
