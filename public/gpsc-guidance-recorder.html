@@ -58,6 +58,13 @@ main{max-width:1600px;margin:auto;padding:14px 14px 116px;display:grid;grid-temp
 #stage:fullscreen #stageFsRecordDock.paused .stage-fs-status{color:#ffe3a1}
 #stage:fullscreen #stageFsToolDock{left:9px}
 #stage:fullscreen #stageFsRecordDock{right:9px}
+.stage-fs-opacity-panel{display:none;position:absolute;left:70px;top:50%;transform:translateY(-50%);z-index:25;width:190px;padding:11px 12px;border:1px solid #ffffff55;border-radius:14px;background:rgba(8,14,25,.58);box-shadow:0 8px 28px #0007;-webkit-backdrop-filter:blur(22px) saturate(160%);backdrop-filter:blur(22px) saturate(160%);color:#fff}
+#stage:fullscreen .stage-fs-opacity-panel:not([hidden]){display:block}
+.stage-fs-opacity-panel label{display:flex;align-items:center;justify-content:space-between;gap:7px;font-size:11px;font-weight:700}
+.stage-fs-opacity-panel label b{color:#b9d7ff;font-variant-numeric:tabular-nums}
+.stage-fs-opacity-panel input{display:block;width:100%;margin:11px 0 4px;accent-color:#65a5ff;touch-action:pan-x}
+.stage-fs-opacity-panel p{margin:0;color:#b6c3d5;font-size:9px}
+#stage:fullscreen .stage-fs-opacity-panel{left:66px}
 .stage-fs-dock button{display:grid;place-items:center;width:42px;height:42px;min-width:42px;min-height:42px;padding:0;border-radius:50%;font-size:18px;line-height:1;background:rgba(16,25,40,.38);border:1px solid #ffffff50;color:#fff;box-shadow:0 3px 12px #0003;touch-action:manipulation}
 .stage-fs-dock button.active{background:rgba(47,129,247,.68);border-color:#91c1ff;box-shadow:0 0 0 2px #2f81f744}
 .stage-fs-dock button:disabled{opacity:.32}
@@ -65,7 +72,7 @@ main{max-width:1600px;margin:auto;padding:14px 14px 116px;display:grid;grid-temp
 #stage:fullscreen #fsRecordToggle.recording{background:rgba(210,48,62,.76);border-color:#ff9da5;animation:recordPulse 1.8s ease-in-out infinite}
 #stage:fullscreen #fsPauseToggle{background:rgba(160,112,25,.48)}
 @keyframes recordPulse{50%{box-shadow:0 0 0 5px #ff536033,0 3px 12px #0003}}
-@media(max-width:650px){#stage:fullscreen .stage-fs-dock{gap:5px;padding:5px}#stage:fullscreen .stage-fs-dock button{width:38px;height:38px;min-width:38px;min-height:38px;font-size:16px}#stage:fullscreen #stageFsToolDock{left:5px}#stage:fullscreen #stageFsRecordDock{right:5px}}
+@media(max-width:650px){#stage:fullscreen .stage-fs-dock{gap:5px;padding:5px}#stage:fullscreen .stage-fs-dock button{width:38px;height:38px;min-width:38px;min-height:38px;font-size:16px}#stage:fullscreen #stageFsToolDock{left:5px}#stage:fullscreen #stageFsRecordDock{right:5px}#stage:fullscreen .stage-fs-opacity-panel{left:54px;width:175px;padding:9px 10px}}
 body.presentation-fullscreen>header,body.presentation-fullscreen>.orientation-hint,body.presentation-fullscreen>.sticky-controls{display:none!important}
 body.presentation-fullscreen>main{display:block!important;width:100vw;height:100vh;height:100dvh;max-width:none;margin:0;padding:0!important}
 body.presentation-fullscreen>main>aside{display:none!important}
@@ -177,6 +184,12 @@ textarea{min-height:150px;resize:vertical;line-height:1.6}
       <button type="button" data-stage-tool="eraser" aria-label="Eraser" title="Eraser">⌫</button>
       <button type="button" data-stage-tool="text" aria-label="Add text" title="Add text">T</button>
       <button type="button" id="fsClearInk" aria-label="Clear annotations" title="Clear annotations">↺</button>
+      <button type="button" id="fsCameraOpacityToggle" aria-label="Camera opacity" title="Adjust camera opacity" aria-expanded="false">◐</button>
+    </div>
+    <div id="fsCameraOpacityPanel" class="stage-fs-opacity-panel" hidden>
+      <label for="fsCameraOpacity"><span>Camera opacity</span><b id="fsCameraOpacityValue">100%</b></label>
+      <input id="fsCameraOpacity" type="range" min="0" max="100" step="5" value="100" aria-label="Camera opacity percentage">
+      <p>Adjust face camera transparency</p>
     </div>
     <div id="stageFsRecordDock" class="stage-fs-dock" role="toolbar" aria-label="Recording controls">
       <button type="button" id="fsRecordToggle" aria-label="Start recording" title="Start recording">●</button>
@@ -265,7 +278,7 @@ textarea{min-height:150px;resize:vertical;line-height:1.6}
       <label for="faceHeight">Face Cam height <span id="faceHeightVal" class="tool-val">18%</span></label>
       <input type="range" id="faceHeight" min="8" max="45" value="18">
       <label for="faceOpacity">Face Cam opacity <span id="faceOpacityVal" class="tool-val">100%</span></label>
-      <input type="range" id="faceOpacity" min="35" max="100" value="100">
+      <input type="range" id="faceOpacity" min="0" max="100" value="100">
     </div>
     <p class="hint">Drag the “Drag Face Cam” handle in the preview to reposition the webcam overlay. Layout and PiP adjustments are included in the recording.</p>
   </div>
@@ -317,12 +330,12 @@ const slidesInput=$('slidesInput'),prevSlide=$('prevSlide'),nextSlide=$('nextSli
 const teleprompterOverlay=$('teleprompterOverlay'),teleprompterWindow=$('teleprompterWindow'),teleprompterText=$('teleprompterText'),teleprompterScript=$('teleprompterScript'),teleprompterSettings=$('teleprompterSettings');
 const fsPrevSlide=$('fsPrevSlide'),fsNextSlide=$('fsNextSlide'),fsSlideJump=$('fsSlideJump'),fsSlideTotal=$('fsSlideTotal'),fsGoSlide=$('fsGoSlide'),stageFsSlideNav=$('stageFsSlideNav'),stageFsControlsToggle=$('stageFsControlsToggle');
 const annotationFab=$('annotationFab'),toolTray=$('toolTray'),pipHandle=$('pipHandle'),pipDragBar=$('pipDragBar');
-const faceSize=$('faceSize'),faceHeight=$('faceHeight'),faceShape=$('faceShape'),faceOpacity=$('faceOpacity'),safeGuides=$('safeGuides'),mirrorOutput=$('mirrorOutput'),outputRatio=$('outputRatio');
+const faceSize=$('faceSize'),faceHeight=$('faceHeight'),faceShape=$('faceShape'),faceOpacity=$('faceOpacity'),fsCameraOpacity=$('fsCameraOpacity'),fsCameraOpacityToggle=$('fsCameraOpacityToggle'),fsCameraOpacityPanel=$('fsCameraOpacityPanel'),fsCameraOpacityValue=$('fsCameraOpacityValue'),safeGuides=$('safeGuides'),mirrorOutput=$('mirrorOutput'),outputRatio=$('outputRatio');
 const recList=$('recList'),empty=$('empty'),recoveryList=$('recoveryList');
 const dataSaver=$('dataSaver'),wifiOnlyDownloads=$('wifiOnlyDownloads');
 let cameraStream=null,micStream=null,screenStream=null,recorder=null,recordTimer=null,meterRAF=0,drawRAF=0,preferredFacing='user';
 let audioContext=null,audioDestination=null,micGain=null,screenGain=null,micAnalyser=null,micSource=null,screenAudioSource=null;
-let layout='pip',pip={x:.77,y:.73},activeTool='pen',drawing=false,slides=[],slideIndex=0,pdfDoc=null,slideSource=null,slideUrls=[];
+let layout='pip',pip={x:.77,y:.73},activeTool='pen',drawing=false,slides=[],slideIndex=0,pdfDoc=null,slideSource=null,slideUrls=[],presentationSavedOutputRatio=null;
 let sessionId=null,chunkIndex=0,writeQueue=Promise.resolve(),localChunks=[],recording=false,paused=false,startedAt=0,testTimeout=null;
 let saved=[],recoveryItems=[],activeMediaElement=null,mediaSessionReady=false;
 let teleprompterRAF=0,teleprompterLastFrame=0,lastInkPoint=null,lastInkPointerId=null;
@@ -333,6 +346,11 @@ const fileSize=bytes=>bytes<1024?bytes+' B':bytes<1048576?(bytes/1024).toFixed(1
 const stamp=()=>{const d=new Date(),p=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'_'+p(d.getHours())+p(d.getMinutes())+p(d.getSeconds())};
 function selectedOutputQuality(){const requested=Number(quality.value);return dataSaver.checked?Math.min(requested,720):requested;}
 function setCanvasQuality(){const h=selectedOutputQuality(),w=h===1080?1920:h===720?1280:854,hh=h===1080?1080:h===720?720:480;const portrait=outputRatio.value==='portrait';canvas.width=portrait?hh:w;canvas.height=portrait?w:hh;inkCanvas.width=canvas.width;inkCanvas.height=canvas.height;stage.style.aspectRatio=portrait?'9 / 16':'16 / 9';$('recResolution').textContent=canvas.width+'×'+canvas.height;}
+function restorePresentationOutputRatio(){
+ if(presentationSavedOutputRatio===null||recording||document.fullscreenElement)return;
+ const previous=presentationSavedOutputRatio;presentationSavedOutputRatio=null;
+ if(outputRatio.value!==previous){outputRatio.value=previous;setCanvasQuality();updatePipHandle();syncVisuals();}
+}
 function modeNeedsCamera(){return captureMode.value==='camera'||captureMode.value==='screen-camera'}
 function modeNeedsScreen(){return captureMode.value==='screen'||captureMode.value==='screen-camera'}
 function baseAvailable(){const mode=captureMode.value;if(mode==='camera')return !!cameraStream;if(mode==='camera-slides')return !!cameraStream&&slides.length>0;if(mode==='screen-camera')return (!!screenStream||slides.length>0)&&!!cameraStream;return !!screenStream||slides.length>0;}
@@ -504,7 +522,7 @@ async function connectScreenAudio(){
 async function startCamera(){
  clearError();if(cameraStream)return;
  if(!navigator.mediaDevices?.getUserMedia){showError('Camera access requires a secure HTTPS page and a supported browser.');return;}
- const h=selectedOutputQuality(),v={width:{ideal:h===1080?1920:h===720?1280:854},height:{ideal:h},frameRate:{ideal:30,max:30}};
+ const h=selectedOutputQuality(),v={width:{ideal:h===1080?1920:h===720?1280:854},height:{ideal:h},aspectRatio:{ideal:16/9},frameRate:{ideal:30,max:30}};
  if(cameraSelect.value)v.deviceId={exact:cameraSelect.value};else v.facingMode={ideal:preferredFacing};
  try{cameraStream=await navigator.mediaDevices.getUserMedia({video:v,audio:false});cameraVideo.srcObject=cameraStream;await cameraVideo.play().catch(()=>{});cameraBtn.textContent='⏹ Stop Camera';cameraSelect.disabled=false;await refreshDevices();syncVisuals();}catch(e){cameraStream=null;showError(cameraError(e));}
 }
@@ -692,7 +710,7 @@ async function startRecording(isTest=false){
    }
   }catch(e){showError('Recording finished, but it could not be saved to local recovery storage: '+e.message);if(localChunks.length){const parts=localChunks.sort((a,b)=>a.index-b.index);const blob=new Blob(parts.map(p=>p.blob),{type:mime||'video/webm'});await addSaved({id:sessionId,name:session.name,status:'complete',mime:blob.type,duration:Date.now()-startedAt,blob});}}
   localChunks=[];if(recorder&&recorder.stream)recorder.stream.getTracks().forEach(t=>{if(t.kind==='video'&&t.label.includes('Canvas'))t.stop()});recorder=null;recording=false;paused=false;sessionId=null;
-  recordBtn.textContent='⏺ Start Recording';recordBtn.classList.remove('danger');recordBtn.classList.add('primary');pauseBtn.textContent='Ⅱ Pause';pauseBtn.disabled=true;stopBtn.disabled=true;cameraBtn.disabled=false;micBtn.disabled=false;screenBtn.disabled=false;cameraSelect.disabled=!cameraStream;micSelect.disabled=!micStream;badge.classList.remove('on');updateControls();
+  recordBtn.textContent='⏺ Start Recording';recordBtn.classList.remove('danger');recordBtn.classList.add('primary');pauseBtn.textContent='Ⅱ Pause';pauseBtn.disabled=true;stopBtn.disabled=true;cameraBtn.disabled=false;micBtn.disabled=false;screenBtn.disabled=false;cameraSelect.disabled=!cameraStream;micSelect.disabled=!micStream;badge.classList.remove('on');updateControls();restorePresentationOutputRatio();
  };
  recorder.start(3000);startedAt=Date.now();recording=true;paused=false;
  recordBtn.textContent='● Recording';recordBtn.classList.add('danger');pauseBtn.disabled=false;stopBtn.disabled=false;cameraBtn.disabled=true;micBtn.disabled=true;screenBtn.disabled=true;cameraSelect.disabled=true;micSelect.disabled=true;badge.classList.add('on');timer.textContent='00:00';
@@ -871,7 +889,20 @@ document.querySelectorAll('[data-position]').forEach(b=>b.onclick=()=>movePip(b.
 faceSize.oninput=()=>{ $('faceSizeVal').textContent=faceSize.value+'%';updatePipHandle();};
 faceHeight.oninput=()=>{ $('faceHeightVal').textContent=faceHeight.value+'%';updatePipHandle();};
 faceShape.onchange=()=>{updatePipHandle();};
-faceOpacity.oninput=()=>$('faceOpacityVal').textContent=faceOpacity.value+'%';
+function syncCameraOpacity(value){
+ const v=Math.max(0,Math.min(100,Number(value)||0));
+ faceOpacity.value=String(v);fsCameraOpacity.value=String(v);
+ $('faceOpacityVal').textContent=v+'%';fsCameraOpacityValue.textContent=v+'%';
+}
+faceOpacity.oninput=()=>syncCameraOpacity(faceOpacity.value);
+fsCameraOpacity.oninput=()=>syncCameraOpacity(fsCameraOpacity.value);
+syncCameraOpacity(faceOpacity.value);
+fsCameraOpacityToggle.onclick=()=>{
+ const open=fsCameraOpacityPanel.hidden;
+ fsCameraOpacityPanel.hidden=!open;
+ fsCameraOpacityToggle.classList.toggle('active',open);
+ fsCameraOpacityToggle.setAttribute('aria-expanded',String(open));
+};
 annotationFab.onclick=()=>{toolTray.hidden=!toolTray.hidden;inkCanvas.classList.add('enabled');};
 document.querySelectorAll('[data-tool]').forEach(b=>b.onclick=()=>{activeTool=b.dataset.tool;document.querySelectorAll('[data-tool]').forEach(x=>{const selected=x===b;x.classList.toggle('active',selected);x.setAttribute('aria-pressed',selected?'true':'false');});toolTray.hidden=true;inkCanvas.classList.add('enabled');syncStagePresenterDock();});
 document.querySelectorAll('[data-stage-tool]').forEach(b=>b.onclick=()=>{const tool=document.querySelector('[data-tool="'+b.dataset.stageTool+'"]');if(tool)tool.click();});
@@ -937,8 +968,19 @@ window.addEventListener('orientationchange',()=>{if(screen.orientation?.type?.st
 async function toggleStageFullscreen(){
  try{
   if(document.fullscreenElement===stage){await document.exitFullscreen();screen.orientation?.unlock?.();}
-  else{if(document.fullscreenElement)await document.exitFullscreen();if(!stage.requestFullscreen)throw new Error('Presentation full screen is not supported by this browser.');await stage.requestFullscreen({navigationUI:'hide'});if(screen.orientation?.lock){try{await screen.orientation.lock('landscape');}catch{}}}
- }catch(e){showError('Presentation full screen unavailable: '+(e.message||'Use Chrome and allow fullscreen mode.'));}
+  else{
+   if(document.fullscreenElement)await document.exitFullscreen();
+   if(!stage.requestFullscreen)throw new Error('Presentation full screen is not supported by this browser.');
+   if(!recording&&outputRatio.value!=='landscape'){
+    presentationSavedOutputRatio=outputRatio.value;outputRatio.value='landscape';setCanvasQuality();updatePipHandle();syncVisuals();
+   }
+   await stage.requestFullscreen({navigationUI:'hide'});
+   if(screen.orientation?.lock){try{await screen.orientation.lock('landscape');}catch{}}
+  }
+ }catch(e){
+  restorePresentationOutputRatio();
+  showError('Presentation full screen unavailable: '+(e.message||'Use Chrome and allow fullscreen mode.'));
+ }
 }
 $('stageFullscreenBtn').onclick=toggleStageFullscreen;
 $('stageFsExit').onclick=()=>{if(document.fullscreenElement===stage)document.exitFullscreen().catch(()=>{});};
@@ -965,6 +1007,8 @@ document.addEventListener('fullscreenchange',()=>{
  $('stageFullscreenBtn').textContent=onStage?'✕ Exit Presentation Full Screen':'⛶ Presentation Full Screen';
  $('stageFsSlideNav').classList.remove('open');
  $('stageFsControlsToggle').setAttribute('aria-expanded','false');
+ fsCameraOpacityPanel.hidden=true;fsCameraOpacityToggle.classList.remove('active');fsCameraOpacityToggle.setAttribute('aria-expanded','false');
+ if(!onStage)restorePresentationOutputRatio();
  $('stageFsControlsToggle').textContent='☰ Controls';
  $('stageFsControlsToggle').title='Show presentation controls';
 });
