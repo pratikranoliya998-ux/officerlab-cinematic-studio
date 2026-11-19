@@ -83,6 +83,9 @@ textarea{min-height:150px;resize:vertical;line-height:1.6}
 .sticky-controls{position:fixed;z-index:50;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 7px);width:max-content;max-width:calc(100vw - 12px);display:flex;gap:7px;flex-wrap:wrap;justify-content:center;padding:7px;background:#101722ed;border:1px solid #ffffff25;border-radius:13px;box-shadow:0 8px 30px #0009;backdrop-filter:blur(12px)}
 .sticky-controls button{min-height:47px}
 .screen-note{font-size:11px;color:var(--muted);margin-top:8px}
+.capture-options,.download-prefs{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px;padding:9px 10px;background:var(--panel2);border:1px solid var(--line);border-radius:10px}
+.download-prefs{margin:0 0 9px}.recording-tabs{display:flex;gap:6px;margin-top:9px}.recording-tabs button{flex:1;min-height:37px;padding:6px 9px;font-size:11px}.recording-tabs button.active{background:var(--blue);border-color:var(--blue)}
+.recording-panel{margin-top:7px;padding:9px;background:#0d141e;border:1px solid var(--line);border-radius:9px}.recording-panel[hidden]{display:none}.resume-note,.transcript-save-note{display:block;color:var(--muted);font-size:11px;line-height:1.5}.transcript-input{min-height:86px;height:86px;margin:6px 0;resize:vertical}.transcript-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.transcript-actions button{min-height:36px;padding:6px 9px;font-size:11px}
 @media(max-width:950px){main{grid-template-columns:1fr}}
 @media(max-width:650px){header{padding:10px 12px}h1{font-size:15px}main{padding:9px 9px 132px;gap:9px}.card{padding:10px}.device-grid{grid-template-columns:1fr}.sticky-controls{width:calc(100% - 10px);bottom:calc(env(safe-area-inset-bottom,0px) + 4px);gap:5px}.sticky-controls button{flex:1;min-width:0;padding:8px 7px;font-size:11px;min-height:49px}.layout-row button{flex:1}.tool-row button{min-width:47px;min-height:47px}.tool-row input[type=range]{height:42px}.rec{grid-template-columns:82px minmax(0,1fr)}.rec video{width:82px}}
 @media(max-height:480px) and (orientation:landscape){main{padding:7px 7px 85px;grid-template-columns:minmax(0,1.55fr) minmax(235px,.65fr);gap:7px}.card{padding:8px}.stage{max-height:calc(100vh - 190px)}.sticky-controls{bottom:3px}.orientation-hint{display:none}}
@@ -126,6 +129,7 @@ textarea{min-height:150px;resize:vertical;line-height:1.6}
     <div class="field"><label for="quality">Recording quality</label><select id="quality"><option value="1080">1080p · 30 fps</option><option value="720">720p · 30 fps</option><option value="480">480p · 30 fps</option></select></div>
     <div class="field"><label for="outputRatio">Output format</label><select id="outputRatio"><option value="landscape">Landscape · 16:9</option><option value="portrait">Portrait · 9:16</option></select></div>
   </div>
+  <div class="capture-options"><label class="check"><input id="dataSaver" type="checkbox"> Data Saver · cap output at 720p / 1.2 Mbps</label><span class="small">Use this on mobile data or when storage is limited.</span></div>
   <div class="device-grid">
     <div class="field"><label for="cameraSelect">Camera input</label><select id="cameraSelect"><option value="">Default camera</option></select></div>
     <div class="field"><label for="micSelect">Microphone input</label><select id="micSelect"><option value="">Default microphone</option></select></div>
@@ -179,7 +183,7 @@ textarea{min-height:150px;resize:vertical;line-height:1.6}
 
 <aside style="display:flex;flex-direction:column;gap:13px;min-width:0">
   <section class="card"><h2>Script / Talking Points</h2><textarea id="notes" placeholder="Paste your GPSC lecture outline here…&#10;&#10;1. Introduction&#10;2. Key concepts&#10;3. Examples and diagrams&#10;4. Revision questions"></textarea><p class="hint">Notes auto-save in this browser.</p></section>
-  <section class="card"><h2>Recordings & Recovery</h2><div id="recoveryList"></div><div id="recList"><div class="empty" id="empty">No recordings yet.<br>Start a capture source and press Start Recording.</div></div></section>
+  <section class="card"><h2>Recordings & Recovery</h2><div class="download-prefs"><label class="check"><input id="wifiOnlyDownloads" type="checkbox"> Wi-Fi-only downloads</label><span class="small" id="downloadNetworkStatus">Network type: checking…</span></div><p class="hint">Some browsers do not expose Wi-Fi status; when unknown, the app will ask before downloading.</p><div id="recoveryList"></div><div id="recList"><div class="empty" id="empty">No recordings yet.<br>Start a capture source and press Start Recording.</div></div></section>
   <section class="card"><h2>Pre-recording checklist</h2>
     <div class="small" style="line-height:1.9">
       <div>☐ Camera at eye level, head and shoulders visible</div>
@@ -214,6 +218,7 @@ const slidesInput=$('slidesInput'),prevSlide=$('prevSlide'),nextSlide=$('nextSli
 const annotationFab=$('annotationFab'),toolTray=$('toolTray'),pipHandle=$('pipHandle'),pipDragBar=$('pipDragBar');
 const faceSize=$('faceSize'),faceHeight=$('faceHeight'),faceShape=$('faceShape'),faceOpacity=$('faceOpacity'),safeGuides=$('safeGuides'),mirrorOutput=$('mirrorOutput'),outputRatio=$('outputRatio');
 const recList=$('recList'),empty=$('empty'),recoveryList=$('recoveryList');
+const dataSaver=$('dataSaver'),wifiOnlyDownloads=$('wifiOnlyDownloads');
 let cameraStream=null,micStream=null,screenStream=null,recorder=null,recordTimer=null,meterRAF=0,drawRAF=0,preferredFacing='user';
 let audioContext=null,audioDestination=null,micGain=null,screenGain=null,micAnalyser=null,micSource=null,screenAudioSource=null;
 let layout='pip',pip={x:.77,y:.73},activeTool='pen',drawing=false,slides=[],slideIndex=0,pdfDoc=null,slideSource=null,slideUrls=[];
@@ -224,7 +229,8 @@ const clearError=()=>{error.textContent='';error.style.display='none'};
 const clock=ms=>{const sec=Math.max(0,Math.floor(ms/1000));return String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0')};
 const fileSize=bytes=>bytes<1024?bytes+' B':bytes<1048576?(bytes/1024).toFixed(1)+' KB':(bytes/1048576).toFixed(1)+' MB';
 const stamp=()=>{const d=new Date(),p=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'_'+p(d.getHours())+p(d.getMinutes())+p(d.getSeconds())};
-function setCanvasQuality(){const h=Number(quality.value),w=h===1080?1920:h===720?1280:854,hh=h===1080?1080:h===720?720:480;const portrait=outputRatio.value==='portrait';canvas.width=portrait?hh:w;canvas.height=portrait?w:hh;inkCanvas.width=canvas.width;inkCanvas.height=canvas.height;stage.style.aspectRatio=portrait?'9 / 16':'16 / 9';$('recResolution').textContent=canvas.width+'×'+canvas.height;}
+function selectedOutputQuality(){const requested=Number(quality.value);return dataSaver.checked?Math.min(requested,720):requested;}
+function setCanvasQuality(){const h=selectedOutputQuality(),w=h===1080?1920:h===720?1280:854,hh=h===1080?1080:h===720?720:480;const portrait=outputRatio.value==='portrait';canvas.width=portrait?hh:w;canvas.height=portrait?w:hh;inkCanvas.width=canvas.width;inkCanvas.height=canvas.height;stage.style.aspectRatio=portrait?'9 / 16':'16 / 9';$('recResolution').textContent=canvas.width+'×'+canvas.height;}
 function modeNeedsCamera(){return captureMode.value==='camera'||captureMode.value==='screen-camera'}
 function modeNeedsScreen(){return captureMode.value==='screen'||captureMode.value==='screen-camera'}
 function baseAvailable(){const mode=captureMode.value;if(mode==='camera')return !!cameraStream;if(mode==='camera-slides')return !!cameraStream&&slides.length>0;if(mode==='screen-camera')return (!!screenStream||slides.length>0)&&!!cameraStream;return !!screenStream||slides.length>0;}
@@ -372,7 +378,7 @@ async function connectScreenAudio(){
 async function startCamera(){
  clearError();if(cameraStream)return;
  if(!navigator.mediaDevices?.getUserMedia){showError('Camera access requires a secure HTTPS page and a supported browser.');return;}
- const h=Number(quality.value),v={width:{ideal:h===1080?1920:h===720?1280:854},height:{ideal:h},frameRate:{ideal:30,max:30}};
+ const h=selectedOutputQuality(),v={width:{ideal:h===1080?1920:h===720?1280:854},height:{ideal:h},frameRate:{ideal:30,max:30}};
  if(cameraSelect.value)v.deviceId={exact:cameraSelect.value};else v.facingMode={ideal:preferredFacing};
  try{cameraStream=await navigator.mediaDevices.getUserMedia({video:v,audio:false});cameraVideo.srcObject=cameraStream;await cameraVideo.play().catch(()=>{});cameraBtn.textContent='⏹ Stop Camera';cameraSelect.disabled=false;await refreshDevices();syncVisuals();}catch(e){cameraStream=null;showError(cameraError(e));}
 }
@@ -500,10 +506,10 @@ async function startRecording(isTest=false){
  setCanvasQuality();if(!drawRAF)startDraw();
  const videoCapture=canvas.captureStream(30),audioTracks=await makeAudioTrack();
  const output=new MediaStream([...videoCapture.getVideoTracks(),...audioTracks]);
- const h=Number(quality.value),isAppleMobile=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1),videoBits=isAppleMobile?1200000:(h===1080?6500000:h===720?4000000:2200000);
+ const h=selectedOutputQuality(),isAppleMobile=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1),lowData=dataSaver.checked||!!navigator.connection?.saveData,videoBits=(isAppleMobile||lowData)?1200000:(h===1080?6500000:h===720?4000000:2200000);
  try{recorder=mime?new MediaRecorder(output,{mimeType:mime,videoBitsPerSecond:videoBits,audioBitsPerSecond:160000}):new MediaRecorder(output,{videoBitsPerSecond:videoBits,audioBitsPerSecond:160000});}
  catch(e){videoCapture.getTracks().forEach(t=>t.stop());showError('Recorder could not start: '+e.message);return;}
- sessionId=requestId();chunkIndex=0;localChunks=[];writeQueue=Promise.resolve();const session={id:sessionId,name:'officerlab-lecture-'+stamp()+(mime&&mime.includes('mp4')?'.mp4':'.webm'),status:'recording',mime:mime||'video/webm',quality:h,createdAt:Date.now(),duration:0};
+ sessionId=requestId();chunkIndex=0;localChunks=[];writeQueue=Promise.resolve();const session={id:sessionId,name:'officerlab-lecture-'+stamp()+(mime&&mime.includes('mp4')?'.mp4':'.webm'),status:'recording',mime:mime||'video/webm',quality:h,createdAt:Date.now(),duration:0,transcript:''};
  try{await putSession(session);}catch(e){showError('Local recovery storage could not be initialized: '+e.message);recorder=null;videoCapture.getTracks().forEach(t=>t.stop());return;}
  recorder.ondataavailable=e=>{
   if(!e.data||!e.data.size)return;
@@ -546,6 +552,9 @@ function pauseRecording(){
 async function addSaved(row){
  const url=URL.createObjectURL(row.blob);saved.unshift({...row,url});renderRecordings();
 }
+function resumeKey(id){return 'officerlab-resume-'+id;}
+function networkConnection(){return navigator.connection||navigator.mozConnection||navigator.webkitConnection||null;}
+function updateDownloadNetworkStatus(){const n=networkConnection(),type=n?.type||'unknown';$('downloadNetworkStatus').textContent=type==='unknown'?(n?.effectiveType?'Network type hidden · '+n.effectiveType:'Network type hidden'):'Network: '+type;}
 function renderRecordings(){
  recList.replaceChildren();if(!saved.length){recList.append(empty);return;}
  saved.forEach((r,i)=>{
@@ -553,8 +562,18 @@ function renderRecordings(){
   const meta=document.createElement('div');meta.className='meta';const title=document.createElement('strong');title.textContent=r.name;
   const info=document.createElement('div');info.textContent=clock(r.duration||0)+' · '+fileSize(r.blob.size);
   const actions=document.createElement('div');actions.className='actions';const link=document.createElement('a');link.href=r.url;link.download=r.name;link.textContent='⬇ Download';
+  link.addEventListener('click',e=>{if(!wifiOnlyDownloads.checked)return;const n=networkConnection(),type=n?.type||'unknown';if(type==='cellular'){e.preventDefault();showError('Wi-Fi-only is enabled. Connect to Wi-Fi before downloading this recording.');}else if(type!=='wifi'&&!confirm('This browser cannot confirm that you are on Wi-Fi. Download anyway?'))e.preventDefault();});
   const del=document.createElement('button');del.textContent='Delete';del.onclick=async()=>{URL.revokeObjectURL(r.url);saved.splice(i,1);try{await dbAction('sessions','readwrite',s=>s.delete(r.id));}catch{}renderRecordings();};
-  actions.append(link,del);meta.append(title,info,actions);box.append(video,meta);recList.append(box);
+  actions.append(link,del);meta.append(title,info,actions);
+  const tabs=document.createElement('div');tabs.className='recording-tabs';const playbackTab=document.createElement('button');playbackTab.type='button';playbackTab.textContent='▶ Playback';playbackTab.className='active';const transcriptTab=document.createElement('button');transcriptTab.type='button';transcriptTab.textContent='Transcript';tabs.append(playbackTab,transcriptTab);
+  const playbackPanel=document.createElement('div');playbackPanel.className='recording-panel';const resumeNote=document.createElement('span');resumeNote.className='resume-note';resumeNote.textContent='Playback position will be saved on this device.';playbackPanel.append(resumeNote);
+  const transcriptPanel=document.createElement('div');transcriptPanel.className='recording-panel';transcriptPanel.hidden=true;const transcript=document.createElement('textarea');transcript.className='transcript-input';transcript.rows=3;transcript.placeholder='Paste or type the lecture transcript here. Transcript is saved locally; automatic speech-to-text is not enabled.';transcript.value=r.transcript||'';const transcriptActions=document.createElement('div');transcriptActions.className='transcript-actions';const exportBtn=document.createElement('button');exportBtn.type='button';exportBtn.textContent='⬇ Export TXT';exportBtn.onclick=()=>{if(!transcript.value.trim()){showError('Add transcript text before exporting.');return;}const blob=new Blob([transcript.value],{type:'text/plain;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=r.name.replace(/\.[^.]+$/,'')+'.txt';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};const saveNote=document.createElement('span');saveNote.className='transcript-save-note';saveNote.textContent='Saved locally in this browser.';transcriptActions.append(exportBtn,saveNote);transcriptPanel.append(transcript,transcriptActions);
+  const setTab=name=>{const showTranscript=name==='transcript';transcriptPanel.hidden=!showTranscript;playbackPanel.hidden=showTranscript;transcriptTab.classList.toggle('active',showTranscript);playbackTab.classList.toggle('active',!showTranscript);};playbackTab.onclick=()=>setTab('playback');transcriptTab.onclick=()=>setTab('transcript');
+  let lastResumeWrite=0;const saveResume=()=>{if(!Number.isFinite(video.currentTime))return;try{localStorage.setItem(resumeKey(r.id),String(video.currentTime));}catch{};resumeNote.textContent='Resume position: '+clock(video.currentTime*1000)+(Number.isFinite(video.duration)?' / '+clock(video.duration*1000):'');};
+  video.addEventListener('loadedmetadata',()=>{let savedTime=0;try{savedTime=Number(localStorage.getItem(resumeKey(r.id))||0);}catch{}if(savedTime>2&&(!Number.isFinite(video.duration)||savedTime<video.duration-1)){video.currentTime=savedTime;resumeNote.textContent='Resumed near '+clock(savedTime*1000)+'. Playback position is saved automatically.';}else resumeNote.textContent='Playback starts from the beginning. Position is saved automatically.';});
+  video.addEventListener('timeupdate',()=>{if(Date.now()-lastResumeWrite>2500){saveResume();lastResumeWrite=Date.now();}});video.addEventListener('pause',saveResume);video.addEventListener('ended',()=>{try{localStorage.removeItem(resumeKey(r.id));}catch{}resumeNote.textContent='Playback completed.';});
+  let transcriptTimer;transcript.addEventListener('input',()=>{clearTimeout(transcriptTimer);saveNote.textContent='Saving…';transcriptTimer=setTimeout(async()=>{const {url,...row}=r;r.transcript=transcript.value;try{await putSession({...row,transcript:transcript.value});saveNote.textContent='Saved locally in this browser.';}catch(e){saveNote.textContent='Could not save transcript: '+e.message;}},500);});
+  box.append(video,meta,tabs,playbackPanel,transcriptPanel);recList.append(box);
  });
 }
 async function loadLocalRecordings(){
@@ -589,6 +608,8 @@ pauseBtn.onclick=pauseRecording;stopBtn.onclick=stopRecording;
 $('testBtn').onclick=()=>startRecording(true);
 captureMode.onchange=()=>{if(captureMode.value==='camera')setLayout('face');else if(layout==='face')setLayout('pip');updateControls();};
 quality.onchange=()=>{if(!recording){setCanvasQuality();syncVisuals();}};
+dataSaver.onchange=()=>{if(!recording){setCanvasQuality();updatePipHandle();syncVisuals();}};
+wifiOnlyDownloads.onchange=updateDownloadNetworkStatus;
 outputRatio.onchange=()=>{if(!recording){setCanvasQuality();updatePipHandle();syncVisuals();}};
 cameraSelect.onchange=()=>{if(cameraStream&&!recording){stopCamera();startCamera();}};
 micSelect.onchange=async()=>{if(micStream&&!recording){stopMic();await startMic();}};
@@ -626,6 +647,7 @@ let noteTimer;$('notes').oninput=()=>{clearTimeout(noteTimer);noteTimer=setTimeo
 window.addEventListener('beforeunload',e=>{if(recording){e.preventDefault();e.returnValue='';}});
 window.addEventListener('pagehide',()=>{stopDraw();if(cameraStream)cameraStream.getTracks().forEach(t=>t.stop());if(micStream)micStream.getTracks().forEach(t=>t.stop());if(screenStream)screenStream.getTracks().forEach(t=>t.stop());if(audioContext)audioContext.close().catch(()=>{});saved.forEach(r=>URL.revokeObjectURL(r.url));slideUrls.forEach(URL.revokeObjectURL);});
 async function init(){
+ try{dataSaver.checked=!!navigator.connection?.saveData;}catch{}updateDownloadNetworkStatus();networkConnection()?.addEventListener?.('change',updateDownloadNetworkStatus);
  setCanvasQuality();syncSlideControls();updateControls();startDraw();drawMicMeter();await refreshDevices();await loadLocalRecordings();
  if('serviceWorker'in navigator)navigator.serviceWorker.register('/gpsc-recorder-sw.js',{scope:'/'}).catch(e=>console.warn('Service worker:',e));
 }
