@@ -55,7 +55,8 @@ main{max-width:1600px;margin:auto;padding:14px 14px 116px;display:grid;grid-temp
 #toolTray[hidden]{display:none}
 #annotationCanvas.enabled{pointer-events:auto;touch-action:none;cursor:crosshair}
 #stage:fullscreen{width:100vw;height:100vh;height:100dvh;max-height:none;aspect-ratio:auto;border-radius:0}
-#stage:fullscreen #compositeCanvas,#stage:fullscreen #annotationCanvas{width:100%;height:100%;object-fit:contain}
+#stage:fullscreen #compositeCanvas{width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain}
+#stage:fullscreen #annotationCanvas{width:100%;height:100%;object-fit:contain}
 #stageFsControlsToggle{display:none}
 #stage:fullscreen #stageFsControlsToggle{display:block;position:absolute;right:12px;top:12px;z-index:21;width:42px;height:42px;min-height:42px;padding:0;border-radius:50%;background:rgba(12,18,30,.3);border:1px solid #ffffff48;box-shadow:0 5px 20px #0005;-webkit-backdrop-filter:blur(20px) saturate(150%);backdrop-filter:blur(20px) saturate(150%);font-size:17px}
 .stage-fs-dock{display:none}
@@ -540,6 +541,24 @@ function restorePresentationOutputRatio(){
  if(presentationSavedOutputRatio===null||recording||document.fullscreenElement)return;
  const previous=presentationSavedOutputRatio;presentationSavedOutputRatio=null;
  if(outputRatio.value!==previous)changePresentationOutputRatio(previous);
+}
+// Keep the full recording canvas inside the actual fullscreen viewport with a small safety inset.
+// This is display-only; the recording canvas resolution and exported video dimensions remain unchanged.
+function updateFullscreenCanvasLayout(){
+ if(document.fullscreenElement!==stage){
+  canvas.style.removeProperty('width');canvas.style.removeProperty('height');
+  ['inset','left','top','right','bottom','width','height','transform'].forEach(p=>inkCanvas.style.removeProperty(p));
+  return;
+ }
+ const rect=stage.getBoundingClientRect(),sourceW=canvas.width,sourceH=canvas.height;
+ if(!rect.width||!rect.height||!sourceW||!sourceH)return;
+ const inset=8,scale=Math.min((rect.width-inset*2)/sourceW,(rect.height-inset*2)/sourceH);
+ if(!Number.isFinite(scale)||scale<=0)return;
+ const width=Math.max(1,Math.floor(sourceW*scale)),height=Math.max(1,Math.floor(sourceH*scale));
+ const left=Math.round((rect.width-width)/2),top=Math.round((rect.height-height)/2);
+ canvas.style.width=width+'px';canvas.style.height=height+'px';
+ inkCanvas.style.inset='auto';inkCanvas.style.left=left+'px';inkCanvas.style.top=top+'px';
+ inkCanvas.style.right='auto';inkCanvas.style.bottom='auto';inkCanvas.style.width=width+'px';inkCanvas.style.height=height+'px';inkCanvas.style.transform='none';
 }
 function modeNeedsCamera(){return captureMode.value==='camera'||captureMode.value==='screen-camera'}
 function modeNeedsScreen(){return captureMode.value==='screen'||captureMode.value==='screen-camera'}
@@ -1483,6 +1502,7 @@ $('fullscreenBtn').onclick=async()=>{
 };
 document.addEventListener('fullscreenchange',()=>{
  const onStage=document.fullscreenElement===stage;
+ requestAnimationFrame(updateFullscreenCanvasLayout);
  document.body.classList.toggle('presentation-fullscreen',onStage);
  $('fullscreenBtn').textContent=document.fullscreenElement?'⛶ Exit Full Screen':'⛶ Full Screen';
  $('stageFullscreenBtn').textContent=onStage?'✕ Exit Presentation Full Screen':'⛶ Presentation Full Screen';
@@ -1490,9 +1510,14 @@ document.addEventListener('fullscreenchange',()=>{
  $('stageFsControlsToggle').setAttribute('aria-expanded','false');
  fsCameraOpacityPanel.hidden=true;fsCameraOpacityToggle.classList.remove('active');fsCameraOpacityToggle.setAttribute('aria-expanded','false');
  if(!onStage)restorePresentationOutputRatio();
+ requestAnimationFrame(updateFullscreenCanvasLayout);
  $('stageFsControlsToggle').textContent='☰ Controls';
  $('stageFsControlsToggle').title='Show presentation controls';
 });
+window.addEventListener('resize',()=>requestAnimationFrame(updateFullscreenCanvasLayout),{passive:true});
+window.addEventListener('orientationchange',()=>requestAnimationFrame(updateFullscreenCanvasLayout),{passive:true});
+window.visualViewport?.addEventListener('resize',()=>requestAnimationFrame(updateFullscreenCanvasLayout),{passive:true});
+if('ResizeObserver'in window){const fullscreenStageObserver=new ResizeObserver(()=>updateFullscreenCanvasLayout());fullscreenStageObserver.observe(stage);}
 function updateConnectionStatus(){const el=$('connectivityStatus');if(!el)return;const online=navigator.onLine;el.textContent=online?'● Online':'● Offline · Local recording available';el.style.borderColor=online?'#3fb950':'#d29922';el.style.color=online?'#7ee787':'#f0c674';}
 window.addEventListener('online',updateConnectionStatus);window.addEventListener('offline',updateConnectionStatus);updateConnectionStatus();
 let installPrompt=null;
