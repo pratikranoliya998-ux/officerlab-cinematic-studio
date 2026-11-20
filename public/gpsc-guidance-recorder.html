@@ -48,7 +48,11 @@ main{max-width:1600px;margin:auto;padding:14px 14px 116px;display:grid;grid-temp
 .record-countdown.on{display:flex}
 #countdownNumber{font-size:clamp(84px,22vw,190px);font-weight:950;line-height:1;color:#fff;text-shadow:0 8px 34px #000b,0 0 35px #2f81f799;letter-spacing:-.06em}
 @media(max-width:650px){#stage:fullscreen .rec-badge{top:8px;font-size:10px;padding:5px 8px}.record-countdown #countdownNumber{font-size:clamp(82px,30vw,150px)}}
-#pipHandle{position:absolute;z-index:6;display:none;aspect-ratio:16/9;border:2px solid #ffffffb0;border-radius:10px;box-shadow:0 3px 16px #0009;pointer-events:none}
+#pipHandle{position:absolute;z-index:6;display:none;aspect-ratio:auto;border:2px solid #ffffffb0;border-radius:10px;box-shadow:0 3px 16px #0009;pointer-events:none}
+.safe-area-overlay{position:absolute;inset:5.5% 5%;z-index:5;pointer-events:none;border:1px dashed rgba(255,255,255,.58);border-radius:5px;box-shadow:0 0 0 1px rgba(0,0,0,.28) inset}
+.safe-area-overlay[hidden]{display:none}
+.safe-area-overlay:before{content:"";position:absolute;inset:0;background-image:linear-gradient(to right,transparent 49.8%,rgba(255,255,255,.24) 50%,transparent 50.2%),linear-gradient(to bottom,transparent 49.8%,rgba(255,255,255,.24) 50%,transparent 50.2%)}
+.safe-area-overlay span{position:absolute;left:7px;top:6px;padding:3px 6px;border-radius:4px;background:rgba(3,8,16,.72);color:#dbeafe;font-size:9px;font-weight:800;letter-spacing:.1em;text-shadow:0 1px 3px #000}
 #pipHandle .drag-bar{position:absolute;left:0;right:0;top:0;height:27px;background:#06101dcc;border-radius:7px 7px 0 0;display:flex;align-items:center;justify-content:center;font-size:11px;color:white;pointer-events:auto;touch-action:none;cursor:move}
 #annotationFab{position:absolute;left:10px;bottom:10px;z-index:8;width:48px;height:48px;border-radius:50%;padding:0;display:none;align-items:center;justify-content:center;background:var(--blue);color:#fff;border:2px solid #ffffff80;font-size:22px;box-shadow:0 5px 20px #0008}
 #toolTray{position:absolute;left:10px;bottom:66px;z-index:14;width:min(360px,calc(100% - 20px));padding:10px;border-radius:12px;background:#111923f2;border:1px solid #ffffff55;box-shadow:0 8px 28px #0009;backdrop-filter:blur(12px)}
@@ -131,6 +135,10 @@ body.presentation-fullscreen>main>section.card>:not(#stage){display:none!importa
 .tool-row label{margin:0;min-width:100%;font-size:10px;color:var(--muted)}
 .tool-row input[type=color]{width:45px;height:40px;padding:3px;border:1px solid var(--line);border-radius:8px;background:var(--panel2)}
 .tool-row input[type=range]{width:100%;height:34px;accent-color:var(--blue);touch-action:pan-x}
+.face-crop-settings{display:grid;grid-template-columns:minmax(0,1fr);gap:2px;padding:8px 9px;border:1px solid var(--line);border-radius:9px;background:#0d141e}
+.face-crop-settings label{display:flex;align-items:center;justify-content:space-between;min-width:0;font-size:10px}
+.face-crop-settings input[type=range]{margin:0 0 5px}
+@media(min-width:760px){.face-crop-settings{grid-template-columns:repeat(3,minmax(0,1fr));column-gap:12px}}
 .tool-val{margin-left:auto;color:var(--muted);font-size:11px}
 .capture-panel{display:flex;gap:9px;align-items:end;flex-wrap:wrap;margin-top:12px}
 .field{flex:1;min-width:145px}.field label,.field-label{display:block;font-size:10px;color:var(--muted);letter-spacing:.07em;text-transform:uppercase;margin:0 0 5px}
@@ -296,6 +304,7 @@ input,select,textarea{border-color:#ffffff20!important;border-radius:9px}button:
   <div class="stage" id="stage">
     <canvas id="compositeCanvas" width="1920" height="1080" aria-label="Lecture recording preview"></canvas>
     <canvas id="annotationCanvas" width="1920" height="1080" aria-label="Teaching annotations"></canvas>
+    <div id="safeAreaOverlay" class="safe-area-overlay" hidden aria-hidden="true"><span>SAFE CONTENT AREA</span></div>
     <video id="cameraVideo" autoplay muted playsinline></video>
     <video id="screenVideo" autoplay muted playsinline></video>
     <div id="pipHandle"><div class="drag-bar" id="pipDragBar">⠿ Drag Face Cam</div></div>
@@ -418,17 +427,23 @@ input,select,textarea{border-color:#ffffff20!important;border-radius:9px}button:
     </div>
     <div class="layout-row" style="margin-top:8px">
       <button type="button" data-position="br">PiP ↘</button><button type="button" data-position="bl">PiP ↙</button><button type="button" data-position="tr">PiP ↗</button><button type="button" data-position="tl">PiP ↖</button>
-      <label class="check"><input id="safeGuides" type="checkbox"> Safe-zone guides</label>
+      <label class="check"><input id="safeGuides" type="checkbox"> Safe slide area (preview only)</label>
+      <label class="check"><input id="smartPipEnabled" type="checkbox" checked> Smart PiP (avoid slide text)</label>
       <label class="check"><input id="mirrorOutput" type="checkbox"> Mirror final camera</label>
     </div>
     <div class="tool-row" style="margin-top:8px">
       <label for="faceShape">Face Cam shape</label><select id="faceShape"><option value="rounded">Rounded rectangle</option><option value="rectangle">Rectangle</option><option value="circle">Circle (square crop)</option><option value="oval">Oval</option></select>
       <label for="faceSize">Face Cam width <span id="faceSizeVal" class="tool-val">18%</span></label>
-      <input type="range" id="faceSize" min="12" max="42" value="18">
+      <input type="range" id="faceSize" min="10" max="36" value="16">
       <label for="faceHeight">Face Cam height <span id="faceHeightVal" class="tool-val">18%</span></label>
       <input type="range" id="faceHeight" min="8" max="45" value="18">
       <label for="faceOpacity">Face Cam opacity <span id="faceOpacityVal" class="tool-val">100%</span></label>
       <input type="range" id="faceOpacity" min="0" max="100" value="100">
+    </div>
+    <div class="tool-row face-crop-settings" id="faceCropSettings">
+      <label for="faceZoom">Face Cam zoom <span id="faceZoomVal" class="tool-val">120%</span></label><input type="range" id="faceZoom" min="100" max="220" value="120" step="5">
+      <label for="faceCropX">Horizontal framing <span id="faceCropXVal" class="tool-val">0</span></label><input type="range" id="faceCropX" min="-50" max="50" value="0">
+      <label for="faceCropY">Vertical framing <span id="faceCropYVal" class="tool-val">0</span></label><input type="range" id="faceCropY" min="-50" max="50" value="0">
     </div>
     <div class="layout-row" style="margin-top:8px;align-items:end">
       <label class="check"><input id="watermarkEnabled" type="checkbox"> Add recording watermark</label>
@@ -580,7 +595,7 @@ const fsPrevSlide=$('fsPrevSlide'),fsNextSlide=$('fsNextSlide'),fsSlideJump=$('f
 const slideAdjustToggle=$('slideAdjustToggle'),slideAdjustPanel=$('slideAdjustPanel'),slideAdjustReset=$('slideAdjustReset'),slideZoom=$('slideZoom'),slideVertical=$('slideVertical'),slideZoomValue=$('slideZoomValue'),slideVerticalValue=$('slideVerticalValue');
 try{const savedZoom=Number(localStorage.getItem('officerlab-slide-zoom')),savedVertical=Number(localStorage.getItem('officerlab-slide-vertical'));if(Number.isFinite(savedZoom)&&savedZoom>=55&&savedZoom<=100)slideZoom.value=String(savedZoom);if(Number.isFinite(savedVertical)&&savedVertical>=-25&&savedVertical<=25)slideVertical.value=String(savedVertical);}catch{}
 const annotationFab=$('annotationFab'),toolTray=$('toolTray'),pipHandle=$('pipHandle'),pipDragBar=$('pipDragBar');
-const faceSize=$('faceSize'),faceHeight=$('faceHeight'),faceShape=$('faceShape'),faceOpacity=$('faceOpacity'),fsCameraOpacity=$('fsCameraOpacity'),fsCameraOpacityToggle=$('fsCameraOpacityToggle'),fsCameraOpacityPanel=$('fsCameraOpacityPanel'),fsCameraOpacityValue=$('fsCameraOpacityValue'),safeGuides=$('safeGuides'),mirrorOutput=$('mirrorOutput'),outputRatio=$('outputRatio');
+const faceSize=$('faceSize'),faceHeight=$('faceHeight'),faceShape=$('faceShape'),faceOpacity=$('faceOpacity'),faceZoom=$('faceZoom'),faceCropX=$('faceCropX'),faceCropY=$('faceCropY'),smartPipEnabled=$('smartPipEnabled'),safeAreaOverlay=$('safeAreaOverlay'),fsCameraOpacity=$('fsCameraOpacity'),fsCameraOpacityToggle=$('fsCameraOpacityToggle'),fsCameraOpacityPanel=$('fsCameraOpacityPanel'),fsCameraOpacityValue=$('fsCameraOpacityValue'),safeGuides=$('safeGuides'),mirrorOutput=$('mirrorOutput'),outputRatio=$('outputRatio');
 const lowerThirdName=$('lowerThirdName'),lowerThirdTitle=$('lowerThirdTitle'),lowerThirdPosition=$('lowerThirdPosition'),lowerThirdEnabled=$('lowerThirdEnabled');
 const brandAccent=$('brandAccent'),brandPanel=$('brandPanel'),brandFont=$('brandFont'),brandLogoFile=$('brandLogoFile'),brandLogoRemove=$('brandLogoRemove'),brandLogoStatus=$('brandLogoStatus');
 const watermarkEnabled=$('watermarkEnabled'),watermarkText=$('watermarkText'),watermarkPosition=$('watermarkPosition'),watermarkOpacity=$('watermarkOpacity'),watermarkOpacityValue=$('watermarkOpacityValue');
