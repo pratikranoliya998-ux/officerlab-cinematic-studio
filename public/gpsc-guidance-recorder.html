@@ -729,7 +729,7 @@ function drawSlideWithMode(ctx,source,x,y,w,h){
  else drawAdjustedSlideForeground(ctx,source,x,y,w,h,mode==='fill',zoom,vertical);
 }
 // Preserve the complete source while filling unused 16:9 canvas space with a soft, darkened extension.
-function containWithFill(ctx,source,x,y,w,h){
+function containWithFill(ctx,source,x,y,w,h,zoom=1,vertical=0){
  if(!source)return;
  const sw=source.videoWidth||source.width||source.naturalWidth,sh=source.videoHeight||source.height||source.naturalHeight;if(!sw||!sh)return;
  // Draw a proportional COVER copy behind the complete slide; this guarantees no empty side bands.
@@ -740,8 +740,8 @@ function containWithFill(ctx,source,x,y,w,h){
  ctx.filter='none';
  ctx.fillStyle='rgba(5,8,13,.06)';ctx.fillRect(x,y,w,h);
  ctx.restore();
- // Keep the complete original slide crisp and uncropped above the blurred background.
- contain(ctx,source,x,y,w,h);
+ // Keep the complete source crisp above the blurred background and apply manual framing.
+ drawAdjustedSlideForeground(ctx,source,x,y,w,h,false,zoom,vertical);
 }
 function resetScreenCropDetection(){screenCropSource=null;screenCropResult=null;screenCropResolved=false;screenCropChecks=0;}
 function detectCenteredScreenContent(source){
@@ -781,13 +781,14 @@ function detectCenteredScreenContent(source){
  }catch(e){screenCropResolved=true;return null;}
 }
 function containScreenWithFill(ctx,source,x,y,w,h){
+ const zoom=Math.max(.55,Math.min(1,Number(slideZoom.value)/100||1)),vertical=(Number(slideVertical.value)||0)/100*h;
  const crop=detectCenteredScreenContent(source);
- if(!crop){containWithFill(ctx,source,x,y,w,h);return;}
- const {sx,sy,sw,sh}=crop,scale=Math.min(w/sw,h/sh),dw=sw*scale,dh=sh*scale,bgScale=Math.max(w/sw,h/sh),bw=sw*bgScale,bh=sh*bgScale,blur=Math.max(14,Math.round(Math.min(w,h)*.028));
+ if(!crop){containWithFill(ctx,source,x,y,w,h,zoom,vertical);return;}
+ const {sx,sy,sw,sh}=crop,scale=Math.min(w/sw,h/sh)*zoom,dw=sw*scale,dh=sh*scale,bgScale=Math.max(w/sw,h/sh),bw=sw*bgScale,bh=sh*bgScale,blur=Math.max(14,Math.round(Math.min(w,h)*.028));
  ctx.save();ctx.beginPath();ctx.rect(x,y,w,h);ctx.clip();ctx.filter='blur('+blur+'px)';
  ctx.drawImage(source,sx,sy,sw,sh,x+(w-bw)/2-blur,y+(h-bh)/2-blur,bw+blur*2,bh+blur*2);
  ctx.filter='none';ctx.fillStyle='rgba(15,23,42,.12)';ctx.fillRect(x,y,w,h);ctx.restore();
- ctx.drawImage(source,sx,sy,sw,sh,x+(w-dw)/2,y+(h-dh)/2,dw,dh);
+ ctx.drawImage(source,sx,sy,sw,sh,x+(w-dw)/2,y+(h-dh)/2+vertical,dw,dh);
 }
 function roundedPath(c,x,y,w,h,r){r=Math.min(r,w/2,h/2);c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();}
 function drawPip(x,y,w,h){
