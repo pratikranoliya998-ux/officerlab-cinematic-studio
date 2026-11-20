@@ -1,7 +1,9 @@
 name: Deploy OfficerLab to GitHub Pages
 on:
   push:
-    branches: [feature/netlify-free-pwa-pages]
+    branches:
+      - main
+      - feature/recorder-animation-scheduler
   workflow_dispatch:
 permissions:
   contents: read
@@ -20,7 +22,10 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm install
-      - run: npm run build -- --base=/officerlab-cinematic-studio/
+      - name: Build OfficerLab PWA
+        run: npm run build
+        env:
+          OFFICERLAB_BASE_PATH: /officerlab-cinematic-studio/
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
