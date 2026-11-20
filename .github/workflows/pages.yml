@@ -4,6 +4,9 @@ on:
     branches:
       - main
       - feature/recorder-animation-scheduler
+  pull_request:
+    branches:
+      - feature/recorder-animation-scheduler
   workflow_dispatch:
 permissions:
   contents: read
@@ -30,6 +33,7 @@ jobs:
         with:
           path: dist
   deploy:
+    if: github.event_name != 'pull_request'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
