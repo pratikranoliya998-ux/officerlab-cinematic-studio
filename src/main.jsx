@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { Camera, CameraOff, Circle, Download, Mic, Play, RotateCcw, Square, Video, Upload, ChevronLeft, ChevronRight, Pencil, Highlighter, Eraser, ArrowUpRight, RectangleHorizontal, Type, ZoomIn, ZoomOut, Undo2, Maximize, Minimize } from "lucide-react";
 import "./style.css";
+import LandingPage from "./LandingPage";
 
 const WORKER = (import.meta.env.VITE_RENDER_API_URL || "https://officerlab-cinematic-worker.onrender.com").replace(/\/+$/, "");
 function loadPdfJs() {
@@ -152,4 +153,6 @@ function PresentationStudio() {
     </main>
   </div>;
 }
-const root=createRoot(document.getElementById("root"));root.render(<PresentationStudio/>);
+const root=createRoot(document.getElementById("root"));
+const showStudio=new URLSearchParams(window.location.search).get("app")==="studio";
+root.render(showStudio?<PresentationStudio/>:<LandingPage/>);
