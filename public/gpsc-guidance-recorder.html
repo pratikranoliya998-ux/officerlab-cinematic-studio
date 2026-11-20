@@ -140,6 +140,7 @@ body.presentation-fullscreen>main>section.card>:not(#stage){display:none!importa
 .face-crop-settings label{display:flex;align-items:center;justify-content:space-between;min-width:0;font-size:10px}
 .face-crop-settings input[type=range]{margin:0 0 5px}
 @media(min-width:760px){.face-crop-settings{grid-template-columns:repeat(3,minmax(0,1fr));column-gap:12px}}
+.cutout-settings{display:grid;grid-template-columns:minmax(0,1fr);gap:6px;margin-top:8px;padding:9px 10px;border:1px solid #3b82f655;border-radius:10px;background:#10213a66}.cutout-settings[hidden]{display:none}.cutout-settings label{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:11px;color:#dbeafe}.cutout-settings input[type=range]{width:100%;accent-color:#60a5fa;touch-action:pan-x}.cutout-settings .cutout-status{font-size:10px;color:var(--muted);line-height:1.45}
 .tool-val{margin-left:auto;color:var(--muted);font-size:11px}
 .capture-panel{display:flex;gap:9px;align-items:end;flex-wrap:wrap;margin-top:12px}
 .field{flex:1;min-width:145px}.field label,.field-label{display:block;font-size:10px;color:var(--muted);letter-spacing:.07em;text-transform:uppercase;margin:0 0 5px}
@@ -433,7 +434,7 @@ input,select,textarea{border-color:#ffffff20!important;border-radius:9px}button:
       <label class="check"><input id="mirrorOutput" type="checkbox"> Mirror final camera</label>
     </div>
     <div class="tool-row" style="margin-top:8px">
-      <label for="faceShape">Face Cam shape</label><select id="faceShape"><option value="rounded">Rounded rectangle</option><option value="rectangle">Rectangle</option><option value="circle">Circle (square crop)</option><option value="oval">Oval</option></select>
+      <label for="faceShape">Face Cam shape</label><select id="faceShape"><option value="rounded">Rounded rectangle</option><option value="rectangle">Rectangle</option><option value="circle">Circle (square crop)</option><option value="oval">Oval</option><option value="cutout">Person Cutout · no background</option></select>
       <label for="faceSize">Face Cam width <span id="faceSizeVal" class="tool-val">18%</span></label>
       <input type="range" id="faceSize" min="10" max="36" value="16">
       <label for="faceHeight">Face Cam height <span id="faceHeightVal" class="tool-val">18%</span></label>
@@ -446,6 +447,7 @@ input,select,textarea{border-color:#ffffff20!important;border-radius:9px}button:
       <div class="face-framing-control"><label for="faceCropX">Horizontal framing <span id="faceCropXVal" class="tool-val">0</span></label><input type="range" id="faceCropX" min="-50" max="50" value="0"></div>
       <div class="face-framing-control"><label for="faceCropY">Vertical framing <span id="faceCropYVal" class="tool-val">0</span></label><input type="range" id="faceCropY" min="-50" max="50" value="0"></div>
     </div>
+    <div class="cutout-settings" id="cutoutSettings" hidden><label for="cutoutSoftness">Cutout edge softness <span id="cutoutSoftnessVal" class="tool-val">2 px</span></label><input id="cutoutSoftness" type="range" min="0" max="8" step="1" value="2"><div class="cutout-status" id="cutoutStatus" role="status" aria-live="polite">Person segmentation loads only when Cutout is selected. First use requires an internet connection.</div></div>
     <div class="layout-row" style="margin-top:8px;align-items:end">
       <label class="check"><input id="watermarkEnabled" type="checkbox"> Add recording watermark</label>
       <div class="field" style="flex:1;min-width:150px;max-width:240px"><label for="watermarkText">Watermark text</label><input id="watermarkText" type="text" maxlength="32" value="OFFICERLAB" placeholder="OFFICERLAB"></div>
@@ -597,6 +599,7 @@ const slideAdjustToggle=$('slideAdjustToggle'),slideAdjustPanel=$('slideAdjustPa
 try{const savedZoom=Number(localStorage.getItem('officerlab-slide-zoom')),savedVertical=Number(localStorage.getItem('officerlab-slide-vertical'));if(Number.isFinite(savedZoom)&&savedZoom>=55&&savedZoom<=100)slideZoom.value=String(savedZoom);if(Number.isFinite(savedVertical)&&savedVertical>=-25&&savedVertical<=25)slideVertical.value=String(savedVertical);}catch{}
 const annotationFab=$('annotationFab'),toolTray=$('toolTray'),pipHandle=$('pipHandle'),pipDragBar=$('pipDragBar');
 const faceSize=$('faceSize'),faceHeight=$('faceHeight'),faceShape=$('faceShape'),faceOpacity=$('faceOpacity'),faceZoom=$('faceZoom'),faceCropX=$('faceCropX'),faceCropY=$('faceCropY'),smartPipEnabled=$('smartPipEnabled'),safeAreaOverlay=$('safeAreaOverlay'),fsCameraOpacity=$('fsCameraOpacity'),fsCameraOpacityToggle=$('fsCameraOpacityToggle'),fsCameraOpacityPanel=$('fsCameraOpacityPanel'),fsCameraOpacityValue=$('fsCameraOpacityValue'),safeGuides=$('safeGuides'),mirrorOutput=$('mirrorOutput'),outputRatio=$('outputRatio');
+const cutoutSettings=$('cutoutSettings'),cutoutSoftness=$('cutoutSoftness'),cutoutSoftnessVal=$('cutoutSoftnessVal'),cutoutStatus=$('cutoutStatus');
 const lowerThirdName=$('lowerThirdName'),lowerThirdTitle=$('lowerThirdTitle'),lowerThirdPosition=$('lowerThirdPosition'),lowerThirdEnabled=$('lowerThirdEnabled');
 const brandAccent=$('brandAccent'),brandPanel=$('brandPanel'),brandFont=$('brandFont'),brandLogoFile=$('brandLogoFile'),brandLogoRemove=$('brandLogoRemove'),brandLogoStatus=$('brandLogoStatus');
 const watermarkEnabled=$('watermarkEnabled'),watermarkText=$('watermarkText'),watermarkPosition=$('watermarkPosition'),watermarkOpacity=$('watermarkOpacity'),watermarkOpacityValue=$('watermarkOpacityValue');
@@ -606,6 +609,7 @@ const recList=$('recList'),empty=$('empty'),recoveryList=$('recoveryList');
 const dataSaver=$('dataSaver'),wifiOnlyDownloads=$('wifiOnlyDownloads');
 const autoCaptionsEnabled=$('autoCaptionsEnabled'),captionLanguage=$('captionLanguage'),captionStatus=$('captionStatus');
 let cameraStream=null,micStream=null,screenStream=null,recorder=null,recordTimer=null,meterRAF=0,drawRAF=0,preferredFacing='user';
+let cutoutSegmenter=null,cutoutSegmenterPromise=null,cutoutLastVideoTime=-1,cutoutLastSegmentAt=0,cutoutMaskReady=false,cutoutMaskCanvas=document.createElement('canvas'),cutoutMaskContext=cutoutMaskCanvas.getContext('2d',{willReadFrequently:true}),cutoutRenderCanvas=document.createElement('canvas'),cutoutRenderContext=cutoutRenderCanvas.getContext('2d',{alpha:true});
 let screenCropSource=null,screenCropResult=null,screenCropResolved=false,screenCropChecks=0;
 let audioContext=null,audioDestination=null,micGain=null,screenGain=null,micAnalyser=null,micSource=null,screenAudioSource=null;
 let layout='pip',pip={x:.77,y:.73},activeTool='pen',drawing=false,slides=[],slideIndex=0,pdfDoc=null,slideSource=null,slideUrls=[],presentationSavedOutputRatio=null;
@@ -801,6 +805,75 @@ function coverCameraCrop(ctx,video,x,y,w,h,mirror=false){
  if(mirror){ctx.translate(x+w,y);ctx.scale(-1,1);ctx.drawImage(video,sx,sy,sw,sh,0,0,w,h);}
  else ctx.drawImage(video,sx,sy,sw,sh,x,y,w,h);
  ctx.restore();
+}
+async function ensureFaceCutout(){
+ if(cutoutSegmenter)return cutoutSegmenter;
+ if(cutoutSegmenterPromise)return cutoutSegmenterPromise;
+ cutoutStatus.textContent='Loading the on-device person segmentation model…';
+ cutoutSegmenterPromise=(async()=>{
+  const mp=await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.2.3/vision_bundle.mjs');
+  const vision=await mp.FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.2.3/wasm');
+  const options={baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter_landscape/float16/latest/selfie_segmenter_landscape.tflite',delegate:'GPU'},runningMode:'VIDEO',outputCategoryMask:true,outputConfidenceMasks:false};
+  try{cutoutSegmenter=await mp.ImageSegmenter.createFromOptions(vision,options);}
+  catch(gpuError){options.baseOptions.delegate='CPU';cutoutSegmenter=await mp.ImageSegmenter.createFromOptions(vision,options);}
+  cutoutStatus.textContent='Ready · person mask is processed on this device.';
+  return cutoutSegmenter;
+ })().catch(error=>{
+  cutoutStatus.textContent='Could not load cutout. Check internet access, then select this option again.';
+  cutoutSegmenterPromise=null;
+  console.warn('OfficerLab Face Cutout:',error);
+  return null;
+ });
+ return cutoutSegmenterPromise;
+}
+function updateFaceCutoutMask(){
+ if(!cutoutSegmenter||cameraVideo.readyState<2||!cameraVideo.videoWidth)return;
+ const now=performance.now();
+ if(now-cutoutLastSegmentAt<125||cameraVideo.currentTime===cutoutLastVideoTime)return;
+ cutoutLastSegmentAt=now;cutoutLastVideoTime=cameraVideo.currentTime;
+ try{
+  cutoutSegmenter.segmentForVideo(cameraVideo,now,result=>{
+   const mask=result&&result.categoryMask;
+   if(!mask)return;
+   const mw=mask.width,mh=mask.height,values=mask.getAsUint8Array();
+   if(!mw||!mh||!values||values.length<mw*mh)return;
+   if(cutoutMaskCanvas.width!==mw)cutoutMaskCanvas.width=mw;
+   if(cutoutMaskCanvas.height!==mh)cutoutMaskCanvas.height=mh;
+   const image=cutoutMaskContext.createImageData(mw,mh),pixels=image.data;
+   for(let i=0;i<mw*mh;i++){
+    const p=i*4;pixels[p]=255;pixels[p+1]=255;pixels[p+2]=255;
+    pixels[p+3]=values[i]===1?255:0;
+   }
+   cutoutMaskContext.putImageData(image,0,0);
+   cutoutMaskReady=true;
+  });
+ }catch(error){cutoutStatus.textContent='Cutout paused · camera preview remains available.';console.warn('OfficerLab Face Cutout frame:',error);}
+}
+function drawFaceCutout(target,x,y,w,h,mirror=false){
+ updateFaceCutoutMask();
+ if(!cutoutMaskReady||!cutoutMaskCanvas.width||!cutoutMaskCanvas.height)return false;
+ const outScale=Math.min(1,640/Math.max(w,h)),rw=Math.max(160,Math.round(w*outScale)),rh=Math.max(120,Math.round(h*outScale));
+ if(cutoutRenderCanvas.width!==rw)cutoutRenderCanvas.width=rw;
+ if(cutoutRenderCanvas.height!==rh)cutoutRenderCanvas.height=rh;
+ cutoutRenderContext.clearRect(0,0,rw,rh);
+ coverCameraCrop(cutoutRenderContext,cameraVideo,0,0,rw,rh,mirror);
+ const zoom=Math.max(1,Math.min(2.2,(Number(faceZoom.value)||100)/100));
+ const scale=Math.max(rw/cameraVideo.videoWidth,rh/cameraVideo.videoHeight)*zoom;
+ const sw=Math.min(cameraVideo.videoWidth,rw/scale),sh=Math.min(cameraVideo.videoHeight,rh/scale);
+ const maxX=Math.max(0,cameraVideo.videoWidth-sw),maxY=Math.max(0,cameraVideo.videoHeight-sh);
+ const nx=Math.max(-50,Math.min(50,Number(faceCropX.value)||0))/50;
+ const ny=Math.max(-50,Math.min(50,Number(faceCropY.value)||0))/50;
+ const sx=Math.max(0,Math.min(maxX,maxX/2+nx*maxX/2)),sy=Math.max(0,Math.min(maxY,maxY/2+ny*maxY/2));
+ const msx=sx/cameraVideo.videoWidth*cutoutMaskCanvas.width,msy=sy/cameraVideo.videoHeight*cutoutMaskCanvas.height;
+ const msw=sw/cameraVideo.videoWidth*cutoutMaskCanvas.width,msh=sh/cameraVideo.videoHeight*cutoutMaskCanvas.height;
+ cutoutRenderContext.save();
+ cutoutRenderContext.globalCompositeOperation='destination-in';
+ cutoutRenderContext.filter='blur('+Math.max(0,Math.min(8,Number(cutoutSoftness.value)||0))+'px)';
+ if(mirror){cutoutRenderContext.translate(rw,0);cutoutRenderContext.scale(-1,1);cutoutRenderContext.drawImage(cutoutMaskCanvas,msx,msy,msw,msh,0,0,rw,rh);}
+ else cutoutRenderContext.drawImage(cutoutMaskCanvas,msx,msy,msw,msh,0,0,rw,rh);
+ cutoutRenderContext.restore();
+ target.drawImage(cutoutRenderCanvas,x,y,w,h);
+ return true;
 }
 function contain(ctx,source,x,y,w,h){
  if(!source)return;
@@ -1008,6 +1081,7 @@ function tracePipFrame(c,shape,x,y,w,h,inset=0){
 function drawPip(x,y,w,h){
  if(!cameraStream||!cameraVideo.videoWidth)return;
  const shape=faceShape.value;let bx=x,by=y,bw=w,bh=h;if(shape==='circle'){const side=Math.min(w,h);bx=x+(w-side)/2;by=y+(h-side)/2;bw=bh=side;}
+ if(shape==='cutout'){ctx.save();ctx.globalAlpha=Number(faceOpacity.value)/100;ctx.shadowColor='rgba(0,0,0,.25)';ctx.shadowBlur=Math.max(3,canvas.width/520);if(!drawFaceCutout(ctx,x,y,w,h,mirrorOutput.checked))coverCameraCrop(ctx,cameraVideo,x,y,w,h,mirrorOutput.checked);ctx.restore();return;}
  ctx.save();ctx.globalAlpha=Number(faceOpacity.value)/100;
  if(shape==='circle'||shape==='oval'||shape==='rounded')tracePipFrame(ctx,shape,bx,by,bw,bh);
  if(shape==='circle'||shape==='oval'||shape==='rounded')ctx.clip();
@@ -1148,7 +1222,7 @@ function drawScene(){
 }
 function startDraw(){if(drawRAF)cancelAnimationFrame(drawRAF);drawScene();}
 function stopDraw(){if(drawRAF)cancelAnimationFrame(drawRAF);drawRAF=0;}
-window.addEventListener('pagehide',()=>animationScheduler.destroy(),{once:true});
+window.addEventListener('pagehide',()=>{animationScheduler.destroy();try{cutoutSegmenter?.close?.();}catch{}},{once:true});
 function syncVisuals(){
  const annotationVisible=slides.length>0||!!screenStream;
  inkCanvas.style.display=annotationVisible?'block':'none';
@@ -1750,7 +1824,10 @@ $('layoutButtons').querySelectorAll('[data-layout]').forEach(b=>b.onclick=()=>se
 document.querySelectorAll('[data-position]').forEach(b=>b.onclick=()=>movePip(b.dataset.position));
 faceSize.oninput=()=>{ $('faceSizeVal').textContent=faceSize.value+'%';updatePipHandle();if(smartPipEnabled.checked)updateSmartPipPosition(screenStream?screenVideo:slideSource);};
 faceHeight.oninput=()=>{ $('faceHeightVal').textContent=faceHeight.value+'%';updatePipHandle();if(smartPipEnabled.checked)updateSmartPipPosition(screenStream?screenVideo:slideSource);};
-faceShape.onchange=()=>{updatePipHandle();if(smartPipEnabled.checked)updateSmartPipPosition(screenStream?screenVideo:slideSource);};
+function syncFaceCutoutControls(){const active=faceShape.value==='cutout';cutoutSettings.hidden=!active;if(active)ensureFaceCutout();}
+faceShape.onchange=()=>{syncFaceCutoutControls();updatePipHandle();if(smartPipEnabled.checked)updateSmartPipPosition(screenStream?screenVideo:slideSource);};
+cutoutSoftness.oninput=()=>{cutoutSoftnessVal.textContent=cutoutSoftness.value+' px';};
+cutoutSoftnessVal.textContent=cutoutSoftness.value+' px';syncFaceCutoutControls();
 faceZoom.oninput=()=>{$('faceZoomVal').textContent=faceZoom.value+'%';};
 faceCropX.oninput=()=>{$('faceCropXVal').textContent=(Number(faceCropX.value)>0?'+':'')+faceCropX.value;};
 faceCropY.oninput=()=>{$('faceCropYVal').textContent=(Number(faceCropY.value)>0?'+':'')+faceCropY.value;};
