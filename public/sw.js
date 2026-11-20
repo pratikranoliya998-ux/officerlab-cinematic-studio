@@ -1,4 +1,4 @@
-const CACHE_NAME = 'officerlab-shell-v2';
+const CACHE_NAME = 'officerlab-shell-v3';
 const BUILD_ASSETS = [];
 const APP_SHELL = [
   './',
@@ -38,7 +38,7 @@ self.addEventListener('fetch', event => {
         const response = await fetch(request);
         if (response && response.ok) {
           const cache = await caches.open(CACHE_NAME);
-          cache.put(request, response.clone());
+          await cache.put(request, response.clone());
         }
         return response;
       } catch {
@@ -59,17 +59,13 @@ self.addEventListener('fetch', event => {
 
   event.respondWith((async () => {
     const cached = await caches.match(request);
-    if (cached) {
-      event.waitUntil(fetch(request).then(response => {
-        if (response && response.ok) return caches.open(CACHE_NAME).then(cache => cache.put(request, response));
-      }).catch(() => {}));
-      return cached;
-    }
+    if (cached) return cached;
+
     try {
       const response = await fetch(request);
       if (response && response.ok) {
         const cache = await caches.open(CACHE_NAME);
-        cache.put(request, response.clone());
+        await cache.put(request, response.clone());
       }
       return response;
     } catch {
