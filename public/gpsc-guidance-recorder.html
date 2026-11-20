@@ -451,7 +451,7 @@ input,select,textarea{border-color:#ffffff20!important;border-radius:9px}button:
       <div class="field" style="min-width:130px;max-width:180px"><label for="watermarkPosition">Watermark position</label><select id="watermarkPosition"><option value="top-right" selected>Top right</option><option value="top-left">Top left</option><option value="bottom-right">Bottom right</option><option value="bottom-left">Bottom left</option></select></div>
       <div class="field" style="min-width:135px;max-width:180px"><label for="watermarkOpacity">Opacity <span id="watermarkOpacityValue" class="tool-val">76%</span></label><input type="range" id="watermarkOpacity" min="20" max="95" value="76"></div>
     </div>
-    <p class="hint">The optional watermark and refined PiP frame are drawn into the recording. Drag the “Drag Face Cam” handle to reposition the webcam overlay.</p>
+    <p class="hint">The watermark and Face Cam are included in the recording. Smart PiP analyses slide detail and selects a quieter corner; turn it off to place the camera manually. Drag the handle to reposition. Safe slide area is preview-only. Use Face Cam zoom and framing controls to adjust the crop.</p>
   </div>
 
   <div class="layout-panel" id="lowerThirdPanel">
@@ -1112,6 +1112,14 @@ function drawScene(){
  ctx.fillStyle='#05080d';ctx.fillRect(0,0,canvas.width,canvas.height);
  const mode=captureMode.value;
  const showCamera=mode!=='screen'&&!!cameraStream;
+ const pipSource=screenStream?screenVideo:slideSource;
+ const smartMode=(mode==='screen-camera'||mode==='camera-slides')&&layout==='pip'&&!!cameraStream;
+ const frameNow=performance.now();
+ if(smartPipEnabled.checked&&smartMode&&pipSource&&(pipSource!==smartPipLastSource||(screenStream&&frameNow>=smartPipNextScanAt))){
+  const placed=updateSmartPipPosition(pipSource);
+  if(placed){smartPipLastSource=pipSource;smartPipNextScanAt=screenStream?frameNow+1800:Number.POSITIVE_INFINITY;}
+  else smartPipNextScanAt=frameNow+1200;
+ }
  const source=(mode==='camera')?cameraVideo:(screenStream?screenVideo:slideSource);
  if(mode==='camera'||(layout==='face'&&showCamera)){
   if(cameraStream)coverCameraCrop(ctx,cameraVideo,0,0,canvas.width,canvas.height,mirrorOutput.checked);
@@ -1320,11 +1328,12 @@ function setLayout(name){
  updateControls();
 }
 function movePip(position){
+ smartPipEnabled.checked=false;pipHandle.dataset.smartPosition='';
  const d=pipDimensions(),g=.03;const map={br:[1-d.w-g,1-d.h-g],bl:[g,1-d.h-g],tr:[1-d.w-g,g],tl:[g,g]};
  if(map[position])pip={x:map[position][0],y:map[position][1]};updatePipHandle();
 }
 function startDrag(e){
- if(!cameraStream)return;e.preventDefault();pipDragBar.setPointerCapture(e.pointerId);
+ if(!cameraStream)return;smartPipEnabled.checked=false;pipHandle.dataset.smartPosition='';e.preventDefault();pipDragBar.setPointerCapture(e.pointerId);
  const rect=stage.getBoundingClientRect(),startX=e.clientX,startY=e.clientY,start={...pip};
  const move=ev=>{const dx=(ev.clientX-startX)/rect.width,dy=(ev.clientY-startY)/rect.height;const d=pipDimensions();pip.x=Math.max(0,Math.min(1-d.w,start.x+dx));pip.y=Math.max(0,Math.min(1-d.h,start.y+dy));updatePipHandle();};
  const end=()=>{pipDragBar.removeEventListener('pointermove',move);pipDragBar.removeEventListener('pointerup',end);pipDragBar.removeEventListener('pointercancel',end);};
@@ -1737,9 +1746,19 @@ prevSlide.onclick=()=>showSlide(slideIndex-1);nextSlide.onclick=()=>showSlide(sl
 clearSlides.onclick=()=>{slideLoadVersion++;clearSlideTransition();slidesInput.value='';slides=[];slideSource=null;pdfDoc=null;slideUrls.forEach(URL.revokeObjectURL);slideUrls=[];ink.clearRect(0,0,inkCanvas.width,inkCanvas.height);syncSlideControls();syncVisuals();};
 $('layoutButtons').querySelectorAll('[data-layout]').forEach(b=>b.onclick=()=>setLayout(b.dataset.layout));
 document.querySelectorAll('[data-position]').forEach(b=>b.onclick=()=>movePip(b.dataset.position));
-faceSize.oninput=()=>{ $('faceSizeVal').textContent=faceSize.value+'%';updatePipHandle();};
-faceHeight.oninput=()=>{ $('faceHeightVal').textContent=faceHeight.value+'%';updatePipHandle();};
-faceShape.onchange=()=>{updatePipHandle();};
+faceSize.oninput=()=>{ $('faceSizeVal').textContent=faceSize.value+'%';updatePipHandle();if(smartPipEnabled.checked)updateSmartPipPosition(screenStream?screenVideo:slideSource);};
+faceHeight.oninput=()=>{ $('faceHeightVal').textContent=faceHeight.value+'%';updatePipHandle();if(smartPipEnabled.checked)updateSmartPipPosition(screenStream?screenVideo:slideSource);};
+faceShape.onchange=()=>{updatePipHandle();if(smartPipEnabled.checked)updateSmartPipPosition(screenStream?screenVideo:slideSource);};
+faceZoom.oninput=()=>{$('faceZoomVal').textContent=faceZoom.value+'%';};
+faceCropX.oninput=()=>{$('faceCropXVal').textContent=(Number(faceCropX.value)>0?'+':'')+faceCropX.value;};
+faceCropY.oninput=()=>{$('faceCropYVal').textContent=(Number(faceCropY.value)>0?'+':'')+faceCropY.value;};
+smartPipEnabled.onchange=()=>{
+ pipHandle.dataset.smartPosition='';
+ smartPipLastSource=null;smartPipNextScanAt=0;
+ if(smartPipEnabled.checked)updateSmartPipPosition(screenStream?screenVideo:slideSource);
+};
+safeGuides.onchange=drawGuides;
+drawGuides();
 function syncCameraOpacity(value){
  const v=Math.max(0,Math.min(100,Number(value)||0));
  faceOpacity.value=String(v);fsCameraOpacity.value=String(v);
