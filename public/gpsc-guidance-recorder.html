@@ -166,6 +166,13 @@ textarea{min-height:150px;resize:vertical;line-height:1.6}
 @media(max-width:520px){.slide-mode-row select{flex:1;min-width:0;width:100%}}
 .slide-animation-options{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:9px;padding:8px 9px;border:1px solid var(--line);border-radius:9px;background:#0d141e}
 .slide-animation-options .check{font-size:10px}
+.slide-animation-options .transition-picker,.progress-bar-settings label{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--muted)}
+.slide-animation-options select,.progress-bar-settings input{min-height:32px;padding:5px 8px;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;font-size:11px;min-width:0}
+.slide-animation-options select{width:auto;max-width:100%}
+.progress-bar-settings{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px;padding:8px 9px;border:1px solid var(--line);border-radius:9px;background:#0d141e}
+.progress-bar-settings input[type=number]{width:76px}
+.progress-bar-settings .progress-note{flex:1 1 100%;font-size:10px;color:var(--muted);line-height:1.4}
+@media(max-width:520px){.slide-animation-options .transition-picker{flex:1 1 100%}.slide-animation-options select{flex:1;width:100%}}
 .error{display:none;background:#f8514920;border:1px solid #f8514980;color:#ffb3ae;border-radius:10px;padding:10px;margin-top:10px;font-size:12px}
 .hint{font-size:11px;color:var(--muted);line-height:1.5;margin:7px 0 0}
 #recList{display:flex;flex-direction:column;gap:9px;max-height:420px;overflow:auto}
@@ -483,10 +490,26 @@ input,select,textarea{border-color:#ffffff20!important;border-radius:9px}button:
       </select>
     </div>
     <div class="slide-animation-options">
-      <label class="check"><input id="slideTransitionsEnabled" type="checkbox" checked> Smooth crossfade · 450ms</label>
+      <label class="check"><input id="slideTransitionsEnabled" type="checkbox" checked> Canvas transition</label>
+      <label class="transition-picker" for="slideTransitionType">Effect
+        <select id="slideTransitionType" aria-label="Slide transition effect">
+          <option value="crossfade" selected>Crossfade · 500ms</option>
+          <option value="slide-left">Slide Left · 450ms</option>
+          <option value="push-left">Push Left · 550ms</option>
+          <option value="wipe">Wipe · 400ms</option>
+          <option value="zoom">Zoom · 600ms</option>
+        </select>
+      </label>
       <label class="check"><input id="slideMotionEnabled" type="checkbox"> Ken Burns · gentle pan + zoom (image slides only)</label>
     </div>
-    <p class="hint" id="slideDisplayHint">Smart Fit keeps the complete slide readable and fills spare space with a soft background. Fit Entire Slide adds dark margins when needed. Fill Screen fills the frame but may crop slide edges. Crossfade is rendered on the recording canvas. Optional Ken Burns adds a slow, subtle alternating pan and zoom to image slides only; PDF pages and tables remain still.</p>
+    <div class="progress-bar-settings">
+      <label class="check"><input id="progressBarEnabled" type="checkbox"> Include canvas progress bar</label>
+      <label for="progressDurationMinutes">Planned length
+        <input id="progressDurationMinutes" type="number" min="1" max="360" step="1" placeholder="minutes" inputmode="numeric" aria-label="Planned lesson duration in minutes">
+      </label>
+      <span class="progress-note" id="progressBarHint">Optional. Enter the planned lesson length in minutes; the thin progress indicator is rendered into the recorded video and stops at 100%.</span>
+    </div>
+    <p class="hint" id="slideDisplayHint">Smart Fit keeps the complete slide readable and fills spare space with a soft background. Fit Entire Slide adds dark margins when needed. Fill Screen fills the frame but may crop slide edges. Choose one restrained canvas transition per lesson. Optional Ken Burns adds slow alternating pan and zoom to image slides only; PDF pages and tables remain still.</p>
   </div>
   <div id="error" class="error" role="alert"></div>
   <p class="screen-note">Screen capture depends on browser support. Camera and microphone permission require HTTPS. Screen sharing must be started by the presenter.</p>
@@ -531,8 +554,16 @@ const inkCanvas=$('annotationCanvas'),ink=inkCanvas.getContext('2d'),stage=$('st
 const captureMode=$('captureMode'),quality=$('quality'),cameraSelect=$('cameraSelect'),micSelect=$('micSelect');
 const cameraBtn=$('cameraBtn'),micBtn=$('micBtn'),screenBtn=$('screenBtn'),screenShareHint=$('screenShareHint'),recordBtn=$('recordBtn'),pauseBtn=$('pauseBtn'),stopBtn=$('stopBtn');
 const muteBtn=$('muteBtn'),meterFill=$('meterFill'),micStatus=$('micStatus'),badge=$('badge'),timer=$('timer'),countdownLayer=$('countdownLayer'),countdownNumber=$('countdownNumber'),error=$('error');
-const slidesInput=$('slidesInput'),slideDisplayMode=$('slideDisplayMode'),slideTransitionsEnabled=$('slideTransitionsEnabled'),slideMotionEnabled=$('slideMotionEnabled'),prevSlide=$('prevSlide'),nextSlide=$('nextSlide'),slideCount=$('slideCount'),clearSlides=$('clearSlides'),slideJump=$('slideJump'),slideTotal=$('slideTotal'),goSlide=$('goSlide');
-try{const crossfade=localStorage.getItem('officerlab-slide-crossfade'),motion=localStorage.getItem('officerlab-slide-motion');if(crossfade!==null)slideTransitionsEnabled.checked=crossfade==='1';if(motion!==null)slideMotionEnabled.checked=motion==='1';}catch{}
+const slidesInput=$('slidesInput'),slideDisplayMode=$('slideDisplayMode'),slideTransitionsEnabled=$('slideTransitionsEnabled'),slideTransitionType=$('slideTransitionType'),slideMotionEnabled=$('slideMotionEnabled'),progressBarEnabled=$('progressBarEnabled'),progressDurationMinutes=$('progressDurationMinutes'),progressBarHint=$('progressBarHint'),prevSlide=$('prevSlide'),nextSlide=$('nextSlide'),slideCount=$('slideCount'),clearSlides=$('clearSlides'),slideJump=$('slideJump'),slideTotal=$('slideTotal'),goSlide=$('goSlide');
+try{
+ const crossfade=localStorage.getItem('officerlab-slide-crossfade'),motion=localStorage.getItem('officerlab-slide-motion'),transition=localStorage.getItem('officerlab-slide-transition-type');
+ if(crossfade!==null)slideTransitionsEnabled.checked=crossfade==='1';
+ if(motion!==null)slideMotionEnabled.checked=motion==='1';
+ if(['crossfade','slide-left','push-left','wipe','zoom'].includes(transition))slideTransitionType.value=transition;
+ progressBarEnabled.checked=localStorage.getItem('officerlab-progress-enabled')==='1';
+ const progressMinutes=localStorage.getItem('officerlab-progress-minutes');
+ if(progressMinutes!==null&&Number(progressMinutes)>=1&&Number(progressMinutes)<=360)progressDurationMinutes.value=progressMinutes;
+}catch{}
 try{const savedSlideMode=localStorage.getItem('officerlab-slide-display-mode');if(['smart','fit','fill'].includes(savedSlideMode))slideDisplayMode.value=savedSlideMode;}catch{}
 const teleprompterOverlay=$('teleprompterOverlay'),teleprompterWindow=$('teleprompterWindow'),teleprompterText=$('teleprompterText'),teleprompterScript=$('teleprompterScript'),teleprompterSettings=$('teleprompterSettings');
 const fsPrevSlide=$('fsPrevSlide'),fsNextSlide=$('fsNextSlide'),fsSlideJump=$('fsSlideJump'),fsSlideTotal=$('fsSlideTotal'),fsGoSlide=$('fsGoSlide'),stageFsSlideNav=$('stageFsSlideNav'),stageFsControlsToggle=$('stageFsControlsToggle');
@@ -778,16 +809,72 @@ function makeSlideTransitionFrame(source){
  return frame;
 }
 function clearSlideTransition(){slideTransitionFromFrame=null;slideTransitionToFrame=null;slideTransitionStartedAt=0;}
+function easeOutCubic(t){return 1-Math.pow(1-t,3);}
+function easeInOutCubic(t){return t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;}
+const SLIDE_TRANSITION_PRESETS={
+ crossfade:{duration:500,easing:easeInOutCubic},
+ 'slide-left':{duration:450,easing:easeOutCubic},
+ 'push-left':{duration:550,easing:easeInOutCubic},
+ wipe:{duration:400,easing:easeOutCubic},
+ zoom:{duration:600,easing:easeInOutCubic}
+};
+function drawTransitionFrame(ctx,frame,x=0,alpha=1,scale=1){
+ const W=canvas.width,H=canvas.height,w=W*scale,h=H*scale;
+ ctx.save();ctx.globalAlpha=alpha;
+ ctx.drawImage(frame,(W-w)/2+x,(H-h)/2,w,h);
+ ctx.restore();
+}
 function drawSlideTransition(ctx){
  if(!slideTransitionFromFrame||!slideTransitionToFrame)return false;
- const duration=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?240:450;
- const raw=Math.max(0,(performance.now()-slideTransitionStartedAt)/duration);
+ const reduce=!!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+ const selected=slideTransitionType.value in SLIDE_TRANSITION_PRESETS?slideTransitionType.value:'crossfade';
+ const type=reduce?'crossfade':selected,duration=reduce?200:SLIDE_TRANSITION_PRESETS[type].duration;
+ const raw=Math.max(0,Math.min(1,(performance.now()-slideTransitionStartedAt)/duration));
  if(raw>=1){clearSlideTransition();return false;}
- const t=raw*raw*(3-2*raw);
- ctx.save();
- ctx.globalAlpha=1-t;ctx.drawImage(slideTransitionFromFrame,0,0,canvas.width,canvas.height);
- ctx.globalAlpha=t;ctx.drawImage(slideTransitionToFrame,0,0,canvas.width,canvas.height);
- ctx.restore();return true;
+ const t=(reduce?easeInOutCubic:SLIDE_TRANSITION_PRESETS[type].easing)(raw),W=canvas.width,H=canvas.height;
+ switch(type){
+  case 'slide-left':
+   // Parallax: previous slide retreats gently while the new slide glides in from the right.
+   drawTransitionFrame(ctx,slideTransitionFromFrame,-W*.32*t,1-.12*t);
+   drawTransitionFrame(ctx,slideTransitionToFrame,W*(1-t),1);
+   break;
+  case 'push-left':
+   drawTransitionFrame(ctx,slideTransitionFromFrame,-W*t);
+   drawTransitionFrame(ctx,slideTransitionToFrame,W*(1-t));
+   break;
+  case 'wipe':
+   ctx.drawImage(slideTransitionFromFrame,0,0,W,H);
+   ctx.save();ctx.beginPath();ctx.rect(0,0,W*t,H);ctx.clip();
+   ctx.drawImage(slideTransitionToFrame,0,0,W,H);ctx.restore();
+   break;
+  case 'zoom':
+   drawTransitionFrame(ctx,slideTransitionFromFrame,0,1-t,1+.065*t);
+   drawTransitionFrame(ctx,slideTransitionToFrame,0,t,.94+.06*t);
+   break;
+  default:
+   drawTransitionFrame(ctx,slideTransitionFromFrame,0,1-t);
+   drawTransitionFrame(ctx,slideTransitionToFrame,0,t);
+ }
+ return true;
+}
+function drawProgressBar(ctx){
+ if(!recording||!progressBarEnabled.checked)return;
+ const minutes=Number(progressDurationMinutes.value);
+ if(!Number.isFinite(minutes)||minutes<1||minutes>360)return;
+ const W=canvas.width,H=canvas.height,barH=Math.max(4,Math.round(H/270));
+ const progress=Math.max(0,Math.min(1,recordingElapsedMs()/(minutes*60000)));
+ ctx.save();ctx.globalAlpha=.96;
+ ctx.fillStyle='rgba(255,255,255,.10)';ctx.fillRect(0,H-barH,W,barH);
+ ctx.fillStyle=brandAccent.value||'#55a3ff';ctx.fillRect(0,H-barH,W*progress,barH);
+ ctx.restore();
+}
+function updateProgressBarHint(){
+ const minutes=Number(progressDurationMinutes.value),valid=Number.isFinite(minutes)&&minutes>=1&&minutes<=360;
+ progressBarHint.textContent=progressBarEnabled.checked
+  ?(valid?'Progress bar will fill across '+minutes+' minute(s); it stays full after the planned duration.':'Enter a planned length from 1 to 360 minutes to enable the progress bar.')
+  :'Optional. Enter the planned lesson length in minutes; the thin progress indicator is rendered into the recorded video.';
+ progressBarEnabled.disabled=recording||recordingStarting;
+ progressDurationMinutes.disabled=recording||recordingStarting;
 }
 // Preserve the complete source while filling unused 16:9 canvas space with a soft, darkened extension.
 function containWithFill(ctx,source,x,y,w,h,zoom=1,vertical=0){
@@ -937,10 +1024,10 @@ function drawBrandTitleCard(kind,elapsedMs){
 }
 function drawScene(){
  if(recording&&stoppingRecording&&outroStartedAt&&outroCardEnabled.checked){
-  drawBrandTitleCard('outro',performance.now()-outroStartedAt);drawRAF=requestAnimationFrame(drawScene);return;
+  drawBrandTitleCard('outro',performance.now()-outroStartedAt);drawProgressBar(ctx);drawRAF=requestAnimationFrame(drawScene);return;
  }
  if(recording&&introCardEnabled.checked&&recordingElapsedMs()<Number(introCardDuration.value)*1000){
-  drawBrandTitleCard('intro',recordingElapsedMs());drawRAF=requestAnimationFrame(drawScene);return;
+  drawBrandTitleCard('intro',recordingElapsedMs());drawProgressBar(ctx);drawRAF=requestAnimationFrame(drawScene);return;
  }
  ctx.fillStyle='#05080d';ctx.fillRect(0,0,canvas.width,canvas.height);
  const mode=captureMode.value;
@@ -966,6 +1053,7 @@ function drawScene(){
  if(recording&&inkCanvas.style.display!=='none'&&mode!=='camera')ctx.drawImage(inkCanvas,0,0,canvas.width,canvas.height);
  drawGuides();
  drawLowerThird();
+ drawProgressBar(ctx);
  drawRAF=requestAnimationFrame(drawScene);
 }
 function startDraw(){if(drawRAF)cancelAnimationFrame(drawRAF);drawScene();}
@@ -1522,11 +1610,29 @@ slidesInput.onchange=()=>loadSlides(slidesInput.files);
 slideDisplayMode.onchange=()=>{clearSlideTransition();try{localStorage.setItem('officerlab-slide-display-mode',slideDisplayMode.value);}catch{}syncVisuals();};
 function saveSlideAnimationSettings(){
  clearSlideTransition();slideMotionStartedAt=performance.now();
- try{localStorage.setItem('officerlab-slide-crossfade',slideTransitionsEnabled.checked?'1':'0');localStorage.setItem('officerlab-slide-motion',slideMotionEnabled.checked?'1':'0');}catch{}
+ slideTransitionType.disabled=!slideTransitionsEnabled.checked;
+ try{
+  localStorage.setItem('officerlab-slide-crossfade',slideTransitionsEnabled.checked?'1':'0');
+  localStorage.setItem('officerlab-slide-motion',slideMotionEnabled.checked?'1':'0');
+  localStorage.setItem('officerlab-slide-transition-type',slideTransitionType.value);
+ }catch{}
  syncVisuals();
 }
 slideTransitionsEnabled.addEventListener('change',saveSlideAnimationSettings);
+slideTransitionType.addEventListener('change',saveSlideAnimationSettings);
 slideMotionEnabled.addEventListener('change',saveSlideAnimationSettings);
+function saveProgressBarSettings(){
+ try{
+  localStorage.setItem('officerlab-progress-enabled',progressBarEnabled.checked?'1':'0');
+  localStorage.setItem('officerlab-progress-minutes',progressDurationMinutes.value);
+ }catch{}
+ updateProgressBarHint();
+ if(!drawRAF)startDraw();
+}
+progressBarEnabled.addEventListener('change',saveProgressBarSettings);
+progressDurationMinutes.addEventListener('input',saveProgressBarSettings);
+slideTransitionType.disabled=!slideTransitionsEnabled.checked;
+updateProgressBarHint();
 function saveSlideAdjustments(){
  clearSlideTransition();
  slideMotionStartedAt=performance.now();
