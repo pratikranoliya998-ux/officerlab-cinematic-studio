@@ -474,7 +474,7 @@ input,select,textarea{border-color:#ffffff20!important;border-radius:9px}button:
       <p class="brand-card-note">Cards use your Brand Kit logo, colours and font. The opening card plays at the start; the closing card plays after you press Stop. Both are included in the saved video.</p>
     </div>
     <label class="check lower-third-enable"><input id="lowerThirdEnabled" type="checkbox"> Show on preview and include in recording</label>
-    <p class="hint">The name/title graphic slides into the frame when enabled and animates again when recording starts. Leave it unchecked for a clean video.</p>
+    <p class="hint">The name/title graphic animates once at recording start: 600ms entrance, 3.5s hold, then 500ms fade-out. Reduced-motion devices use a simple fade. Leave it unchecked for a clean video.</p>
   </div>
 
   <div class="slide-panel">
@@ -585,7 +585,7 @@ let layout='pip',pip={x:.77,y:.73},activeTool='pen',drawing=false,slides=[],slid
 let slideLoadVersion=0,slideTransitionFromFrame=null,slideTransitionToFrame=null,slideTransitionStartedAt=0,slideMotionStartedAt=performance.now();
 let sessionId=null,chunkIndex=0,writeQueue=Promise.resolve(),localChunks=[],recording=false,paused=false,recordingStarting=false,stoppingRecording=false,startedAt=0,recordElapsedMs=0,recordSegmentStartedAt=0,testTimeout=null,outroStartedAt=0,outroTimer=null;
 let saved=[],recoveryItems=[],activeMediaElement=null,mediaSessionReady=false;
-let teleprompterRAF=0,teleprompterLastFrame=0,lastInkPoint=null,lastInkPointerId=null,lowerThirdStartedAt=0;
+let teleprompterRAF=0,teleprompterLastFrame=0,lastInkPoint=null,lastInkPointerId=null,lowerThirdStartedAt=0,lowerThirdRecordingStartedAt=0;
 let captionRecognition=null,captionDesired=false,captionSuspended=false,captionRestartTimer=null,captionStopResolver=null,captionSaveQueue=Promise.resolve(),activeCaptionSession=null,captionCues=[],captionLastCueEnd=0,captionStopAtMs=null;
 const showError=message=>{error.textContent=message;error.style.display='block'};
 const clearError=()=>{error.textContent='';error.style.display='none'};
@@ -977,14 +977,40 @@ function drawLowerThird(){
  let x=margin,y=H-boxH-margin;
  if(lowerThirdPosition.value==='lower-centre')x=(W-boxW)/2;
  else if(lowerThirdPosition.value==='top-right'){x=W-boxW-margin;y=margin;}
- let progress=1;
- if(lowerThirdStartedAt){progress=Math.max(0,Math.min(1,(performance.now()-lowerThirdStartedAt)/650));}
- const eased=1-Math.pow(1-progress,3);
- const travel=Math.max(26,W*.11)*(1-eased);
- if(lowerThirdPosition.value==='lower-centre')y+=travel;
- else if(lowerThirdPosition.value==='top-right')x+=travel;
- else x-=travel;
- ctx.globalAlpha=eased;
+ let alpha=1,travelX=0,travelY=0;
+ if(recording){
+  // Use recording elapsed time (not wall clock) so the animation freezes while paused.
+  const elapsed=recordingElapsedMs()-lowerThirdRecordingStartedAt;
+  const reduced=!!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const inMs=reduced?250:600,holdMs=3500,outMs=reduced?250:500,total=inMs+holdMs+outMs;
+  if(elapsed<0||elapsed>=total){ctx.restore();return;}
+  const distance=Math.max(26,W*.11);
+  if(elapsed<inMs){
+   const raw=Math.max(0,elapsed/inMs);
+   const eased=reduced?raw:1+2.70158*Math.pow(raw-1,3)+1.70158*Math.pow(raw-1,2);
+   alpha=reduced?eased:Math.min(1,eased);
+   const remaining=distance*(1-eased);
+   if(lowerThirdPosition.value==='lower-centre')travelY=remaining;
+   else if(lowerThirdPosition.value==='top-right')travelX=remaining;
+   else travelX=-remaining;
+  }else if(elapsed>=inMs+holdMs){
+   const raw=Math.min(1,(elapsed-inMs-holdMs)/outMs),fade=1-Math.pow(1-raw,3);
+   alpha=1-fade;
+   const drift=distance*.12*fade;
+   if(lowerThirdPosition.value==='lower-centre')travelY=-drift;
+   else if(lowerThirdPosition.value==='top-right')travelX=drift;
+   else travelX=-drift;
+  }
+ }else if(lowerThirdStartedAt){
+  const raw=Math.max(0,Math.min(1,(performance.now()-lowerThirdStartedAt)/650));
+  const eased=1-Math.pow(1-raw,3),distance=Math.max(26,W*.11);
+  if(lowerThirdPosition.value==='lower-centre')travelY=distance*(1-eased);
+  else if(lowerThirdPosition.value==='top-right')travelX=distance*(1-eased);
+  else travelX=-distance*(1-eased);
+  alpha=eased;
+ }
+ x+=travelX;y+=travelY;
+ ctx.globalAlpha=alpha;
  roundedPath(ctx,x,y,boxW,boxH,Math.max(9,Math.round(12*scale)));
  const panelHex=brandPanel.value||'#050c18';ctx.fillStyle=panelHex+'e0';ctx.fill();
  ctx.strokeStyle='rgba(255,255,255,.22)';ctx.lineWidth=Math.max(1,scale*1.5);ctx.stroke();
@@ -1346,7 +1372,7 @@ async function startRecording(isTest=false){
   localChunks=[];if(outroTimer){clearTimeout(outroTimer);outroTimer=null;}if(recorder&&recorder.stream)recorder.stream.getTracks().forEach(t=>{if(t.kind==='video'&&t.label.includes('Canvas'))t.stop()});recorder=null;recording=false;paused=false;recordingStarting=false;stoppingRecording=false;outroStartedAt=0;recordElapsedMs=0;recordSegmentStartedAt=0;sessionId=null;activeCaptionSession=null;captionRecognition=null;captionCues=[];captionLastCueEnd=0;captionStopAtMs=null;
   recordBtn.textContent='⏺ Start Recording';recordBtn.classList.remove('danger');recordBtn.classList.add('primary');pauseBtn.textContent='Ⅱ Pause';pauseBtn.disabled=true;stopBtn.disabled=true;cameraBtn.disabled=false;micBtn.disabled=false;screenBtn.disabled=false;cameraSelect.disabled=!cameraStream;micSelect.disabled=!micStream;badge.classList.remove('on');updateControls();restorePresentationOutputRatio();
  };
- recorder.start(3000);startedAt=Date.now();recordElapsedMs=0;recordSegmentStartedAt=startedAt;recording=true;paused=false;stoppingRecording=false;outroStartedAt=0;if(lowerThirdEnabled.checked)lowerThirdStartedAt=performance.now();
+ recorder.start(3000);startedAt=Date.now();recordElapsedMs=0;recordSegmentStartedAt=startedAt;recording=true;paused=false;stoppingRecording=false;outroStartedAt=0;if(lowerThirdEnabled.checked){lowerThirdStartedAt=performance.now();lowerThirdRecordingStartedAt=0;}
  recordBtn.textContent='● Recording';recordBtn.classList.add('danger');pauseBtn.disabled=false;stopBtn.disabled=false;cameraBtn.disabled=true;micBtn.disabled=true;screenBtn.disabled=true;cameraSelect.disabled=true;micSelect.disabled=true;badge.classList.add('on');timer.textContent='00:00';
  recordTimer=setInterval(()=>{timer.textContent=clock(recordingElapsedMs())},250);
  if(autoCaptionsEnabled.checked)startCaptionCapture();
