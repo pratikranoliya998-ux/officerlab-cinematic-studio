@@ -675,6 +675,39 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
  button{transition:none!important}
 }
 
+
+/* Saved defaults, low-latency ink and explanatory motion attachments */
+.default-prefs{display:flex;align-items:center;gap:7px;margin-left:auto;min-width:0}
+.default-prefs span{font-size:9px;color:#68809c;font-weight:700;white-space:nowrap}
+.default-prefs button{padding:7px 10px;font-size:10px;font-weight:800;white-space:nowrap;background:#edf4ff;border-color:#c9dbf4;color:#245b9f}
+.ink-settings-row{align-items:center;flex-wrap:wrap;gap:7px}
+.ink-settings-row label:not(.check){font-size:10px;font-weight:800;color:#60738d}
+.ink-settings-row input[type=color]{width:34px;height:30px;padding:2px;border-radius:7px;border:1px solid #d5dfeb;background:#fff}
+.ink-settings-row input[type=range]{width:110px;min-width:64px;accent-color:#2563eb}
+.ink-settings-row .ink-pressure{font-size:10px;margin-left:auto}
+.ink-quality-hint{margin:5px 0 0;color:#68809c;font-size:10px}
+#annotationCanvas{touch-action:none;user-select:none;-webkit-user-select:none}
+.motion-graphic-panel{margin-top:12px}
+.motion-graphic-upload{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:8px 0 12px}
+.motion-graphic-upload input{max-width:100%;font-size:11px}
+.motion-graphic-controls{display:grid;grid-template-columns:auto minmax(120px,1fr) auto auto auto auto;align-items:center;gap:9px;padding:11px;background:#f7faff;border:1px solid #e1e9f3;border-radius:10px}
+.motion-graphic-controls>label:not(.check){font-size:10px;font-weight:800;color:#61758f}
+.motion-graphic-controls select{min-width:0;max-width:100%;padding:7px;font-size:11px}
+.motion-graphic-controls .check{grid-column:1/-1;font-size:11px}
+.motion-graphic-controls input[type=range]{width:100%;min-width:75px;accent-color:#2563eb}
+.motion-graphic-controls button{grid-column:1/-1;justify-self:start;padding:7px 10px;font-size:10px}
+#motionGraphicStatus{margin:9px 0 0}
+@media(max-width:760px){
+ .default-prefs{margin-left:0;flex:1 1 100%;justify-content:space-between}
+ .default-prefs span{white-space:normal}
+ .motion-graphic-controls{grid-template-columns:auto minmax(0,1fr);gap:8px}
+ .motion-graphic-controls .check,.motion-graphic-controls button{grid-column:1/-1}
+ .motion-graphic-controls input[type=range]{max-width:100%}
+}
+@media(prefers-reduced-motion:reduce){
+ .default-prefs button{transition:none!important}
+}
+
 </style>
 </head>
 <body>
@@ -683,6 +716,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   <span class="tag">16:9 · 1080p / 30fps target</span>
   <span class="tag" id="connectivityStatus" role="status" aria-live="polite">● Checking connection</span>
   <button id="contextToggle" class="context-toggle" type="button" aria-controls="contextPanel" aria-expanded="true" title="Hide context panel">▤ Hide Context</button>
+  <div class="default-prefs" aria-label="Recorder defaults"><span id="defaultsStatus" role="status" aria-live="polite">Settings auto-save on this device</span><button id="saveDefaultsBtn" type="button" title="Save all current recorder settings as your default setup">Save as Default</button></div>
   <button id="installApp" type="button" hidden style="margin-left:auto;padding:6px 10px;font-size:11px">⬇ Install App</button>
 </header>
 <div class="orientation-hint" id="orientationHint">
@@ -701,7 +735,9 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
     <button id="annotationFab" type="button" aria-label="Open teaching tools" title="Teaching tools">✎</button>
     <div id="toolTray" hidden>
       <div class="tool-row"><button type="button" data-tool="pen" class="active" aria-pressed="true">✎ Pen</button><button type="button" data-tool="highlighter" aria-pressed="false">🖍 Highlighter</button><button type="button" data-tool="eraser" aria-pressed="false">⌫ Eraser</button><button type="button" data-tool="text" aria-pressed="false">T Text</button><button type="button" id="clearInk">Clear</button></div>
-      <div class="tool-row"><label for="inkColor">Pen colour</label><input type="color" id="inkColor" value="#ff3b30"><label for="inkWidth">Pen thickness</label><input type="range" id="inkWidth" min="2" max="32" value="5"><span class="tool-val" id="inkWidthVal">5 px</span><span class="small">Highlighter uses transparent yellow ink.</span></div>
+      <div class="tool-row ink-settings-row"><label for="inkColor">Pen</label><input type="color" id="inkColor" value="#ff3b30" aria-label="Pen colour"><label for="inkWidth">Width</label><input type="range" id="inkWidth" min="1" max="32" value="5"><span class="tool-val" id="inkWidthVal">5 px</span><label class="check ink-pressure"><input id="inkPressure" type="checkbox" checked> Stylus pressure</label></div>
+      <div class="tool-row ink-settings-row"><label for="highlightColor">Highlighter</label><input type="color" id="highlightColor" value="#ffe45c" aria-label="Highlighter colour"><label for="highlightWidth">Width</label><input type="range" id="highlightWidth" min="10" max="72" value="30"><span class="tool-val" id="highlightWidthVal">30 px</span><label for="highlightOpacity">Opacity</label><input type="range" id="highlightOpacity" min="12" max="65" value="34"><span class="tool-val" id="highlightOpacityVal">34%</span></div>
+      <p class="small ink-quality-hint">Smooth real-time strokes · Coalesced stylus/touch samples · Separate pen and marker presets</p>
     </div>
     <div class="stage-placeholder" id="placeholder">Choose a capture mode, start the required source,<br>and your lecture preview will appear here.</div>
     <div class="rec-badge" id="badge"><span class="rec-dot"></span>REC <span id="timer">00:00</span><span id="recResolution">1920×1080</span></div>
@@ -919,6 +955,20 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
     </div>
     <p class="hint" id="slideDisplayHint">Smart Fit keeps the complete slide readable and fills spare space with a soft background. Fit Entire Slide adds dark margins when needed. Fill Screen fills the frame but may crop slide edges. Choose one restrained canvas transition per lesson. Optional Ken Burns adds slow alternating pan and zoom to image slides only; PDF pages and tables remain still.</p>
   </div>
+  <section class="motion-graphic-panel card" id="motionGraphicPanel">
+    <h2>Motion Graphic Attachments</h2>
+    <p class="hint">Attach a GIF, MP4, WebM or transparent/static image as an explanatory visual. It appears as a picture-in-picture graphic on the lesson canvas and is included in the recorded video.</p>
+    <div class="motion-graphic-upload"><input id="motionGraphicInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm,.gif,.mp4,.webm" multiple><span class="small">Multiple attachments supported · GIF / MP4 / WebM / PNG / JPG / WebP</span></div>
+    <div class="motion-graphic-controls">
+      <label for="motionGraphicSelect">Attachment</label><select id="motionGraphicSelect" disabled><option value="">No attachment loaded</option></select>
+      <label class="check"><input id="motionGraphicEnabled" type="checkbox" checked disabled> Show in preview and recording</label>
+      <label for="motionGraphicPosition">Position</label><select id="motionGraphicPosition"><option value="bottom-right" selected>Bottom right</option><option value="bottom-left">Bottom left</option><option value="top-right">Top right</option><option value="top-left">Top left</option></select>
+      <label for="motionGraphicSize">Size</label><input id="motionGraphicSize" type="range" min="12" max="45" value="28"><span id="motionGraphicSizeVal" class="tool-val">28%</span>
+      <label for="motionGraphicOpacity">Opacity</label><input id="motionGraphicOpacity" type="range" min="35" max="100" value="96"><span id="motionGraphicOpacityVal" class="tool-val">96%</span>
+      <button id="clearMotionGraphics" type="button" disabled>Remove Attachments</button>
+    </div>
+    <p class="hint" id="motionGraphicStatus" role="status" aria-live="polite">No motion graphic attached. Uploaded files remain local to this browser session; attachment preferences are saved as defaults.</p>
+  </section>
   <div id="error" class="error" role="alert"></div>
   <p class="screen-note">Screen capture depends on browser support. Camera and microphone permission require HTTPS. Screen sharing must be started by the presenter.</p>
   <section class="device-diagnostic card" id="deviceDiagnosticPanel">
@@ -963,6 +1013,7 @@ const captureMode=$('captureMode'),quality=$('quality'),cameraSelect=$('cameraSe
 const cameraBtn=$('cameraBtn'),micBtn=$('micBtn'),screenBtn=$('screenBtn'),screenShareHint=$('screenShareHint'),recordBtn=$('recordBtn'),pauseBtn=$('pauseBtn'),stopBtn=$('stopBtn');
 const muteBtn=$('muteBtn'),meterFill=$('meterFill'),micStatus=$('micStatus'),badge=$('badge'),timer=$('timer'),countdownLayer=$('countdownLayer'),countdownNumber=$('countdownNumber'),error=$('error');
 const slidesInput=$('slidesInput'),slideDisplayMode=$('slideDisplayMode'),slideTransitionsEnabled=$('slideTransitionsEnabled'),slideTransitionType=$('slideTransitionType'),slideMotionEnabled=$('slideMotionEnabled'),progressBarEnabled=$('progressBarEnabled'),progressDurationMinutes=$('progressDurationMinutes'),progressBarHint=$('progressBarHint'),prevSlide=$('prevSlide'),nextSlide=$('nextSlide'),slideCount=$('slideCount'),clearSlides=$('clearSlides'),slideJump=$('slideJump'),slideTotal=$('slideTotal'),goSlide=$('goSlide');
+const motionGraphicInput=$('motionGraphicInput'),motionGraphicSelect=$('motionGraphicSelect'),motionGraphicEnabled=$('motionGraphicEnabled'),motionGraphicPosition=$('motionGraphicPosition'),motionGraphicSize=$('motionGraphicSize'),motionGraphicSizeVal=$('motionGraphicSizeVal'),motionGraphicOpacity=$('motionGraphicOpacity'),motionGraphicOpacityVal=$('motionGraphicOpacityVal'),motionGraphicStatus=$('motionGraphicStatus'),clearMotionGraphics=$('clearMotionGraphics');
 try{
  const crossfade=localStorage.getItem('officerlab-slide-crossfade'),motion=localStorage.getItem('officerlab-slide-motion'),transition=localStorage.getItem('officerlab-slide-transition-type');
  if(crossfade!==null)slideTransitionsEnabled.checked=crossfade==='1';
@@ -992,6 +1043,7 @@ let cameraStream=null,micStream=null,screenStream=null,recorder=null,recordTimer
 let screenCropSource=null,screenCropResult=null,screenCropResolved=false,screenCropChecks=0;
 let audioContext=null,audioDestination=null,micGain=null,screenGain=null,micAnalyser=null,micSource=null,screenAudioSource=null;
 let layout='pip',pip={x:.77,y:.73},activeTool='pen',drawing=false,slides=[],slideIndex=0,pdfDoc=null,slideSource=null,slideUrls=[],presentationSavedOutputRatio=null;
+let motionGraphics=[],activeMotionGraphicIndex=-1,lastInkMidpoint=null;
 let slideLoadVersion=0,slideTransitionFromFrame=null,slideTransitionToFrame=null,slideTransitionStartedAt=0,slideMotionStartedAt=performance.now();
 let sessionId=null,chunkIndex=0,writeQueue=Promise.resolve(),localChunks=[],recording=false,paused=false,recordingStarting=false,stoppingRecording=false,startedAt=0,recordElapsedMs=0,recordSegmentStartedAt=0,testTimeout=null,outroStartedAt=0,outroTimer=null;
 let saved=[],recoveryItems=[],activeMediaElement=null,mediaSessionReady=false;
@@ -1531,6 +1583,7 @@ function drawScene(){
    drawPip(canvas.width*pip.x,canvas.height*pip.y,w,hh);
   }
  }
+ drawMotionGraphic(ctx);
  if(recording&&inkCanvas.style.display!=='none'&&mode!=='camera')ctx.drawImage(inkCanvas,0,0,canvas.width,canvas.height);
  drawGuides();
  drawLowerThird();
@@ -1731,13 +1784,19 @@ function startDrag(e){
  pipDragBar.addEventListener('pointermove',move);pipDragBar.addEventListener('pointerup',end);pipDragBar.addEventListener('pointercancel',end);
 }
 function getInkPoint(e){const r=inkCanvas.getBoundingClientRect();return{x:(e.clientX-r.left)*inkCanvas.width/r.width,y:(e.clientY-r.top)*inkCanvas.height/r.height};}
-function inkStyle(){
- ink.lineCap=activeTool==='highlighter'?'butt':'round';
- ink.lineJoin='round';
- ink.lineWidth=activeTool==='highlighter'?Math.max(22,Number($('inkWidth').value)*4):Number($('inkWidth').value);
- ink.globalCompositeOperation=activeTool==='eraser'?'destination-out':'source-over';
- ink.globalAlpha=activeTool==='highlighter'?.34:1;
- ink.strokeStyle=activeTool==='highlighter'?'#ffeb3b':$('inkColor').value;
+function inkPressureScale(point){
+ if(!$('inkPressure').checked||point.pointerType!=='pen'||!Number.isFinite(point.pressure)||point.pressure<=0)return 1;
+ return .48+Math.max(0,Math.min(1,point.pressure))*.92;
+}
+function inkStyle(point){
+ ink.lineCap='round';ink.lineJoin='round';
+ const marker=activeTool==='highlighter',eraser=activeTool==='eraser';
+ const base=marker?Number($('highlightWidth').value):Number($('inkWidth').value);
+ ink.lineWidth=Math.max(1,base*inkPressureScale(point||{}));
+ ink.globalCompositeOperation=eraser?'destination-out':'source-over';
+ ink.globalAlpha=marker?Number($('highlightOpacity').value)/100:1;
+ ink.strokeStyle=marker?$('highlightColor').value:$('inkColor').value;
+ ink.fillStyle=ink.strokeStyle;
 }
 function inkStart(e){
  if(toolTray.contains(e.target)||drawing)return;
@@ -1747,31 +1806,126 @@ function inkStart(e){
  }
  e.preventDefault();drawing=true;lastInkPointerId=e.pointerId;
  try{inkCanvas.setPointerCapture(e.pointerId);}catch{}
- const p=getInkPoint(e);lastInkPoint=p;inkStyle();
- // One single dab on pointer-down; do not paint an extra zero-length stroke.
- ink.beginPath();ink.arc(p.x,p.y,Math.max(1,ink.lineWidth/2),0,Math.PI*2);ink.fillStyle=ink.strokeStyle;ink.fill();
+ const p=getInkPoint(e);lastInkPoint=p;lastInkMidpoint=p;inkStyle(e);
+ // Round dab prevents an unpainted first frame on touch and stylus input.
+ ink.beginPath();ink.arc(p.x,p.y,Math.max(1,ink.lineWidth/2),0,Math.PI*2);ink.fill();
 }
 function inkMove(e){
  if(!drawing||!lastInkPoint||e.pointerId!==lastInkPointerId)return;
  const coalesced=typeof e.getCoalescedEvents==='function'?e.getCoalescedEvents():[];
- const events=coalesced.length?coalesced:[e];inkStyle();
- ink.beginPath();ink.moveTo(lastInkPoint.x,lastInkPoint.y);
- let moved=false;
+ const events=coalesced.length?coalesced:[e];
  for(const point of events){
-  const p=getInkPoint(point);
-  const dx=p.x-lastInkPoint.x,dy=p.y-lastInkPoint.y;
-  // Ignore duplicate/coalesced samples so the same touch position is never painted twice.
-  if(dx*dx+dy*dy<0.75*0.75)continue;
-  ink.lineTo(p.x,p.y);lastInkPoint=p;moved=true;
+  const p=getInkPoint(point),dx=p.x-lastInkPoint.x,dy=p.y-lastInkPoint.y;
+  if(dx*dx+dy*dy<.35*.35)continue;
+  const midpoint={x:(lastInkPoint.x+p.x)/2,y:(lastInkPoint.y+p.y)/2};
+  inkStyle(point);
+  // Quadratic midpoint interpolation smooths uneven touch/stylus samples without delaying the stroke.
+  ink.beginPath();ink.moveTo(lastInkMidpoint.x,lastInkMidpoint.y);
+  ink.quadraticCurveTo(lastInkPoint.x,lastInkPoint.y,midpoint.x,midpoint.y);ink.stroke();
+  lastInkPoint=p;lastInkMidpoint=midpoint;
  }
- if(moved)ink.stroke();
 }
 function inkEnd(e){
  if(!drawing)return;
  if(e&&e.pointerId!==undefined&&e.pointerId!==lastInkPointerId)return;
- drawing=false;lastInkPoint=null;lastInkPointerId=null;
+ if(lastInkPoint&&lastInkMidpoint){
+  ink.beginPath();ink.moveTo(lastInkMidpoint.x,lastInkMidpoint.y);
+  ink.quadraticCurveTo(lastInkPoint.x,lastInkPoint.y,lastInkPoint.x,lastInkPoint.y);ink.stroke();
+ }
+ drawing=false;lastInkPoint=null;lastInkMidpoint=null;lastInkPointerId=null;
  ink.globalAlpha=1;ink.globalCompositeOperation='source-over';
 }
+function updateInkSettingLabels(){
+ $('inkWidthVal').textContent=$('inkWidth').value+' px';
+ $('highlightWidthVal').textContent=$('highlightWidth').value+' px';
+ $('highlightOpacityVal').textContent=$('highlightOpacity').value+'%';
+}
+$('inkWidth').addEventListener('input',updateInkSettingLabels);
+$('highlightWidth').addEventListener('input',updateInkSettingLabels);
+$('highlightOpacity').addEventListener('input',updateInkSettingLabels);
+function releaseMotionGraphic(asset){
+ if(!asset)return;
+ if(asset.media&&asset.kind==='video'){asset.media.pause();asset.media.removeAttribute('src');asset.media.load();}
+ if(asset.url)URL.revokeObjectURL(asset.url);
+}
+async function loadMotionGraphics(fileList){
+ const files=[...fileList||[]];
+ if(!files.length)return;
+ clearMotionGraphicAttachments(false);
+ const version=(loadMotionGraphics.version||0)+1;loadMotionGraphics.version=version;
+ const accepted=[];
+ for(const file of files){
+  const name=file.name.toLowerCase(),isVideo=file.type.startsWith('video/')||/\.(mp4|webm)$/.test(name),isImage=file.type.startsWith('image/')||/\.(gif|png|jpe?g|webp)$/.test(name);
+  if(!isVideo&&!isImage)continue;
+  if(file.size>120*1024*1024){motionGraphicStatus.textContent='Skipped '+file.name+' (larger than 120 MB).';continue;}
+  const asset={name:file.name,kind:isVideo?'video':'image',url:URL.createObjectURL(file),media:null};
+  try{
+   if(isVideo){
+    const video=document.createElement('video');video.muted=true;video.loop=true;video.playsInline=true;video.preload='auto';video.src=asset.url;
+    await new Promise((resolve,reject)=>{if(video.readyState>=2){resolve();return;}video.addEventListener('loadeddata',resolve,{once:true});video.addEventListener('error',()=>reject(new Error('Video could not be decoded')), {once:true});});
+    asset.media=video;
+   }else{
+    const img=new Image();img.src=asset.url;await img.decode();asset.media=img;
+   }
+   if(version!==loadMotionGraphics.version){releaseMotionGraphic(asset);return;}
+   accepted.push(asset);
+  }catch(error){releaseMotionGraphic(asset);console.warn('Motion graphic attachment skipped:',file.name,error);}
+ }
+ if(version!==loadMotionGraphics.version){accepted.forEach(releaseMotionGraphic);return;}
+ motionGraphics=accepted;activeMotionGraphicIndex=motionGraphics.length?0:-1;
+ motionGraphicSelect.innerHTML='';
+ if(!motionGraphics.length){
+  motionGraphicSelect.add(new Option('No supported attachment loaded',''));
+  motionGraphicSelect.disabled=true;motionGraphicEnabled.checked=false;motionGraphicEnabled.disabled=true;clearMotionGraphics.disabled=true;
+  motionGraphicStatus.textContent='No supported motion graphic could be loaded. Try GIF, MP4, WebM, PNG, JPG or WebP.';
+  return;
+ }
+ motionGraphics.forEach((asset,index)=>motionGraphicSelect.add(new Option(asset.name,String(index))));
+ motionGraphicSelect.value='0';motionGraphicSelect.disabled=false;motionGraphicEnabled.disabled=false;motionGraphicEnabled.checked=true;clearMotionGraphics.disabled=false;
+ motionGraphicStatus.textContent=motionGraphics.length+' visual attachment(s) ready. The selected visual will appear in the lesson preview and recorded video.';
+ playActiveMotionGraphic();
+ if(!drawRAF)startDraw();
+}
+function pauseMotionGraphics(){motionGraphics.forEach(asset=>{if(asset.kind==='video')asset.media.pause();});}
+function playActiveMotionGraphic(){
+ pauseMotionGraphics();const asset=motionGraphics[activeMotionGraphicIndex];
+ if(asset&&asset.kind==='video')asset.media.play().catch(()=>{motionGraphicStatus.textContent='Tap the motion graphic attachment again if browser playback was paused.';});
+ if(!drawRAF)startDraw();
+}
+function selectMotionGraphic(index){
+ if(!Number.isInteger(index)||index<0||index>=motionGraphics.length){activeMotionGraphicIndex=-1;pauseMotionGraphics();return;}
+ activeMotionGraphicIndex=index;playActiveMotionGraphic();
+}
+function clearMotionGraphicAttachments(clearInput=true){
+ loadMotionGraphics.version=(loadMotionGraphics.version||0)+1;
+ motionGraphics.forEach(releaseMotionGraphic);motionGraphics=[];activeMotionGraphicIndex=-1;
+ motionGraphicSelect.innerHTML='';motionGraphicSelect.add(new Option('No attachment loaded',''));
+ motionGraphicSelect.disabled=true;motionGraphicEnabled.checked=false;motionGraphicEnabled.disabled=true;clearMotionGraphics.disabled=true;
+ if(clearInput)motionGraphicInput.value='';
+ motionGraphicStatus.textContent='No motion graphic attached. Upload an explanatory visual to add it to the recording.';
+ if(!drawRAF)startDraw();
+}
+function drawMotionGraphic(target){
+ if(!motionGraphicEnabled.checked)return;
+ const asset=motionGraphics[activeMotionGraphicIndex],media=asset&&asset.media;
+ if(!media)return;
+ const naturalW=asset.kind==='video'?media.videoWidth:media.naturalWidth;
+ const naturalH=asset.kind==='video'?media.videoHeight:media.naturalHeight;
+ if(!naturalW||!naturalH||(asset.kind==='video'&&media.readyState<2))return;
+ const W=canvas.width,H=canvas.height,maxW=W*(Number(motionGraphicSize.value)/100),maxH=H*.42,scale=Math.min(maxW/naturalW,maxH/naturalH);
+ const w=Math.max(1,naturalW*scale),h=Math.max(1,naturalH*scale),margin=Math.max(24,W*.035);
+ const position=motionGraphicPosition.value;
+ const x=position.endsWith('right')?W-margin-w:margin;
+ const y=position.startsWith('top')?margin: H-margin-h;
+ target.save();target.globalAlpha=Number(motionGraphicOpacity.value)/100;
+ target.shadowColor='rgba(0,0,0,.48)';target.shadowBlur=W*.012;target.shadowOffsetY=H*.006;
+ roundedPath(target,x,y,w,h,Math.max(12,W*.009));target.fillStyle='rgba(8,18,34,.72)';target.fill();target.clip();
+ const pad=Math.max(3,W*.003);target.drawImage(media,x+pad,y+pad,Math.max(1,w-pad*2),Math.max(1,h-pad*2));
+ target.shadowColor='transparent';target.shadowBlur=0;target.shadowOffsetY=0;
+ roundedPath(target,x,y,w,h,Math.max(12,W*.009));target.strokeStyle='rgba(255,255,255,.9)';target.lineWidth=Math.max(2,W*.0018);target.stroke();
+ target.restore();
+}
+
 async function makeAudioTrack(){
  const tracks=[];
  if(audioDestination)audioDestination.stream.getAudioTracks().forEach(t=>tracks.push(t));
@@ -2089,6 +2243,12 @@ cameraSelect.onchange=()=>{if(cameraStream&&!recording){stopCamera();startCamera
 micSelect.onchange=async()=>{if(micStream&&!recording){stopMic();await startMic();}};
 $('includeSystemAudio').onchange=()=>{if(screenStream){showError('To change system audio selection, stop screen sharing and share again.');}};
 slidesInput.onchange=()=>loadSlides(slidesInput.files);
+motionGraphicInput.onchange=()=>loadMotionGraphics(motionGraphicInput.files);
+motionGraphicSelect.onchange=()=>selectMotionGraphic(Number(motionGraphicSelect.value));
+motionGraphicEnabled.addEventListener('change',()=>{if(motionGraphicEnabled.checked)playActiveMotionGraphic();else pauseMotionGraphics();});
+motionGraphicSize.addEventListener('input',()=>{motionGraphicSizeVal.textContent=motionGraphicSize.value+'%';});
+motionGraphicOpacity.addEventListener('input',()=>{motionGraphicOpacityVal.textContent=motionGraphicOpacity.value+'%';});
+clearMotionGraphics.addEventListener('click',clearMotionGraphicAttachments);
 slideDisplayMode.onchange=()=>{clearSlideTransition();try{localStorage.setItem('officerlab-slide-display-mode',slideDisplayMode.value);}catch{}syncVisuals();};
 function saveSlideAnimationSettings(){
  clearSlideTransition();slideMotionStartedAt=performance.now();
@@ -2441,10 +2601,71 @@ let noteTimer;
  contextToggle.addEventListener('click',()=>setContextPanelOpen(document.body.classList.contains('context-collapsed')));
  try{setContextPanelOpen(localStorage.getItem('officerlab-context-panel')!=='closed',false);}catch{setContextPanelOpen(true,false);}$('notes').oninput=()=>{clearTimeout(noteTimer);noteTimer=setTimeout(()=>{try{localStorage.setItem('officerlab-lecture-notes',$('notes').value);}catch{}},350);};
 window.addEventListener('beforeunload',e=>{if(recording){e.preventDefault();e.returnValue='';}});
-window.addEventListener('pagehide',()=>{stopDraw();stopTeleprompterScroll();if(cameraStream)cameraStream.getTracks().forEach(t=>t.stop());if(micStream)micStream.getTracks().forEach(t=>t.stop());if(screenStream)screenStream.getTracks().forEach(t=>t.stop());if(audioContext)audioContext.close().catch(()=>{});saved.forEach(r=>URL.revokeObjectURL(r.url));slideUrls.forEach(URL.revokeObjectURL);});
+window.addEventListener('pagehide',()=>{stopDraw();stopTeleprompterScroll();if(cameraStream)cameraStream.getTracks().forEach(t=>t.stop());if(micStream)micStream.getTracks().forEach(t=>t.stop());if(screenStream)screenStream.getTracks().forEach(t=>t.stop());if(audioContext)audioContext.close().catch(()=>{});saved.forEach(r=>URL.revokeObjectURL(r.url));slideUrls.forEach(URL.revokeObjectURL);motionGraphics.forEach(releaseMotionGraphic);});
+
+const RECORDER_DEFAULTS_KEY='officerlab-recorder-defaults-v1';
+const defaultsStatus=$('defaultsStatus'),saveDefaultsBtn=$('saveDefaultsBtn');
+let recorderDefaultSnapshot=null,defaultsSaveTimer=0;
+function isRecorderPreferenceControl(el){
+ if(!el||!el.id||el.hasAttribute('data-no-persist'))return false;
+ if(el.tagName==='TEXTAREA')return false;
+ if(!['INPUT','SELECT'].includes(el.tagName))return false;
+ const type=(el.type||'').toLowerCase();
+ return !['file','button','submit','reset','password','hidden'].includes(type);
+}
+function collectRecorderDefaults(){
+ const values={};
+ document.querySelectorAll('input,select').forEach(el=>{
+  if(!isRecorderPreferenceControl(el))return;
+  values[el.id]={type:(el.type||el.tagName).toLowerCase(),value:el.type==='checkbox'||el.type==='radio'?undefined:el.value,checked:el.type==='checkbox'||el.type==='radio'?el.checked:undefined};
+ });
+ return {version:1,savedAt:new Date().toISOString(),values};
+}
+function persistRecorderDefaults(showStatus=true){
+ try{
+  recorderDefaultSnapshot=collectRecorderDefaults();
+  localStorage.setItem(RECORDER_DEFAULTS_KEY,JSON.stringify(recorderDefaultSnapshot));
+  if(showStatus&&defaultsStatus)defaultsStatus.textContent='✓ All setup settings saved';
+ }catch(error){
+  if(defaultsStatus)defaultsStatus.textContent='Could not save settings · Browser storage full';
+ }
+}
+function restoreRecorderDefaults(){
+ try{
+  const raw=localStorage.getItem(RECORDER_DEFAULTS_KEY);
+  if(!raw)return false;
+  const snapshot=JSON.parse(raw);
+  if(!snapshot||snapshot.version!==1||!snapshot.values)return false;
+  recorderDefaultSnapshot=snapshot;
+  Object.entries(snapshot.values).forEach(([id,state])=>{
+   const el=$(id);if(!el||!isRecorderPreferenceControl(el)||!state)return;
+   if(el.type==='checkbox'||el.type==='radio')el.checked=!!state.checked;
+   else if(state.value!==undefined){
+    if(el.tagName!=='SELECT'||[...el.options].some(option=>option.value===state.value))el.value=state.value;
+   }
+  });
+  if(defaultsStatus)defaultsStatus.textContent='✓ Your saved setup was restored';
+  return true;
+ }catch(error){if(defaultsStatus)defaultsStatus.textContent='Saved setup could not be restored';return false;}
+}
+function scheduleRecorderDefaultsSave(){
+ if(defaultsSaveTimer)clearTimeout(defaultsSaveTimer);
+ if(defaultsStatus)defaultsStatus.textContent='Saving setup…';
+ defaultsSaveTimer=setTimeout(()=>persistRecorderDefaults(true),180);
+}
+document.addEventListener('input',event=>{if(isRecorderPreferenceControl(event.target))scheduleRecorderDefaultsSave();},true);
+document.addEventListener('change',event=>{if(isRecorderPreferenceControl(event.target))scheduleRecorderDefaultsSave();},true);
+saveDefaultsBtn.addEventListener('click',()=>persistRecorderDefaults(true));
+restoreRecorderDefaults();
+updateInkSettingLabels();
+motionGraphicSizeVal.textContent=motionGraphicSize.value+'%';
+motionGraphicOpacityVal.textContent=motionGraphicOpacity.value+'%';
+
 async function init(){
  try{dataSaver.checked=!!navigator.connection?.saveData;}catch{}updateDownloadNetworkStatus();networkConnection()?.addEventListener?.('change',updateDownloadNetworkStatus);
- setCanvasQuality();syncSlideControls();updateControls();startDraw();drawMicMeter();await refreshDevices();await loadLocalRecordings();
+ setCanvasQuality();syncSlideControls();updateControls();startDraw();drawMicMeter();await refreshDevices();
+ try{const saved=recorderDefaultSnapshot?.values||{};if(saved.cameraSelect?.value&&[...cameraSelect.options].some(o=>o.value===saved.cameraSelect.value))cameraSelect.value=saved.cameraSelect.value;if(saved.micSelect?.value&&[...micSelect.options].some(o=>o.value===saved.micSelect.value))micSelect.value=saved.micSelect.value;}catch{}
+ await loadLocalRecordings();
  if('serviceWorker'in navigator)navigator.serviceWorker.register('/gpsc-recorder-sw.js',{scope:'/'}).catch(e=>console.warn('Service worker:',e));
 }
 init();
