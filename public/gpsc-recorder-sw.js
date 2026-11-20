@@ -1,4 +1,4 @@
-const CACHE_NAME = "gpsc-recorder-v14";
+const CACHE_NAME = "gpsc-recorder-v15";
 const APP_URL = "/gpsc-guidance-recorder.html";
 const ASSETS = [
   APP_URL,
