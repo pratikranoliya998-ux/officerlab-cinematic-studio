@@ -552,10 +552,14 @@ function updateFullscreenCanvasLayout(){
  }
  const rect=stage.getBoundingClientRect(),sourceW=canvas.width,sourceH=canvas.height;
  if(!rect.width||!rect.height||!sourceW||!sourceH)return;
- const inset=8,scale=Math.min((rect.width-inset*2)/sourceW,(rect.height-inset*2)/sourceH);
+ // Larger bottom clearance protects the last slide row from Android fullscreen
+ // gesture/navigation areas and minor viewport rounding on landscape devices.
+ const safe={top:14,right:14,bottom:34,left:14};
+ const availableW=rect.width-safe.left-safe.right,availableH=rect.height-safe.top-safe.bottom;
+ const scale=Math.min(availableW/sourceW,availableH/sourceH);
  if(!Number.isFinite(scale)||scale<=0)return;
  const width=Math.max(1,Math.floor(sourceW*scale)),height=Math.max(1,Math.floor(sourceH*scale));
- const left=Math.round((rect.width-width)/2),top=Math.round((rect.height-height)/2);
+ const left=safe.left+Math.round((availableW-width)/2),top=safe.top+Math.round((availableH-height)/2);
  canvas.style.width=width+'px';canvas.style.height=height+'px';
  inkCanvas.style.inset='auto';inkCanvas.style.left=left+'px';inkCanvas.style.top=top+'px';
  inkCanvas.style.right='auto';inkCanvas.style.bottom='auto';inkCanvas.style.width=width+'px';inkCanvas.style.height=height+'px';inkCanvas.style.transform='none';
