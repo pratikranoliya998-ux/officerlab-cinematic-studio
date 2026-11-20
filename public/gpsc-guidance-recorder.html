@@ -113,6 +113,16 @@ body.presentation-fullscreen>main>section.card>:not(#stage){display:none!importa
 #stageFsExit{right:12px;top:12px;width:42px;height:42px;min-width:42px;min-height:42px;font-size:25px;background:rgba(150,38,50,.3);border-color:#ff9da588}
 #stageFsSlideNav .fs-jump,#stageFsSlideNav #fsGoSlide{display:none!important}
 #stageFsSlideNav button:disabled{opacity:.32}
+#slideAdjustToggle{display:none}
+#stage:fullscreen #slideAdjustToggle{display:grid;place-items:center;position:absolute;right:12px;top:62px;z-index:33;width:42px;height:42px;min-height:42px;padding:0;border-radius:50%;font-size:18px;background:rgba(10,18,30,.42);border:1px solid #ffffff70;color:#fff;box-shadow:0 4px 16px #0005}
+#slideAdjustToggle.active{background:#17447a;border-color:#75baff}
+#slideAdjustPanel{position:absolute;right:12px;top:112px;z-index:34;width:min(290px,calc(100% - 24px));padding:12px;border:1px solid #ffffff58;border-radius:13px;background:rgba(8,14,25,.88);box-shadow:0 10px 30px #0008;color:#fff;-webkit-backdrop-filter:blur(22px) saturate(150%);backdrop-filter:blur(22px) saturate(150%)}
+#slideAdjustPanel[hidden]{display:none}
+#slideAdjustPanel header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 10px;padding:0;border:0;background:none;color:#eaf3ff;font-size:12px;font-weight:800;letter-spacing:.02em}
+#slideAdjustPanel header button{min-height:30px;padding:3px 8px;font-size:11px}
+#slideAdjustPanel label{display:flex;justify-content:space-between;gap:8px;margin:10px 0 4px;font-size:11px;color:#dce8f8}
+#slideAdjustPanel input[type=range]{width:100%;accent-color:#60a5fa;min-height:28px;touch-action:pan-x}
+#slideAdjustPanel p{margin:7px 0 0;color:#aebed2;font-size:10px;line-height:1.45}
 @media(max-width:650px){#fsPrevSlide{left:8px;top:8px}#fsNextSlide{left:53px;top:8px}#stageFsExit{right:8px;top:8px;width:38px;height:38px;min-width:38px;min-height:38px}#stageFsSlideNav button{width:38px;height:38px;min-width:38px;min-height:38px;font-size:22px}}
 @media(max-width:650px){.stage-toolbar{gap:5px;padding:7px}.stage-toolbar button{flex:1;min-width:78px}.teleprompter-overlay{left:4%;right:4%;height:32%}.teleprompter-window{font-size:24px}.teleprompter-controls input[type=range]{width:78px}}
 .tool-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:8px}.tool-row:last-child{margin-bottom:0}
@@ -303,6 +313,15 @@ input,select,textarea{border-color:#ffffff20!important;border-radius:9px}button:
       <button type="button" id="fsPauseToggle" aria-label="Pause recording" title="Pause recording" disabled>Ⅱ</button>
       <span id="fsRecordStatus" class="stage-fs-status" aria-live="polite">READY</span>
     </div>
+    <button id="slideAdjustToggle" type="button" aria-label="Manual slide adjustment" aria-expanded="false" title="Manual slide adjustment">↕</button>
+    <section id="slideAdjustPanel" hidden aria-label="Manual slide adjustment controls">
+      <header><span>MANUAL SLIDE ADJUST</span><button id="slideAdjustReset" type="button">Reset</button></header>
+      <label for="slideZoom"><span>Slide size</span><b id="slideZoomValue">100%</b></label>
+      <input id="slideZoom" type="range" min="55" max="100" step="1" value="100">
+      <label for="slideVertical"><span>Vertical position</span><b id="slideVerticalValue">0%</b></label>
+      <input id="slideVertical" type="range" min="-25" max="25" step="1" value="0">
+      <p>Negative values move the slide upward to reveal lower rows. Reduce Slide size to fit more content.</p>
+    </section>
     <div id="stageFsSlideNav" aria-label="Fullscreen slide navigation">
       <button id="fsPrevSlide" type="button" aria-label="Previous slide" title="Previous slide" disabled>‹</button>
       <label class="fs-jump">Slide <input id="fsSlideJump" type="number" min="1" step="1" inputmode="numeric" aria-label="Fullscreen slide number"> / <b id="fsSlideTotal">0</b></label>
@@ -505,6 +524,8 @@ const slidesInput=$('slidesInput'),slideDisplayMode=$('slideDisplayMode'),prevSl
 try{const savedSlideMode=localStorage.getItem('officerlab-slide-display-mode');if(['smart','fit','fill'].includes(savedSlideMode))slideDisplayMode.value=savedSlideMode;}catch{}
 const teleprompterOverlay=$('teleprompterOverlay'),teleprompterWindow=$('teleprompterWindow'),teleprompterText=$('teleprompterText'),teleprompterScript=$('teleprompterScript'),teleprompterSettings=$('teleprompterSettings');
 const fsPrevSlide=$('fsPrevSlide'),fsNextSlide=$('fsNextSlide'),fsSlideJump=$('fsSlideJump'),fsSlideTotal=$('fsSlideTotal'),fsGoSlide=$('fsGoSlide'),stageFsSlideNav=$('stageFsSlideNav'),stageFsControlsToggle=$('stageFsControlsToggle');
+const slideAdjustToggle=$('slideAdjustToggle'),slideAdjustPanel=$('slideAdjustPanel'),slideAdjustReset=$('slideAdjustReset'),slideZoom=$('slideZoom'),slideVertical=$('slideVertical'),slideZoomValue=$('slideZoomValue'),slideVerticalValue=$('slideVerticalValue');
+try{const savedZoom=Number(localStorage.getItem('officerlab-slide-zoom')),savedVertical=Number(localStorage.getItem('officerlab-slide-vertical'));if(Number.isFinite(savedZoom)&&savedZoom>=55&&savedZoom<=100)slideZoom.value=String(savedZoom);if(Number.isFinite(savedVertical)&&savedVertical>=-25&&savedVertical<=25)slideVertical.value=String(savedVertical);}catch{}
 const annotationFab=$('annotationFab'),toolTray=$('toolTray'),pipHandle=$('pipHandle'),pipDragBar=$('pipDragBar');
 const faceSize=$('faceSize'),faceHeight=$('faceHeight'),faceShape=$('faceShape'),faceOpacity=$('faceOpacity'),fsCameraOpacity=$('fsCameraOpacity'),fsCameraOpacityToggle=$('fsCameraOpacityToggle'),fsCameraOpacityPanel=$('fsCameraOpacityPanel'),fsCameraOpacityValue=$('fsCameraOpacityValue'),safeGuides=$('safeGuides'),mirrorOutput=$('mirrorOutput'),outputRatio=$('outputRatio');
 const lowerThirdName=$('lowerThirdName'),lowerThirdTitle=$('lowerThirdTitle'),lowerThirdPosition=$('lowerThirdPosition'),lowerThirdEnabled=$('lowerThirdEnabled');
@@ -667,7 +688,17 @@ function fitSlide(ctx,source,x,y,w,h){
 }
 // Cached Smart Fit background: build once per current slide and target size, not on every animation frame.
 let smartSlideBackdrop=null,smartSlideBackdropSource=null,smartSlideBackdropSize='';
-function smartFitSlide(ctx,source,x,y,w,h){
+function drawAdjustedSlideForeground(ctx,source,x,y,w,h,cover,zoom,vertical){
+ const sw=source.videoWidth||source.width||source.naturalWidth,sh=source.videoHeight||source.height||source.naturalHeight;
+ if(!Number.isFinite(sw)||!Number.isFinite(sh)||sw<=0||sh<=0||w<=0||h<=0)return;
+ const base=cover?Math.max(w/sw,h/sh):Math.min(w/sw,h/sh),scale=base*zoom,dw=sw*scale,dh=sh*scale;
+ ctx.save();ctx.beginPath();ctx.rect(x,y,w,h);ctx.clip();
+ if(!cover){ctx.fillStyle='#09090b';ctx.fillRect(x,y,w,h);}
+ ctx.imageSmoothingEnabled=true;try{ctx.imageSmoothingQuality='high';}catch{}
+ ctx.drawImage(source,x+(w-dw)/2,y+(h-dh)/2+vertical,dw,dh);
+ ctx.restore();
+}
+function smartFitSlide(ctx,source,x,y,w,h,zoom,vertical){
  if(!source)return;
  const sw=source.videoWidth||source.width||source.naturalWidth,sh=source.videoHeight||source.height||source.naturalHeight;
  if(!Number.isFinite(sw)||!Number.isFinite(sh)||sw<=0||sh<=0||w<=0||h<=0)return;
@@ -681,7 +712,7 @@ function smartFitSlide(ctx,source,x,y,w,h){
   smartSlideBackdrop=back;smartSlideBackdropSource=source;smartSlideBackdropSize=key;
  }
  ctx.drawImage(smartSlideBackdrop,x,y,w,h);
- fitSlide(ctx,source,x,y,w,h);
+ drawAdjustedSlideForeground(ctx,source,x,y,w,h,false,zoom,vertical);
 }
 function fillSlide(ctx,source,x,y,w,h){
  if(!source)return;
@@ -693,10 +724,9 @@ function fillSlide(ctx,source,x,y,w,h){
  ctx.drawImage(source,x+(w-dw)/2,y+(h-dh)/2,dw,dh);ctx.restore();
 }
 function drawSlideWithMode(ctx,source,x,y,w,h){
- const mode=slideDisplayMode.value;
- if(mode==='fit')fitSlide(ctx,source,x,y,w,h);
- else if(mode==='fill')fillSlide(ctx,source,x,y,w,h);
- else smartFitSlide(ctx,source,x,y,w,h);
+ const mode=slideDisplayMode.value,zoom=Math.max(.55,Math.min(1,Number(slideZoom.value)/100||1)),vertical=(Number(slideVertical.value)||0)/100*h;
+ if(mode==='smart')smartFitSlide(ctx,source,x,y,w,h,zoom,vertical);
+ else drawAdjustedSlideForeground(ctx,source,x,y,w,h,mode==='fill',zoom,vertical);
 }
 // Preserve the complete source while filling unused 16:9 canvas space with a soft, darkened extension.
 function containWithFill(ctx,source,x,y,w,h){
@@ -1382,6 +1412,22 @@ micSelect.onchange=async()=>{if(micStream&&!recording){stopMic();await startMic(
 $('includeSystemAudio').onchange=()=>{if(screenStream){showError('To change system audio selection, stop screen sharing and share again.');}};
 slidesInput.onchange=()=>loadSlides(slidesInput.files);
 slideDisplayMode.onchange=()=>{try{localStorage.setItem('officerlab-slide-display-mode',slideDisplayMode.value);}catch{}syncVisuals();};
+function saveSlideAdjustments(){
+ slideZoomValue.textContent=slideZoom.value+'%';
+ const y=Number(slideVertical.value);slideVerticalValue.textContent=(y>0?'+':'')+y+'%';
+ try{localStorage.setItem('officerlab-slide-zoom',slideZoom.value);localStorage.setItem('officerlab-slide-vertical',slideVertical.value);}catch{}
+ syncVisuals();
+}
+[slideZoom,slideVertical].forEach(el=>el.addEventListener('input',saveSlideAdjustments));
+slideAdjustToggle.onclick=()=>{
+ const open=slideAdjustPanel.hidden;
+ slideAdjustPanel.hidden=!open;
+ slideAdjustToggle.classList.toggle('active',open);
+ slideAdjustToggle.setAttribute('aria-expanded',String(open));
+ slideAdjustToggle.textContent=open?'↕':'×';
+};
+slideAdjustReset.onclick=()=>{slideZoom.value='100';slideVertical.value='0';saveSlideAdjustments();};
+saveSlideAdjustments();
 prevSlide.onclick=()=>showSlide(slideIndex-1);nextSlide.onclick=()=>showSlide(slideIndex+1);
 clearSlides.onclick=()=>{slidesInput.value='';slides=[];slideSource=null;pdfDoc=null;slideUrls.forEach(URL.revokeObjectURL);slideUrls=[];ink.clearRect(0,0,inkCanvas.width,inkCanvas.height);syncSlideControls();syncVisuals();};
 $('layoutButtons').querySelectorAll('[data-layout]').forEach(b=>b.onclick=()=>setLayout(b.dataset.layout));
@@ -1511,6 +1557,7 @@ document.addEventListener('fullscreenchange',()=>{
  $('fullscreenBtn').textContent=document.fullscreenElement?'⛶ Exit Full Screen':'⛶ Full Screen';
  $('stageFullscreenBtn').textContent=onStage?'✕ Exit Presentation Full Screen':'⛶ Presentation Full Screen';
  $('stageFsSlideNav').classList.remove('open');
+ slideAdjustPanel.hidden=true;slideAdjustToggle.classList.remove('active');slideAdjustToggle.setAttribute('aria-expanded','false');slideAdjustToggle.textContent='↕';
  $('stageFsControlsToggle').setAttribute('aria-expanded','false');
  fsCameraOpacityPanel.hidden=true;fsCameraOpacityToggle.classList.remove('active');fsCameraOpacityToggle.setAttribute('aria-expanded','false');
  if(!onStage)restorePresentationOutputRatio();
