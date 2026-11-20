@@ -432,7 +432,9 @@ input,select,textarea{border-color:#ffffff20!important;border-radius:9px}button:
     </div>
     <div class="layout-row" style="margin-top:8px;align-items:end">
       <label class="check"><input id="watermarkEnabled" type="checkbox"> Add recording watermark</label>
-      <div class="field" style="flex:1;min-width:150px;max-width:260px"><label for="watermarkText">Watermark text</label><input id="watermarkText" type="text" maxlength="32" value="OFFICERLAB" placeholder="OFFICERLAB"></div>
+      <div class="field" style="flex:1;min-width:150px;max-width:240px"><label for="watermarkText">Watermark text</label><input id="watermarkText" type="text" maxlength="32" value="OFFICERLAB" placeholder="OFFICERLAB"></div>
+      <div class="field" style="min-width:130px;max-width:180px"><label for="watermarkPosition">Watermark position</label><select id="watermarkPosition"><option value="top-right" selected>Top right</option><option value="top-left">Top left</option><option value="bottom-right">Bottom right</option><option value="bottom-left">Bottom left</option></select></div>
+      <div class="field" style="min-width:135px;max-width:180px"><label for="watermarkOpacity">Opacity <span id="watermarkOpacityValue" class="tool-val">76%</span></label><input type="range" id="watermarkOpacity" min="20" max="95" value="76"></div>
     </div>
     <p class="hint">The optional watermark and refined PiP frame are drawn into the recording. Drag the “Drag Face Cam” handle to reposition the webcam overlay.</p>
   </div>
@@ -577,7 +579,7 @@ const annotationFab=$('annotationFab'),toolTray=$('toolTray'),pipHandle=$('pipHa
 const faceSize=$('faceSize'),faceHeight=$('faceHeight'),faceShape=$('faceShape'),faceOpacity=$('faceOpacity'),fsCameraOpacity=$('fsCameraOpacity'),fsCameraOpacityToggle=$('fsCameraOpacityToggle'),fsCameraOpacityPanel=$('fsCameraOpacityPanel'),fsCameraOpacityValue=$('fsCameraOpacityValue'),safeGuides=$('safeGuides'),mirrorOutput=$('mirrorOutput'),outputRatio=$('outputRatio');
 const lowerThirdName=$('lowerThirdName'),lowerThirdTitle=$('lowerThirdTitle'),lowerThirdPosition=$('lowerThirdPosition'),lowerThirdEnabled=$('lowerThirdEnabled');
 const brandAccent=$('brandAccent'),brandPanel=$('brandPanel'),brandFont=$('brandFont'),brandLogoFile=$('brandLogoFile'),brandLogoRemove=$('brandLogoRemove'),brandLogoStatus=$('brandLogoStatus');
-const watermarkEnabled=$('watermarkEnabled'),watermarkText=$('watermarkText');
+const watermarkEnabled=$('watermarkEnabled'),watermarkText=$('watermarkText'),watermarkPosition=$('watermarkPosition'),watermarkOpacity=$('watermarkOpacity'),watermarkOpacityValue=$('watermarkOpacityValue');
 const introCardEnabled=$('introCardEnabled'),introCardDuration=$('introCardDuration'),introCardTitle=$('introCardTitle'),introCardSubtitle=$('introCardSubtitle'),outroCardEnabled=$('outroCardEnabled'),outroCardDuration=$('outroCardDuration'),outroCardTitle=$('outroCardTitle'),outroCardSubtitle=$('outroCardSubtitle');
 let brandLogoDataUrl='',brandLogoImage=null,brandLogoVersion=0;
 const recList=$('recList'),empty=$('empty'),recoveryList=$('recoveryList');
@@ -1046,10 +1048,13 @@ function drawWatermark(){
  ctx.save();ctx.font='750 '+fontSize+'px '+(brandFont.value==='serif'?'Georgia,serif':brandFont.value==='mono'?'ui-monospace,monospace':'system-ui,sans-serif');
  const textW=ctx.measureText(label).width,contentW=(logoSize?logoSize+gap:0)+textW;
  const boxH=Math.max(fontSize*1.7,logoSize+pad),boxW=contentW+pad*2;
- const margin=Math.max(20,Math.round(W*.035)),x=W-boxW-margin,y=margin,r=Math.max(7,Math.round(boxH*.22));
- roundedPath(ctx,x,y,boxW,boxH,r);ctx.globalAlpha=.25;ctx.fillStyle=brandPanel.value||'#050c18';ctx.fill();
- ctx.globalAlpha=.38;ctx.strokeStyle=brandAccent.value||'#55a3ff';ctx.lineWidth=Math.max(1,W/1600);ctx.stroke();
- ctx.globalAlpha=.76;
+ const margin=Math.max(20,Math.round(W*.035)),position=watermarkPosition.value;
+ const coords={'top-left':[margin,margin],'top-right':[W-boxW-margin,margin],'bottom-left':[margin,H-boxH-margin],'bottom-right':[W-boxW-margin,H-boxH-margin]};
+ const [x,y]=coords[position]||coords['top-right'],r=Math.max(7,Math.round(boxH*.22));
+ const opacity=Math.max(.2,Math.min(.95,(Number(watermarkOpacity.value)||76)/100));
+ roundedPath(ctx,x,y,boxW,boxH,r);ctx.globalAlpha=opacity*.33;ctx.fillStyle=brandPanel.value||'#050c18';ctx.fill();
+ ctx.globalAlpha=opacity*.5;ctx.strokeStyle=brandAccent.value||'#55a3ff';ctx.lineWidth=Math.max(1,W/1600);ctx.stroke();
+ ctx.globalAlpha=opacity;
  if(logoSize){const lx=x+pad,ly=y+(boxH-logoSize)/2;ctx.save();roundedPath(ctx,lx,ly,logoSize,logoSize,Math.max(4,logoSize*.14));ctx.clip();ctx.drawImage(brandLogoImage,lx,ly,logoSize,logoSize);ctx.restore();}
  ctx.font='750 '+fontSize+'px '+(brandFont.value==='serif'?'Georgia,serif':brandFont.value==='mono'?'ui-monospace,monospace':'system-ui,sans-serif');
  ctx.fillStyle='#ffffff';ctx.textBaseline='middle';ctx.textAlign='left';ctx.fillText(label,x+pad+(logoSize?logoSize+gap:0),y+boxH/2,Math.max(12,textW));
@@ -1884,15 +1889,31 @@ restoreLowerThirdSettings();
 brandLogoFile.addEventListener('change',()=>{const file=brandLogoFile.files&&brandLogoFile.files[0];if(!file)return;if(!/^image\/(png|jpeg|webp)$/.test(file.type)){brandLogoStatus.textContent='Choose a PNG, JPG or WebP logo.';brandLogoFile.value='';return;}if(file.size>5*1024*1024){brandLogoStatus.textContent='Choose a logo smaller than 5 MB.';brandLogoFile.value='';return;}const url=URL.createObjectURL(file),img=new Image();brandLogoStatus.textContent='Optimizing logo for this device…';img.onload=()=>{URL.revokeObjectURL(url);const max=160,ratio=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight)),w=Math.max(1,Math.round(img.naturalWidth*ratio)),h=Math.max(1,Math.round(img.naturalHeight*ratio)),off=document.createElement('canvas');off.width=w;off.height=h;off.getContext('2d').drawImage(img,0,0,w,h);let data='';try{data=off.toDataURL('image/webp',.78);if(data.length>125000)data=off.toDataURL('image/jpeg',.72);}catch(e){brandLogoStatus.textContent='Could not optimize this logo.';return;}if(data.length>125000){brandLogoStatus.textContent='Logo is still too large after optimization. Choose a simpler/smaller image.';return;}setBrandLogo(data);};img.onerror=()=>{URL.revokeObjectURL(url);brandLogoStatus.textContent='Could not read that logo image.';};img.src=url;});
 brandLogoRemove.addEventListener('click',()=>{brandLogoFile.value='';setBrandLogo('');});
 restoreBrandKit();
-const WATERMARK_STORAGE={enabled:'officerlab-watermark-enabled',text:'officerlab-watermark-text'};
+const WATERMARK_STORAGE={enabled:'officerlab-watermark-enabled',text:'officerlab-watermark-text',position:'officerlab-watermark-position',opacity:'officerlab-watermark-opacity'};
 function saveWatermarkSettings(){
- try{localStorage.setItem(WATERMARK_STORAGE.enabled,watermarkEnabled.checked?'1':'0');localStorage.setItem(WATERMARK_STORAGE.text,watermarkText.value);}catch{}
+ try{
+  localStorage.setItem(WATERMARK_STORAGE.enabled,watermarkEnabled.checked?'1':'0');
+  localStorage.setItem(WATERMARK_STORAGE.text,watermarkText.value);
+  localStorage.setItem(WATERMARK_STORAGE.position,watermarkPosition.value);
+  localStorage.setItem(WATERMARK_STORAGE.opacity,watermarkOpacity.value);
+ }catch{}
+ watermarkOpacityValue.textContent=watermarkOpacity.value+'%';
+ if(!drawRAF)startDraw();
 }
 function restoreWatermarkSettings(){
- try{watermarkEnabled.checked=localStorage.getItem(WATERMARK_STORAGE.enabled)==='1';const saved=localStorage.getItem(WATERMARK_STORAGE.text);if(saved!==null)watermarkText.value=saved;}catch{}
+ try{
+  watermarkEnabled.checked=localStorage.getItem(WATERMARK_STORAGE.enabled)==='1';
+  const saved=localStorage.getItem(WATERMARK_STORAGE.text),position=localStorage.getItem(WATERMARK_STORAGE.position),opacity=Number(localStorage.getItem(WATERMARK_STORAGE.opacity));
+  if(saved!==null)watermarkText.value=saved;
+  if(['top-left','top-right','bottom-left','bottom-right'].includes(position))watermarkPosition.value=position;
+  if(Number.isFinite(opacity)&&opacity>=20&&opacity<=95)watermarkOpacity.value=String(opacity);
+ }catch{}
+ watermarkOpacityValue.textContent=watermarkOpacity.value+'%';
 }
 watermarkEnabled.addEventListener('change',saveWatermarkSettings);
 watermarkText.addEventListener('input',saveWatermarkSettings);
+watermarkPosition.addEventListener('change',saveWatermarkSettings);
+watermarkOpacity.addEventListener('input',saveWatermarkSettings);
 restoreWatermarkSettings();
 const BRAND_CARDS_STORAGE={introOn:'officerlab-intro-enabled',introDuration:'officerlab-intro-duration',introTitle:'officerlab-intro-title',introSubtitle:'officerlab-intro-subtitle',outroOn:'officerlab-outro-enabled',outroDuration:'officerlab-outro-duration',outroTitle:'officerlab-outro-title',outroSubtitle:'officerlab-outro-subtitle'};
 function saveBrandCardSettings(){
