@@ -1,0 +1,22 @@
+{
+  "appId": "com.officerlab.cinematicstudio",
+  "appName": "OfficerLab Studio",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 1200,
+      "backgroundColor": "#101827",
+      "showSpinner": false
+    },
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#101827"
+    },
+    "CapacitorHttp": {
+      "enabled": true
+    }
+  }
+}
