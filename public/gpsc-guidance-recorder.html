@@ -138,6 +138,10 @@ select,textarea,input[type=text]{width:100%;padding:9px 10px;border-radius:9px;b
 textarea{min-height:150px;resize:vertical;line-height:1.6}
 .device-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px}
 .device-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}.device-actions button{flex:1}
+.screen-share-hint{margin:7px 0 0;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:var(--panel2);font-size:10px;line-height:1.5;color:var(--muted)}
+.screen-share-hint[data-state="unsupported"]{border-color:#d2992266;background:#d2992210;color:#e8c77a}
+.screen-share-hint[data-state="ready"]{border-color:#3fb95055;color:#8bd99b}
+.device-actions button:disabled{opacity:.46;cursor:not-allowed}
 .audio-panel{display:flex;align-items:center;gap:9px;margin-top:10px;padding:9px 10px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;flex-wrap:wrap}
 .caption-options{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:9px;padding:10px;background:var(--panel2);border:1px solid var(--line);border-radius:10px}.caption-options select{width:auto;min-width:150px;max-width:100%}.caption-options .caption-status{flex:1 1 100%;font-size:10px;color:var(--muted);line-height:1.5}.caption-options input{width:17px;height:17px;accent-color:var(--blue)}
 .caption-export{margin-top:8px;padding:9px;border:1px solid var(--line);border-radius:9px;background:#0d141e}.caption-export .small{display:block;margin-bottom:7px}.caption-export button{min-height:34px;padding:6px 9px;font-size:11px}
@@ -376,8 +380,9 @@ input,select,textarea{border-color:#ffffff20!important;border-radius:9px}button:
     <button id="cameraBtn">📷 Start Camera</button>
     <button id="cameraSwitchBtn" disabled>🔄 Switch Front / Rear</button>
     <button id="micBtn">🎙 Enable Microphone</button>
-    <button id="screenBtn">🖥 Share Screen</button>
+    <button id="screenBtn" type="button">🖥 Share Screen</button>
   </div>
+  <p id="screenShareHint" class="screen-share-hint" data-state="checking" role="status" aria-live="polite">Checking browser screen-capture support…</p>
   <div class="audio-panel">
     <span class="small" id="micStatus">Mic: off</span>
     <div class="meter waveform" role="meter" aria-label="Microphone input level" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><div id="meterFill" hidden></div></div>
@@ -518,7 +523,7 @@ const $=id=>document.getElementById(id);
 const cameraVideo=$('cameraVideo'),screenVideo=$('screenVideo'),canvas=$('compositeCanvas'),ctx=canvas.getContext('2d',{alpha:false});
 const inkCanvas=$('annotationCanvas'),ink=inkCanvas.getContext('2d'),stage=$('stage'),placeholder=$('placeholder');
 const captureMode=$('captureMode'),quality=$('quality'),cameraSelect=$('cameraSelect'),micSelect=$('micSelect');
-const cameraBtn=$('cameraBtn'),micBtn=$('micBtn'),screenBtn=$('screenBtn'),recordBtn=$('recordBtn'),pauseBtn=$('pauseBtn'),stopBtn=$('stopBtn');
+const cameraBtn=$('cameraBtn'),micBtn=$('micBtn'),screenBtn=$('screenBtn'),screenShareHint=$('screenShareHint'),recordBtn=$('recordBtn'),pauseBtn=$('pauseBtn'),stopBtn=$('stopBtn');
 const muteBtn=$('muteBtn'),meterFill=$('meterFill'),micStatus=$('micStatus'),badge=$('badge'),timer=$('timer'),countdownLayer=$('countdownLayer'),countdownNumber=$('countdownNumber'),error=$('error');
 const slidesInput=$('slidesInput'),slideDisplayMode=$('slideDisplayMode'),prevSlide=$('prevSlide'),nextSlide=$('nextSlide'),slideCount=$('slideCount'),clearSlides=$('clearSlides'),slideJump=$('slideJump'),slideTotal=$('slideTotal'),goSlide=$('goSlide');
 try{const savedSlideMode=localStorage.getItem('officerlab-slide-display-mode');if(['smart','fit','fill'].includes(savedSlideMode))slideDisplayMode.value=savedSlideMode;}catch{}
@@ -585,6 +590,18 @@ function updateFullscreenCanvasLayout(){
  inkCanvas.style.inset='auto';inkCanvas.style.left=left+'px';inkCanvas.style.top=top+'px';
  inkCanvas.style.right='auto';inkCanvas.style.bottom='auto';inkCanvas.style.width=width+'px';inkCanvas.style.height=height+'px';inkCanvas.style.transform='none';
 }
+function screenShareCapability(){
+ const ua=navigator.userAgent||'',android=/Android/i.test(ua),secure=!!window.isSecureContext;
+ const api=typeof navigator.mediaDevices?.getDisplayMedia==='function';
+ if(!secure)return {supported:false,state:'unsupported',message:'Screen sharing requires a secure HTTPS page. Open the official HTTPS Recorder link.'};
+ if(!api)return {supported:false,state:'unsupported',message:android?'Screen sharing is not supported inside this Android browser. This is a browser limitation, not a Recorder permission problem. Upload your PDF/images under Presentation slides, or use the Recorder on desktop Chrome/Edge to share a live screen.':'This browser does not provide the Screen Capture API. Use an up-to-date desktop Chrome or Edge browser, or upload PDF/images.'};
+ return {supported:true,state:'ready',message:'Screen sharing is available in this browser. Tap Share Screen, then choose a tab, window, or full display in the browser picker.'};
+}
+function updateScreenShareHint(){
+ const capability=screenShareCapability();
+ if(screenStream){screenShareHint.textContent='Screen sharing is active. Use Stop Sharing to end the capture.';screenShareHint.dataset.state='ready';}
+ else{screenShareHint.textContent=capability.message;screenShareHint.dataset.state=capability.state;}
+}
 function modeNeedsCamera(){return captureMode.value==='camera'||captureMode.value==='screen-camera'}
 function modeNeedsScreen(){return captureMode.value==='screen'||captureMode.value==='screen-camera'}
 function baseAvailable(){const mode=captureMode.value;if(mode==='camera')return !!cameraStream;if(mode==='camera-slides')return !!cameraStream&&slides.length>0;if(mode==='screen-camera')return (!!screenStream||slides.length>0)&&!!cameraStream;return !!screenStream||slides.length>0;}
@@ -613,7 +630,7 @@ function syncStagePresenterDock(){
 }
 function updateControls(){
  const mode=captureMode.value;inkCanvas.style.opacity=recording?'0':'1';captureMode.disabled=recording||recordingStarting;quality.disabled=recording||recordingStarting;outputRatio.disabled=recording||recordingStarting;recordBtn.disabled=recording||recordingStarting||!baseAvailable()||((mode==='screen-camera'||mode==='camera-slides')&&!cameraStream);autoCaptionsEnabled.disabled=recording||recordingStarting;captionLanguage.disabled=recording||recordingStarting;[introCardEnabled,introCardDuration,introCardTitle,introCardSubtitle,outroCardEnabled,outroCardDuration,outroCardTitle,outroCardSubtitle].forEach(el=>el.disabled=recording||recordingStarting||stoppingRecording);
- cameraBtn.disabled=recording||recordingStarting;micBtn.disabled=recording||recordingStarting;screenBtn.disabled=recording||recordingStarting;$('cameraSwitchBtn').disabled=recording||recordingStarting||!cameraStream;
+ cameraBtn.disabled=recording||recordingStarting;micBtn.disabled=recording||recordingStarting;screenBtn.disabled=recording||recordingStarting||(!screenStream&&!screenShareCapability().supported);updateScreenShareHint();screenBtn.title=screenStream?'Stop the active screen share':screenShareCapability().message;$('cameraSwitchBtn').disabled=recording||recordingStarting||!cameraStream;
  $('muteBtn').disabled=!micStream;
  $('cameraBtn').textContent=cameraStream?'⏹ Stop Camera':'📷 Start Camera';
  $('micBtn').textContent=micStream?'✓ Microphone Ready':'🎙 Enable Microphone';
@@ -984,23 +1001,57 @@ function stopMic(){
 }
 async function startScreen(){
  clearError();if(screenStream)return;
- if(!navigator.mediaDevices?.getDisplayMedia){showError('Screen capture is not available in this browser. Use Chrome on HTTPS or use uploaded PDF slides.');return;}
+ const capability=screenShareCapability();
+ if(!capability.supported){showError(capability.message);updateScreenShareHint();return;}
+ let pendingStream=null;
  try{
   resetScreenCropDetection();
-   screenStream=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:{ideal:30,max:30}},audio:$('includeSystemAudio').checked});
-  screenVideo.srcObject=screenStream;await screenVideo.play().catch(()=>{});
-  // Re-arm centered-content detection now that the video element has its stream metadata.
+  // getDisplayMedia must be invoked directly from this user-click handler.
+  pendingStream=await navigator.mediaDevices.getDisplayMedia({
+   video:{frameRate:{ideal:30,max:30}},
+   audio:$('includeSystemAudio').checked
+  });
+  const videoTrack=pendingStream.getVideoTracks()[0];
+  if(!videoTrack)throw new Error('The browser returned no screen video track. Choose a tab, window, or display and try again.');
+  screenStream=pendingStream;screenVideo.srcObject=screenStream;
+  await screenVideo.play();
+  if(!screenVideo.videoWidth){
+   await new Promise((resolve,reject)=>{
+    let timer=setTimeout(()=>{cleanup();reject(new Error('The screen was selected, but no video frames arrived. Choose the entire screen or a browser tab and try again.'));},6000);
+    const ready=()=>{cleanup();resolve();};
+    const cleanup=()=>{clearTimeout(timer);screenVideo.removeEventListener('loadedmetadata',ready);screenVideo.removeEventListener('canplay',ready);};
+    screenVideo.addEventListener('loadedmetadata',ready,{once:true});screenVideo.addEventListener('canplay',ready,{once:true});
+   });
+  }
+  if(!screenVideo.videoWidth||!screenVideo.videoHeight)throw new Error('Screen capture started without usable video dimensions. Please select the screen again.');
   resetScreenCropDetection();
-  screenStream.getVideoTracks()[0].addEventListener('ended',()=>{stopScreen();});
-  if(screenStream.getAudioTracks().length)await connectScreenAudio();
+  videoTrack.addEventListener('ended',()=>{stopScreen();});
+  if(screenStream.getAudioTracks().length){
+   try{await connectScreenAudio();}
+   catch(audioError){console.warn('Shared system audio unavailable:',audioError);showError('Screen video is active, but shared system audio is unavailable. Your microphone can still be used.');}
+  }
   screenBtn.textContent='⏹ Stop Sharing';syncVisuals();
- }catch(e){screenStream=null;if(e.name!=='NotAllowedError')showError('Could not share screen: '+e.message);}
+ }catch(e){
+  if(pendingStream)pendingStream.getTracks().forEach(track=>{try{track.stop();}catch{}});
+  screenStream=null;screenVideo.srcObject=null;resetScreenCropDetection();
+  const name=e?.name||'';
+  if(name==='NotAllowedError'||name==='AbortError'){
+   showError('Screen sharing was cancelled or blocked. Tap Share Screen again and select a tab, window, or full display.');
+  }else if(name==='InvalidStateError'){
+   showError('The browser tab is not active. Return to the Recorder tab and tap Share Screen again.');
+  }else if(name==='NotReadableError'){
+   showError('The browser could not read the selected display. Close other screen-capture sessions and try again.');
+  }else{
+   showError('Could not start screen sharing: '+(e?.message||String(e)));
+  }
+  syncVisuals();
+ }finally{updateScreenShareHint();}
 }
 function stopScreen(){
   resetScreenCropDetection();
  if(screenStream)screenStream.getTracks().forEach(t=>t.stop());screenStream=null;screenVideo.srcObject=null;
  if(screenAudioSource){try{screenAudioSource.disconnect()}catch{}screenAudioSource=null;}if(screenGain){try{screenGain.disconnect()}catch{}screenGain=null;}
- screenBtn.textContent='🖥 Share Screen';syncVisuals();
+ screenBtn.textContent='🖥 Share Screen';syncVisuals();updateScreenShareHint();
 }
 async function loadSlides(files){
  clearError();slides=[];slideSource=null;slideUrls.forEach(URL.revokeObjectURL);slideUrls=[];pdfDoc=null;
@@ -1643,7 +1694,8 @@ async function runDeviceCheck(){
   const getPermission=async name=>{try{return (await navigator.permissions.query({name})).state;}catch{return 'not exposed by browser';}};
   const [cameraPermission,micPermission]=await Promise.all([getPermission('camera'),getPermission('microphone')]);
   let storage='not exposed';try{const est=await navigator.storage?.estimate?.();if(est){const free=Math.max(0,(est.quota||0)-(est.usage||0));storage=(free/1048576).toFixed(0)+' MB estimated free';}}catch{}
-  const audio=!!(window.AudioContext||window.webkitAudioContext),screen=!!navigator.mediaDevices?.getDisplayMedia,fullscreen=!!document.documentElement.requestFullscreen,speech=!!(window.SpeechRecognition||window.webkitSpeechRecognition),sw=('serviceWorker'in navigator);
+  const audio=!!(window.AudioContext||window.webkitAudioContext),screen=!!navigator.mediaDevices?.getDisplayMedia&&secure,fullscreen=!!document.documentElement.requestFullscreen,speech=!!(window.SpeechRecognition||window.webkitSpeechRecognition),sw=('serviceWorker'in navigator);
+  const screenDetail=screen?'getDisplayMedia API available':android?'Not supported by Android Chrome/mobile browser':'Not available in this browser or page context';
   const required=[secure,media,recorder,canvasCapture,db],ready=required.every(Boolean);
   const rows=[
    'OFFICERLAB — DEVICE COMPATIBILITY REPORT',
@@ -1661,7 +1713,7 @@ async function runDeviceCheck(){
    deviceCheckLine('Supported recording format',!!supportedMime||recorder,supportedMime||'Browser default codec will be selected',!supportedMime),
    '',
    'OPTIONAL / BROWSER-DEPENDENT FEATURES',
-   deviceCheckLine('Screen sharing',screen,'getDisplayMedia',true),
+   deviceCheckLine('Screen sharing',screen,screenDetail,true),
    deviceCheckLine('Fullscreen API',fullscreen,'Presentation fullscreen',true),
    deviceCheckLine('Web Audio',audio,'Microphone waveform/audio mixing',true),
    deviceCheckLine('Automatic speech captions',speech,'SpeechRecognition API',true),
