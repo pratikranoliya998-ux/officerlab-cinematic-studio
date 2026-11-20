@@ -1771,16 +1771,18 @@ function setLayout(name){
  layout=name;
  $('layoutButtons').querySelectorAll('[data-layout]').forEach(b=>b.classList.toggle('active',b.dataset.layout===name));
  updateControls();
+ if(typeof scheduleRecorderDefaultsSave==='function')scheduleRecorderDefaultsSave();
 }
 function movePip(position){
  const d=pipDimensions(),g=.03;const map={br:[1-d.w-g,1-d.h-g],bl:[g,1-d.h-g],tr:[1-d.w-g,g],tl:[g,g]};
  if(map[position])pip={x:map[position][0],y:map[position][1]};updatePipHandle();
+ if(typeof scheduleRecorderDefaultsSave==='function')scheduleRecorderDefaultsSave();
 }
 function startDrag(e){
  if(!cameraStream)return;e.preventDefault();pipDragBar.setPointerCapture(e.pointerId);
  const rect=stage.getBoundingClientRect(),startX=e.clientX,startY=e.clientY,start={...pip};
  const move=ev=>{const dx=(ev.clientX-startX)/rect.width,dy=(ev.clientY-startY)/rect.height;const d=pipDimensions();pip.x=Math.max(0,Math.min(1-d.w,start.x+dx));pip.y=Math.max(0,Math.min(1-d.h,start.y+dy));updatePipHandle();};
- const end=()=>{pipDragBar.removeEventListener('pointermove',move);pipDragBar.removeEventListener('pointerup',end);pipDragBar.removeEventListener('pointercancel',end);};
+ const end=()=>{pipDragBar.removeEventListener('pointermove',move);pipDragBar.removeEventListener('pointerup',end);pipDragBar.removeEventListener('pointercancel',end);if(typeof scheduleRecorderDefaultsSave==='function')scheduleRecorderDefaultsSave();};
  pipDragBar.addEventListener('pointermove',move);pipDragBar.addEventListener('pointerup',end);pipDragBar.addEventListener('pointercancel',end);
 }
 function getInkPoint(e){const r=inkCanvas.getBoundingClientRect();return{x:(e.clientX-r.left)*inkCanvas.width/r.width,y:(e.clientY-r.top)*inkCanvas.height/r.height};}
@@ -2619,7 +2621,7 @@ function collectRecorderDefaults(){
   if(!isRecorderPreferenceControl(el))return;
   values[el.id]={type:(el.type||el.tagName).toLowerCase(),value:el.type==='checkbox'||el.type==='radio'?undefined:el.value,checked:el.type==='checkbox'||el.type==='radio'?el.checked:undefined};
  });
- return {version:1,savedAt:new Date().toISOString(),values};
+ return {version:1,savedAt:new Date().toISOString(),values,workspace:{layout,pip:{...pip},activeTool}};
 }
 function persistRecorderDefaults(showStatus=true){
  try{
@@ -2644,6 +2646,11 @@ function restoreRecorderDefaults(){
     if(el.tagName!=='SELECT'||[...el.options].some(option=>option.value===state.value))el.value=state.value;
    }
   });
+  const workspace=snapshot.workspace||{};
+  if(['pip','screen','face','split'].includes(workspace.layout))setLayout(workspace.layout);
+  if(workspace.pip&&Number.isFinite(workspace.pip.x)&&Number.isFinite(workspace.pip.y))pip={x:Math.max(0,Math.min(.95,workspace.pip.x)),y:Math.max(0,Math.min(.95,workspace.pip.y))};
+  if(['pen','highlighter','eraser','text'].includes(workspace.activeTool)){const tool=document.querySelector('[data-tool="'+workspace.activeTool+'"]');if(tool)tool.click();}
+  updatePipHandle();
   if(defaultsStatus)defaultsStatus.textContent='✓ Your saved setup was restored';
   return true;
  }catch(error){if(defaultsStatus)defaultsStatus.textContent='Saved setup could not be restored';return false;}
@@ -2662,7 +2669,7 @@ motionGraphicSizeVal.textContent=motionGraphicSize.value+'%';
 motionGraphicOpacityVal.textContent=motionGraphicOpacity.value+'%';
 
 async function init(){
- try{dataSaver.checked=!!navigator.connection?.saveData;}catch{}updateDownloadNetworkStatus();networkConnection()?.addEventListener?.('change',updateDownloadNetworkStatus);
+ try{if(!recorderDefaultSnapshot?.values?.dataSaver)dataSaver.checked=!!navigator.connection?.saveData;}catch{}updateDownloadNetworkStatus();networkConnection()?.addEventListener?.('change',updateDownloadNetworkStatus);
  setCanvasQuality();syncSlideControls();updateControls();startDraw();drawMicMeter();await refreshDevices();
  try{const saved=recorderDefaultSnapshot?.values||{};if(saved.cameraSelect?.value&&[...cameraSelect.options].some(o=>o.value===saved.cameraSelect.value))cameraSelect.value=saved.cameraSelect.value;if(saved.micSelect?.value&&[...micSelect.options].some(o=>o.value===saved.micSelect.value))micSelect.value=saved.micSelect.value;}catch{}
  await loadLocalRecordings();
