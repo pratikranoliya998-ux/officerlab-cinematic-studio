@@ -1,0 +1,14 @@
+{
+  "name": "OfficerLab Cinematic Studio",
+  "short_name": "OfficerLab",
+  "description": "OfficerLab Creator Platform for Gujarati educational video production.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#090d17",
+  "theme_color": "#090d17",
+  "icons": [
+    { "src": "officerlab-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
