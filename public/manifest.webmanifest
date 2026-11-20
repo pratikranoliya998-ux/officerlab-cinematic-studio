@@ -9,6 +9,7 @@
   "background_color": "#090d17",
   "theme_color": "#090d17",
   "icons": [
-    { "src": "officerlab-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+    { "src": "officerlab-icon-192.svg", "sizes": "192x192", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "officerlab-icon-512.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "any maskable" }
   ]
 }
