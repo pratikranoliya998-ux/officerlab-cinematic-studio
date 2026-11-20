@@ -2,20 +2,94 @@
 <html lang="gu">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#090d17" />
-    <meta name="description" content="OfficerLab Creator Platform for general cinematic video creation and competitive exam preparation." />
+    <meta name="description" content="OfficerLab Creator Platform for Gujarati educational video production." />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./officerlab-icon.svg" type="image/svg+xml" />
     <title>OfficerLab Creator Platform | Video Studio & Exam Studio</title>
+    <style>
+      #ol-install-tools{position:fixed;right:14px;bottom:calc(14px + env(safe-area-inset-bottom));z-index:2147483000;font:500 13px/1.45 system-ui,-apple-system,Segoe UI,sans-serif;color:#f8fafc}
+      #ol-install-tools button{border:1px solid #475569;border-radius:999px;padding:10px 14px;background:#111827;color:#f8fafc;font:inherit;cursor:pointer;box-shadow:0 8px 28px #0005}
+      #ol-install-tools #ol-install-main{background:#0e7490;border-color:#22d3ee;font-weight:700}
+      #ol-install-tools .ol-install-row{display:flex;gap:7px;justify-content:flex-end}
+      #ol-install-panel{width:min(340px,calc(100vw - 28px));margin-top:9px;padding:14px;border:1px solid #475569;border-radius:16px;background:#0b1220;color:#e2e8f0;box-shadow:0 14px 42px #0008}
+      #ol-install-panel h2{font-size:15px;margin:0 0 8px;color:#fff}
+      #ol-install-panel p{font-size:12px;margin:7px 0;color:#cbd5e1}
+      #ol-install-panel strong{color:#fff}
+      #ol-install-panel[hidden],#ol-install-tools[hidden]{display:none}
+      @media(prefers-reduced-motion:no-preference){#ol-install-panel{animation:ol-panel-in .16s ease-out}@keyframes ol-panel-in{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}}
+    </style>
   </head>
   <body>
     <div id="root"></div>
+    <aside id="ol-install-tools" aria-label="OfficerLab app installation">
+      <div class="ol-install-row">
+        <button id="ol-install-main" type="button">Install OfficerLab</button>
+        <button id="ol-install-help-toggle" type="button" aria-expanded="false" aria-controls="ol-install-panel" aria-label="Installation help">?</button>
+      </div>
+      <section id="ol-install-panel" hidden>
+        <h2>Install OfficerLab as an app</h2>
+        <p><strong>Windows PC (Chrome / Edge):</strong> Click Install OfficerLab, or use the browser menu → Install OfficerLab / Apps → Install this site as an app.</p>
+        <p><strong>Android (Chrome):</strong> Tap Install OfficerLab, or ⋮ → Install app / Add to Home screen.</p>
+        <p><strong>iPhone / iPad (Safari):</strong> Share → Add to Home Screen.</p>
+        <p>Open OfficerLab online once before using it offline. The app shell and built JS/CSS are cached; AI, cloud rendering, PPT conversion and external PDF services still need internet.</p>
+      </section>
+    </aside>
     <script type="module" src="/src/main.jsx"></script>
     <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
-      }
+      (() => {
+        const tools = document.getElementById('ol-install-tools');
+        const installButton = document.getElementById('ol-install-main');
+        const helpButton = document.getElementById('ol-install-help-toggle');
+        const panel = document.getElementById('ol-install-panel');
+        let installPrompt = null;
+
+        const isInstalled = () =>
+          window.matchMedia('(display-mode: standalone)').matches ||
+          window.matchMedia('(display-mode: minimal-ui)').matches ||
+          window.navigator.standalone === true;
+
+        if (isInstalled()) tools.hidden = true;
+
+        window.addEventListener('beforeinstallprompt', event => {
+          event.preventDefault();
+          installPrompt = event;
+          installButton.textContent = 'Install OfficerLab';
+        });
+
+        window.addEventListener('appinstalled', () => {
+          installPrompt = null;
+          tools.hidden = true;
+        });
+
+        installButton.addEventListener('click', async () => {
+          if (!installPrompt) {
+            panel.hidden = false;
+            helpButton.setAttribute('aria-expanded', 'true');
+            return;
+          }
+          installPrompt.prompt();
+          const choice = await installPrompt.userChoice;
+          installPrompt = null;
+          if (choice && choice.outcome === 'accepted') tools.hidden = true;
+          else {
+            panel.hidden = false;
+            helpButton.setAttribute('aria-expanded', 'true');
+          }
+        });
+
+        helpButton.addEventListener('click', () => {
+          panel.hidden = !panel.hidden;
+          helpButton.setAttribute('aria-expanded', String(!panel.hidden));
+        });
+
+        if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+          window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./sw.js', { scope: './' }).catch(() => {});
+          });
+        }
+      })();
     </script>
   </body>
 </html>
