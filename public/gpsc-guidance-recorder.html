@@ -842,7 +842,7 @@ function updateFaceCutoutMask(){
    const image=cutoutMaskContext.createImageData(mw,mh),pixels=image.data;
    for(let i=0;i<mw*mh;i++){
     const p=i*4;pixels[p]=255;pixels[p+1]=255;pixels[p+2]=255;
-    pixels[p+3]=values[i]===1?255:0;
+    pixels[p+3]=values[i]>0?255:0;
    }
    cutoutMaskContext.putImageData(image,0,0);
    cutoutMaskReady=true;
