@@ -320,7 +320,7 @@ input,select,textarea{border-color:#ffffff20!important;border-radius:9px}button:
       <input id="slideZoom" type="range" min="55" max="100" step="1" value="100">
       <label for="slideVertical"><span>Vertical position</span><b id="slideVerticalValue">0%</b></label>
       <input id="slideVertical" type="range" min="-25" max="25" step="1" value="0">
-      <p>Negative values move the slide upward to reveal lower rows. Reduce Slide size to fit more content.</p>
+      <p>Automatic safe-fit keeps a small border around slide edges. Negative values move the slide upward to reveal lower rows. Reduce Slide size for even more space.</p>
     </section>
     <div id="stageFsSlideNav" aria-label="Fullscreen slide navigation">
       <button id="fsPrevSlide" type="button" aria-label="Previous slide" title="Previous slide" disabled>‹</button>
@@ -691,7 +691,8 @@ let smartSlideBackdrop=null,smartSlideBackdropSource=null,smartSlideBackdropSize
 function drawAdjustedSlideForeground(ctx,source,x,y,w,h,cover,zoom,vertical){
  const sw=source.videoWidth||source.width||source.naturalWidth,sh=source.videoHeight||source.height||source.naturalHeight;
  if(!Number.isFinite(sw)||!Number.isFinite(sh)||sw<=0||sh<=0||w<=0||h<=0)return;
- const base=cover?Math.max(w/sw,h/sh):Math.min(w/sw,h/sh),scale=base*zoom,dw=sw*scale,dh=sh*scale;
+ // Keep a small inner safety frame so 4:3 PDF page footers never sit flush on the 16:9 canvas edge.
+ const base=cover?Math.max(w/sw,h/sh):Math.min((w*.92)/sw,(h*.92)/sh),scale=base*zoom,dw=sw*scale,dh=sh*scale;
  ctx.save();ctx.beginPath();ctx.rect(x,y,w,h);ctx.clip();
  if(!cover){ctx.fillStyle='#09090b';ctx.fillRect(x,y,w,h);}
  ctx.imageSmoothingEnabled=true;try{ctx.imageSmoothingQuality='high';}catch{}
@@ -784,7 +785,7 @@ function containScreenWithFill(ctx,source,x,y,w,h){
  const zoom=Math.max(.55,Math.min(1,Number(slideZoom.value)/100||1)),vertical=(Number(slideVertical.value)||0)/100*h;
  const crop=detectCenteredScreenContent(source);
  if(!crop){containWithFill(ctx,source,x,y,w,h,zoom,vertical);return;}
- const {sx,sy,sw,sh}=crop,scale=Math.min(w/sw,h/sh)*zoom,dw=sw*scale,dh=sh*scale,bgScale=Math.max(w/sw,h/sh),bw=sw*bgScale,bh=sh*bgScale,blur=Math.max(14,Math.round(Math.min(w,h)*.028));
+ const {sx,sy,sw,sh}=crop,scale=Math.min((w*.92)/sw,(h*.92)/sh)*zoom,dw=sw*scale,dh=sh*scale,bgScale=Math.max(w/sw,h/sh),bw=sw*bgScale,bh=sh*bgScale,blur=Math.max(14,Math.round(Math.min(w,h)*.028));
  ctx.save();ctx.beginPath();ctx.rect(x,y,w,h);ctx.clip();ctx.filter='blur('+blur+'px)';
  ctx.drawImage(source,sx,sy,sw,sh,x+(w-bw)/2-blur,y+(h-bh)/2-blur,bw+blur*2,bh+blur*2);
  ctx.filter='none';ctx.fillStyle='rgba(15,23,42,.12)';ctx.fillRect(x,y,w,h);ctx.restore();
