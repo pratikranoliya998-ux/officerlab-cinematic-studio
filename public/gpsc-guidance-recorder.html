@@ -136,6 +136,7 @@ body.presentation-fullscreen>main>section.card>:not(#stage){display:none!importa
 .tool-row input[type=color]{width:45px;height:40px;padding:3px;border:1px solid var(--line);border-radius:8px;background:var(--panel2)}
 .tool-row input[type=range]{width:100%;height:34px;accent-color:var(--blue);touch-action:pan-x}
 .face-crop-settings{display:grid;grid-template-columns:minmax(0,1fr);gap:2px;padding:8px 9px;border:1px solid var(--line);border-radius:9px;background:#0d141e}
+.face-crop-settings .face-framing-control{min-width:0}
 .face-crop-settings label{display:flex;align-items:center;justify-content:space-between;min-width:0;font-size:10px}
 .face-crop-settings input[type=range]{margin:0 0 5px}
 @media(min-width:760px){.face-crop-settings{grid-template-columns:repeat(3,minmax(0,1fr));column-gap:12px}}
@@ -441,9 +442,9 @@ input,select,textarea{border-color:#ffffff20!important;border-radius:9px}button:
       <input type="range" id="faceOpacity" min="0" max="100" value="100">
     </div>
     <div class="tool-row face-crop-settings" id="faceCropSettings">
-      <label for="faceZoom">Face Cam zoom <span id="faceZoomVal" class="tool-val">100%</span></label><input type="range" id="faceZoom" min="100" max="220" value="100" step="5">
-      <label for="faceCropX">Horizontal framing <span id="faceCropXVal" class="tool-val">0</span></label><input type="range" id="faceCropX" min="-50" max="50" value="0">
-      <label for="faceCropY">Vertical framing <span id="faceCropYVal" class="tool-val">0</span></label><input type="range" id="faceCropY" min="-50" max="50" value="0">
+      <div class="face-framing-control"><label for="faceZoom">Face Cam zoom <span id="faceZoomVal" class="tool-val">100%</span></label><input type="range" id="faceZoom" min="100" max="220" value="100" step="5"></div>
+      <div class="face-framing-control"><label for="faceCropX">Horizontal framing <span id="faceCropXVal" class="tool-val">0</span></label><input type="range" id="faceCropX" min="-50" max="50" value="0"></div>
+      <div class="face-framing-control"><label for="faceCropY">Vertical framing <span id="faceCropYVal" class="tool-val">0</span></label><input type="range" id="faceCropY" min="-50" max="50" value="0"></div>
     </div>
     <div class="layout-row" style="margin-top:8px;align-items:end">
       <label class="check"><input id="watermarkEnabled" type="checkbox"> Add recording watermark</label>
@@ -1115,10 +1116,10 @@ function drawScene(){
  const pipSource=screenStream?screenVideo:slideSource;
  const smartMode=(mode==='screen-camera'||mode==='camera-slides')&&layout==='pip'&&!!cameraStream;
  const frameNow=performance.now();
- if(smartPipEnabled.checked&&smartMode&&pipSource&&(pipSource!==smartPipLastSource||(screenStream&&frameNow>=smartPipNextScanAt))){
+ if(smartPipEnabled.checked&&smartMode&&pipSource&&(pipSource!==smartPipLastSource||frameNow>=smartPipNextScanAt)){
   const placed=updateSmartPipPosition(pipSource);
-  if(placed){smartPipLastSource=pipSource;smartPipNextScanAt=screenStream?frameNow+1800:Number.POSITIVE_INFINITY;}
-  else smartPipNextScanAt=frameNow+1200;
+  smartPipLastSource=pipSource;
+  smartPipNextScanAt=frameNow+(placed?(screenStream?1800:Number.POSITIVE_INFINITY):1200);
  }
  const source=(mode==='camera')?cameraVideo:(screenStream?screenVideo:slideSource);
  if(mode==='camera'||(layout==='face'&&showCamera)){
@@ -1324,6 +1325,7 @@ function syncSlideControls(){
 }
 function setLayout(name){
  layout=name;
+ if(name==='pip'&&smartPipEnabled.checked){smartPipLastSource=null;smartPipNextScanAt=0;}
  $('layoutButtons').querySelectorAll('[data-layout]').forEach(b=>b.classList.toggle('active',b.dataset.layout===name));
  updateControls();
 }
@@ -1755,7 +1757,10 @@ faceCropY.oninput=()=>{$('faceCropYVal').textContent=(Number(faceCropY.value)>0?
 smartPipEnabled.onchange=()=>{
  pipHandle.dataset.smartPosition='';
  smartPipLastSource=null;smartPipNextScanAt=0;
- if(smartPipEnabled.checked)updateSmartPipPosition(screenStream?screenVideo:slideSource);
+ if(smartPipEnabled.checked){
+  const source=screenStream?screenVideo:slideSource;
+  if(updateSmartPipPosition(source)){smartPipLastSource=source;smartPipNextScanAt=performance.now()+(screenStream?1800:Number.POSITIVE_INFINITY);}
+ }
 };
 safeGuides.onchange=drawGuides;
 drawGuides();
