@@ -155,6 +155,8 @@ textarea{min-height:150px;resize:vertical;line-height:1.6}
 .layout-row button,.slide-nav button{padding:7px 10px;min-height:38px;font-size:12px}
 .layout-row button.active{background:var(--blue);border-color:var(--blue)}
 .lower-third-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:9px}
+.lower-third-fields input[type="range"]{width:100%;min-width:0;accent-color:var(--blue);touch-action:pan-x}
+.lower-third-fields .tool-val{float:right;color:#b9d7ff;font-variant-numeric:tabular-nums;font-weight:700}
 .brand-kit{margin-top:10px;padding:10px;background:#0d141e;border:1px solid var(--line);border-radius:10px}.brand-kit-title{font-size:11px;font-weight:800;letter-spacing:.06em;color:#b9d7ff;text-transform:uppercase;margin-bottom:8px}.brand-kit-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.brand-kit-fields .field{min-width:0}.brand-kit-fields input[type=color]{width:100%;height:40px;padding:3px;border:1px solid var(--line);border-radius:8px;background:var(--panel2)}.brand-logo-row{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-top:9px}.brand-logo-row input[type=file]{flex:1;min-width:150px;max-width:100%;font-size:11px}.brand-logo-row button{min-height:34px;padding:5px 9px;font-size:11px}.brand-logo-status{display:block;margin-top:6px;color:var(--muted);font-size:10px;line-height:1.4}
 .brand-cards{margin-top:10px;padding:10px;background:#0d141e;border:1px solid var(--line);border-radius:10px}.brand-cards-title{font-size:11px;font-weight:800;letter-spacing:.06em;color:#b9d7ff;text-transform:uppercase;margin-bottom:8px}.brand-card-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.brand-card-config{padding:9px;border:1px solid #2a3140;border-radius:9px;background:#111a27;min-width:0}.brand-card-config strong{display:block;font-size:11px;margin-bottom:7px;color:#e6edf3}.brand-card-config .field{min-width:0;margin-bottom:7px}.brand-card-config input,.brand-card-config select{width:100%;min-width:0}.brand-card-config label{display:block;font-size:10px;color:var(--muted);margin-bottom:4px}.brand-card-config .check{display:flex;align-items:center;gap:6px}.brand-card-config .check input{width:17px;height:17px;flex:0 0 auto}.brand-card-note{font-size:10px;line-height:1.45;color:var(--muted);margin:7px 0 0}
 @media(max-width:520px){.brand-card-grid{grid-template-columns:1fr}}
@@ -445,6 +447,9 @@ input,select,textarea{border-color:#ffffff20!important;border-radius:9px}button:
       <div class="field"><label for="lowerThirdName">Instructor name</label><input id="lowerThirdName" type="text" maxlength="48" placeholder="Your name"></div>
       <div class="field"><label for="lowerThirdTitle">Designation / subject</label><input id="lowerThirdTitle" type="text" maxlength="64" placeholder="Agriculture Officer · GPSC Mentor"></div>
       <div class="field"><label for="lowerThirdPosition">Position</label><select id="lowerThirdPosition"><option value="lower-left">Lower left</option><option value="lower-centre">Lower centre</option><option value="top-right">Top right corner</option></select></div>
+      <div class="field"><label for="lowerThirdAnimation">Entrance animation</label><select id="lowerThirdAnimation"><option value="slide">Slide + fade</option><option value="fade">Fade</option><option value="rise">Rise up</option><option value="zoom">Zoom in</option><option value="static">Static · stay visible</option></select></div>
+      <div class="field"><label for="lowerThirdSize">Instructor graphic size <span id="lowerThirdSizeVal" class="tool-val">100%</span></label><input id="lowerThirdSize" type="range" min="65" max="150" step="1" value="100"></div>
+      <div class="field"><label for="lowerThirdOpacity">Instructor graphic opacity <span id="lowerThirdOpacityVal" class="tool-val">100%</span></label><input id="lowerThirdOpacity" type="range" min="0" max="100" step="1" value="100"></div>
     </div>
     <div class="brand-kit" id="brandKitPanel">
       <div class="brand-kit-title">🎨 OfficerLab Brand Kit</div>
@@ -578,6 +583,7 @@ try{const savedZoom=Number(localStorage.getItem('officerlab-slide-zoom')),savedV
 const annotationFab=$('annotationFab'),toolTray=$('toolTray'),pipHandle=$('pipHandle'),pipDragBar=$('pipDragBar');
 const faceSize=$('faceSize'),faceHeight=$('faceHeight'),faceShape=$('faceShape'),faceOpacity=$('faceOpacity'),fsCameraOpacity=$('fsCameraOpacity'),fsCameraOpacityToggle=$('fsCameraOpacityToggle'),fsCameraOpacityPanel=$('fsCameraOpacityPanel'),fsCameraOpacityValue=$('fsCameraOpacityValue'),safeGuides=$('safeGuides'),mirrorOutput=$('mirrorOutput'),outputRatio=$('outputRatio');
 const lowerThirdName=$('lowerThirdName'),lowerThirdTitle=$('lowerThirdTitle'),lowerThirdPosition=$('lowerThirdPosition'),lowerThirdEnabled=$('lowerThirdEnabled');
+const lowerThirdAnimation=$('lowerThirdAnimation'),lowerThirdSize=$('lowerThirdSize'),lowerThirdSizeVal=$('lowerThirdSizeVal'),lowerThirdOpacity=$('lowerThirdOpacity'),lowerThirdOpacityVal=$('lowerThirdOpacityVal');
 const brandAccent=$('brandAccent'),brandPanel=$('brandPanel'),brandFont=$('brandFont'),brandLogoFile=$('brandLogoFile'),brandLogoRemove=$('brandLogoRemove'),brandLogoStatus=$('brandLogoStatus');
 const watermarkEnabled=$('watermarkEnabled'),watermarkText=$('watermarkText'),watermarkPosition=$('watermarkPosition'),watermarkOpacity=$('watermarkOpacity'),watermarkOpacityValue=$('watermarkOpacityValue');
 const introCardEnabled=$('introCardEnabled'),introCardDuration=$('introCardDuration'),introCardTitle=$('introCardTitle'),introCardSubtitle=$('introCardSubtitle'),outroCardEnabled=$('outroCardEnabled'),outroCardDuration=$('outroCardDuration'),outroCardTitle=$('outroCardTitle'),outroCardSubtitle=$('outroCardSubtitle');
@@ -973,64 +979,79 @@ function drawLowerThird(){
  const name=lowerThirdName.value.trim(),subtitle=lowerThirdTitle.value.trim();
  if(!name&&!subtitle)return;
  const W=canvas.width,H=canvas.height,scale=W/1920;
- const pad=Math.max(13,Math.round(W*.018)),accent=Math.max(4,Math.round(W*.004));
- const nameSize=Math.max(20,Math.round(W*.024)),subSize=Math.max(14,Math.round(W*.015));
+ const sizeFactor=Math.max(.65,Math.min(1.5,(Number(lowerThirdSize.value)||100)/100));
+ const opacityFactor=Math.max(0,Math.min(1,(Number(lowerThirdOpacity.value)||0)/100));
+ const pad=Math.max(9,Math.round(W*.018*sizeFactor)),accent=Math.max(3,Math.round(W*.004*sizeFactor));
+ const nameSize=Math.max(14,Math.round(W*.024*sizeFactor)),subSize=Math.max(10,Math.round(W*.015*sizeFactor));
  const fontStack=brandFont.value==='serif'?'Georgia,"Times New Roman",serif':brandFont.value==='mono'?'ui-monospace,SFMono-Regular,Consolas,monospace':brandFont.value==='rounded'?'system-ui,"Trebuchet MS",sans-serif':'system-ui,-apple-system,"Segoe UI",sans-serif';
- const logoSize=brandLogoImage&&brandLogoImage.complete&&brandLogoImage.naturalWidth?Math.min(Math.round(H*.07),Math.round(W*.06)):0;
+ const logoSize=brandLogoImage&&brandLogoImage.complete&&brandLogoImage.naturalWidth?Math.min(Math.round(H*.07*sizeFactor),Math.round(W*.06*sizeFactor)):0;
  const logoGap=logoSize?Math.round(pad*.55):0;
- const gap=Math.max(5,Math.round(H*.008));
+ const gap=Math.max(4,Math.round(H*.008*sizeFactor));
  ctx.save();
  ctx.font='750 '+nameSize+'px '+fontStack;
  const nameWidth=name?ctx.measureText(name).width:0;
  ctx.font='550 '+subSize+'px '+fontStack;
  const subWidth=subtitle?ctx.measureText(subtitle).width:0;
- const maxBoxWidth=W*.58,textWidth=Math.max(nameWidth,subWidth);
- const boxW=Math.min(maxBoxWidth,Math.max(Math.min(W*.25,300*scale),textWidth+pad*2+accent+(logoSize?logoSize+logoGap:0)));
+ const maxBoxWidth=W*.68,textWidth=Math.max(nameWidth,subWidth);
+ const boxW=Math.min(maxBoxWidth,Math.max(Math.min(W*.25*sizeFactor,300*scale*sizeFactor),textWidth+pad*2+accent+(logoSize?logoSize+logoGap:0)));
  const textH=(name?nameSize:0)+(name&&subtitle?gap:0)+(subtitle?subSize:0);
  const boxH=Math.max(textH,logoSize)+pad*2;
- const margin=Math.max(16,Math.round(W*.045));
+ const margin=Math.max(12,Math.round(W*.045*sizeFactor));
  let x=margin,y=H-boxH-margin;
  if(lowerThirdPosition.value==='lower-centre')x=(W-boxW)/2;
  else if(lowerThirdPosition.value==='top-right'){x=W-boxW-margin;y=margin;}
- let alpha=1,travelX=0,travelY=0;
- if(recording){
-  // Use recording elapsed time (not wall clock) so the animation freezes while paused.
-  const elapsed=recordingElapsedMs()-lowerThirdRecordingStartedAt;
-  const reduced=!!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-  const inMs=reduced?250:600,holdMs=3500,outMs=reduced?250:500,total=inMs+holdMs+outMs;
-  if(elapsed<0||elapsed>=total){ctx.restore();return;}
-  const distance=Math.max(26,W*.11);
-  if(elapsed<inMs){
-   const raw=Math.max(0,elapsed/inMs);
-   const eased=reduced?raw:1+2.70158*Math.pow(raw-1,3)+1.70158*Math.pow(raw-1,2);
-   alpha=reduced?eased:Math.min(1,eased);
-   const remaining=distance*(1-eased);
+ let alpha=1,travelX=0,travelY=0,animationScale=1;
+ const animation=lowerThirdAnimation.value||'slide';
+ const reduced=!!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+ const inMs=reduced?250:600,holdMs=3500,outMs=reduced?250:500,total=inMs+holdMs+outMs;
+ const distance=Math.max(26,W*.11);
+ const applyEntrance=(raw,recorded=false)=>{
+  const t=Math.max(0,Math.min(1,raw));
+  const eased=reduced?t:1-Math.pow(1-t,3);
+  if(animation==='fade'){alpha=eased;return;}
+  if(animation==='rise'){alpha=eased;travelY=distance*(1-eased);return;}
+  if(animation==='zoom'){alpha=eased;animationScale=.82+.18*eased;return;}
+  if(animation==='slide'){
+   const back=reduced?t:Math.min(1,1+2.70158*Math.pow(t-1,3)+1.70158*Math.pow(t-1,2));
+   alpha=reduced?back:Math.max(0,back);
+   const remaining=distance*(1-back);
    if(lowerThirdPosition.value==='lower-centre')travelY=remaining;
    else if(lowerThirdPosition.value==='top-right')travelX=remaining;
    else travelX=-remaining;
-  }else if(elapsed>=inMs+holdMs){
-   const raw=Math.min(1,(elapsed-inMs-holdMs)/outMs),fade=1-Math.pow(1-raw,3);
-   alpha=1-fade;
-   const drift=distance*.12*fade;
-   if(lowerThirdPosition.value==='lower-centre')travelY=-drift;
-   else if(lowerThirdPosition.value==='top-right')travelX=drift;
-   else travelX=-drift;
+   return;
   }
- }else if(lowerThirdStartedAt){
-  const raw=Math.max(0,Math.min(1,(performance.now()-lowerThirdStartedAt)/650));
-  const eased=1-Math.pow(1-raw,3),distance=Math.max(26,W*.11);
-  if(lowerThirdPosition.value==='lower-centre')travelY=distance*(1-eased);
-  else if(lowerThirdPosition.value==='top-right')travelX=distance*(1-eased);
-  else travelX=-distance*(1-eased);
-  alpha=eased;
+ };
+ if(animation!=='static'){
+  if(recording){
+   // Use elapsed recording time so entrance/exit pause and resume with the recording.
+   const elapsed=recordingElapsedMs()-lowerThirdRecordingStartedAt;
+   if(elapsed<0||elapsed>=total){ctx.restore();return;}
+   if(elapsed<inMs)applyEntrance(elapsed/inMs,true);
+   else if(elapsed>=inMs+holdMs){
+    const raw=Math.min(1,(elapsed-inMs-holdMs)/outMs),fade=1-Math.pow(1-raw,3);
+    alpha=1-fade;
+    if(animation==='rise')travelY=-distance*.12*fade;
+    else if(animation==='zoom')animationScale=1-.12*fade;
+    else if(animation==='slide'){
+     const drift=distance*.12*fade;
+     if(lowerThirdPosition.value==='lower-centre')travelY=-drift;
+     else if(lowerThirdPosition.value==='top-right')travelX=drift;
+     else travelX=-drift;
+    }
+   }
+  }else if(lowerThirdStartedAt){
+   const elapsed=performance.now()-lowerThirdStartedAt;
+   if(elapsed<650)applyEntrance(elapsed/650);
+  }
  }
  x+=travelX;y+=travelY;
- ctx.globalAlpha=alpha;
- roundedPath(ctx,x,y,boxW,boxH,Math.max(9,Math.round(12*scale)));
+ ctx.globalAlpha=alpha*opacityFactor;
+ if(animationScale!==1){const cx=x+boxW/2,cy=y+boxH/2;ctx.translate(cx,cy);ctx.scale(animationScale,animationScale);ctx.translate(-cx,-cy);}
+ roundedPath(ctx,x,y,boxW,boxH,Math.max(7,Math.round(12*scale*sizeFactor)));
  const panelHex=brandPanel.value||'#050c18';ctx.fillStyle=panelHex+'e0';ctx.fill();
- ctx.strokeStyle='rgba(255,255,255,.22)';ctx.lineWidth=Math.max(1,scale*1.5);ctx.stroke();
+ ctx.strokeStyle='rgba(255,255,255,.22)';ctx.lineWidth=Math.max(1,scale*1.5*sizeFactor);ctx.stroke();
  ctx.fillStyle=brandAccent.value||'#55a3ff';
- if(logoSize){const lx=x+pad,ly=y+(boxH-logoSize)/2;ctx.save();roundedPath(ctx,lx,ly,logoSize,logoSize,Math.max(5,logoSize*.16));ctx.clip();ctx.drawImage(brandLogoImage,lx,ly,logoSize,logoSize);ctx.restore();}
+ if(logoSize){const lx=x+pad,ly=y+(boxH-logoSize)/2;ctx.save();roundedPath(ctx,lx,ly,logoSize,logoSize,Math.max(4,logoSize*.16));ctx.clip();ctx.drawImage(brandLogoImage,lx,ly,logoSize,logoSize);ctx.restore();}
  else{roundedPath(ctx,x+pad*.35,y+pad*.55,accent,boxH-pad*1.1,Math.max(2,accent/2));ctx.fill();}
  const tx=x+pad+accent+pad*.45+(logoSize?logoSize+logoGap:0);
  let ty=y+pad;
@@ -1864,13 +1885,21 @@ $('installApp').onclick=async()=>{if(!installPrompt){showError('In Chrome, open 
 window.addEventListener('appinstalled',()=>$('installApp').hidden=true);
 try{$('notes').value=localStorage.getItem('officerlab-lecture-notes')||'';}catch{}
 restoreTeleprompterSettings();
-const LOWER_THIRD_STORAGE={name:'officerlab-lower-third-name',title:'officerlab-lower-third-title',position:'officerlab-lower-third-position',enabled:'officerlab-lower-third-enabled'};
+const LOWER_THIRD_STORAGE={name:'officerlab-lower-third-name',title:'officerlab-lower-third-title',position:'officerlab-lower-third-position',enabled:'officerlab-lower-third-enabled',animation:'officerlab-lower-third-animation',size:'officerlab-lower-third-size',opacity:'officerlab-lower-third-opacity'};
 const BRAND_KIT_STORAGE={accent:'officerlab-brand-accent',panel:'officerlab-brand-panel',font:'officerlab-brand-font',logo:'officerlab-brand-logo'};
 function saveBrandKit(){try{localStorage.setItem(BRAND_KIT_STORAGE.accent,brandAccent.value);localStorage.setItem(BRAND_KIT_STORAGE.panel,brandPanel.value);localStorage.setItem(BRAND_KIT_STORAGE.font,brandFont.value);if(brandLogoDataUrl)localStorage.setItem(BRAND_KIT_STORAGE.logo,brandLogoDataUrl);else localStorage.removeItem(BRAND_KIT_STORAGE.logo);brandLogoStatus.textContent=brandLogoDataUrl?'Logo and brand settings saved on this device.':'Brand settings saved on this device.';}catch(e){brandLogoStatus.textContent='Browser storage is full; logo could not be saved. Try a smaller image.';}}
 function setBrandLogo(dataUrl){brandLogoVersion++;const version=brandLogoVersion;brandLogoDataUrl=dataUrl||'';brandLogoImage=null;if(!dataUrl){brandLogoStatus.textContent='No logo selected. Brand colours and font are still active.';saveBrandKit();return;}const img=new Image();img.onload=()=>{if(version!==brandLogoVersion)return;brandLogoImage=img;brandLogoStatus.textContent='Logo ready · '+img.naturalWidth+' × '+img.naturalHeight+' px.';saveBrandKit();};img.onerror=()=>{if(version!==brandLogoVersion)return;brandLogoDataUrl='';brandLogoImage=null;brandLogoStatus.textContent='This logo could not be loaded. Choose a PNG, JPG or WebP image.';saveBrandKit();};img.src=dataUrl;}
 function restoreBrandKit(){try{const accent=localStorage.getItem(BRAND_KIT_STORAGE.accent),panel=localStorage.getItem(BRAND_KIT_STORAGE.panel),font=localStorage.getItem(BRAND_KIT_STORAGE.font),logo=localStorage.getItem(BRAND_KIT_STORAGE.logo);if(/^#[0-9a-f]{6}$/i.test(accent||''))brandAccent.value=accent;if(/^#[0-9a-f]{6}$/i.test(panel||''))brandPanel.value=panel;if(['system','rounded','serif','mono'].includes(font))brandFont.value=font;if(logo)setBrandLogo(logo);}catch(e){brandLogoStatus.textContent='Could not restore brand settings from browser storage.';}}
 function saveLowerThirdSettings(){
- try{localStorage.setItem(LOWER_THIRD_STORAGE.name,lowerThirdName.value);localStorage.setItem(LOWER_THIRD_STORAGE.title,lowerThirdTitle.value);localStorage.setItem(LOWER_THIRD_STORAGE.position,lowerThirdPosition.value);localStorage.setItem(LOWER_THIRD_STORAGE.enabled,lowerThirdEnabled.checked?'1':'0');}catch{}
+ try{
+  localStorage.setItem(LOWER_THIRD_STORAGE.name,lowerThirdName.value);
+  localStorage.setItem(LOWER_THIRD_STORAGE.title,lowerThirdTitle.value);
+  localStorage.setItem(LOWER_THIRD_STORAGE.position,lowerThirdPosition.value);
+  localStorage.setItem(LOWER_THIRD_STORAGE.enabled,lowerThirdEnabled.checked?'1':'0');
+  localStorage.setItem(LOWER_THIRD_STORAGE.animation,lowerThirdAnimation.value);
+  localStorage.setItem(LOWER_THIRD_STORAGE.size,lowerThirdSize.value);
+  localStorage.setItem(LOWER_THIRD_STORAGE.opacity,lowerThirdOpacity.value);
+ }catch{}
 }
 function restoreLowerThirdSettings(){
  try{
@@ -1878,11 +1907,22 @@ function restoreLowerThirdSettings(){
   lowerThirdTitle.value=localStorage.getItem(LOWER_THIRD_STORAGE.title)||'';
   const position=localStorage.getItem(LOWER_THIRD_STORAGE.position);
   if(['lower-left','lower-centre','top-right'].includes(position))lowerThirdPosition.value=position;
+  const animation=localStorage.getItem(LOWER_THIRD_STORAGE.animation);
+  if(['slide','fade','rise','zoom','static'].includes(animation))lowerThirdAnimation.value=animation;
+  const size=Number(localStorage.getItem(LOWER_THIRD_STORAGE.size));
+  if(Number.isFinite(size)&&size>=65&&size<=150)lowerThirdSize.value=String(size);
+  const opacity=Number(localStorage.getItem(LOWER_THIRD_STORAGE.opacity));
+  if(Number.isFinite(opacity)&&opacity>=0&&opacity<=100)lowerThirdOpacity.value=String(opacity);
   lowerThirdEnabled.checked=localStorage.getItem(LOWER_THIRD_STORAGE.enabled)==='1';
  }catch{}
+ lowerThirdSizeVal.textContent=lowerThirdSize.value+'%';
+ lowerThirdOpacityVal.textContent=lowerThirdOpacity.value+'%';
 }
-[lowerThirdName,lowerThirdTitle].forEach(el=>el.addEventListener('input',()=>{saveLowerThirdSettings();if(lowerThirdEnabled.checked)lowerThirdStartedAt=performance.now();}));
-lowerThirdPosition.addEventListener('change',()=>{saveLowerThirdSettings();if(lowerThirdEnabled.checked)lowerThirdStartedAt=performance.now();});
+function refreshLowerThirdPreview(){saveLowerThirdSettings();if(lowerThirdEnabled.checked)lowerThirdStartedAt=performance.now();}
+[lowerThirdName,lowerThirdTitle].forEach(el=>el.addEventListener('input',refreshLowerThirdPreview));
+[lowerThirdPosition,lowerThirdAnimation].forEach(el=>el.addEventListener('change',refreshLowerThirdPreview));
+lowerThirdSize.addEventListener('input',()=>{lowerThirdSizeVal.textContent=lowerThirdSize.value+'%';refreshLowerThirdPreview();});
+lowerThirdOpacity.addEventListener('input',()=>{lowerThirdOpacityVal.textContent=lowerThirdOpacity.value+'%';refreshLowerThirdPreview();});
 lowerThirdEnabled.addEventListener('change',()=>{lowerThirdStartedAt=lowerThirdEnabled.checked?performance.now():0;saveLowerThirdSettings();});
 restoreLowerThirdSettings();
 [brandAccent,brandPanel,brandFont].forEach(el=>el.addEventListener('input',saveBrandKit));
