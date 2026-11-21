@@ -709,6 +709,8 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 }
 
 
+
+.mic-test-panel{margin-top:11px;padding:11px;background:#fff;border:1px solid #dbe5f1;border-radius:9px;display:flex;flex-direction:column;gap:8px}.mic-test-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px}.mic-test-actions button{font-size:10px;padding:8px 11px}.mic-test-primary{background:#2563eb;color:#fff;border-color:#2563eb}.mic-test-actions #micTestCountdown{font-size:10px;font-weight:750;color:#476584}.mic-test-panel audio{width:100%;max-width:480px}.mic-test-panel .hint{font-size:10px;margin:0}
 </style>
 </head>
 <body>
@@ -834,27 +836,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
     <button id="muteBtn" type="button" disabled>Mute Mic</button>
     <label class="check"><input id="includeSystemAudio" type="checkbox" checked> Include shared screen audio</label>
   </div>
-  <div class="caption-options" id="autoCaptionControls">
-    <div class="mic-enhance-head"><div><b>🎙 Voice Audio Enhancement</b><p class="hint">Optimised for lecture narration · local browser processing · no audio uploaded for enhancement</p></div><label class="check"><input id="audioProcessingEnabled" type="checkbox" checked> Process voice</label></div>
-    <div class="mic-enhance-grid">
-      <label for="audioPreset">Voice profile</label>
-      <select id="audioPreset"><option value="natural">Natural · gentle correction</option><option value="clarity" selected>Voice Clarity · teaching</option><option value="broadcast">Broadcast · stronger dynamics</option></select>
-      <label for="micInputGain">Mic input gain <b id="micInputGainValue">100%</b></label>
-      <input id="micInputGain" type="range" min="50" max="150" value="100">
-      <label for="micHighpass">Low rumble cut <b id="micHighpassValue">85 Hz</b></label>
-      <input id="micHighpass" type="range" min="50" max="160" step="5" value="85">
-      <label for="micPresence">Voice clarity <b id="micPresenceValue">+1.5 dB</b></label>
-      <input id="micPresence" type="range" min="0" max="5" step="0.5" value="1.5">
-    </div>
-    <div class="mic-capture-options">
-      <label class="check"><input id="micNoiseSuppression" type="checkbox" checked> Browser noise suppression</label>
-      <label class="check"><input id="micEchoCancellation" type="checkbox" checked> Echo cancellation</label>
-      <label class="check"><input id="micAutoGain" type="checkbox"> Automatic gain control</label>
-    </div>
-    <div class="mic-test-panel"><div class="mic-test-actions"><button type="button" id="micTestStart" class="mic-test-primary">▶ Record 10-second Mic Test</button><button type="button" id="micTestStop" disabled>■ Stop Test</button><span id="micTestCountdown" role="status" aria-live="polite">10-second audio check</span></div><audio id="micTestPlayback" controls hidden></audio><span id="micTestStatus" class="hint" role="status" aria-live="polite">Enable the mic first, then record a short sample.</span></div>
-    <div class="mic-enhance-footer"><button type="button" id="applyMicCaptureBtn">Apply mic capture settings</button><span id="micEnhanceStatus" class="hint" role="status" aria-live="polite">Voice Clarity is ready. Start the mic and speak at a steady distance.</span></div>
-    <p class="hint">Keep the mic 15–20 cm away, slightly off-axis. Use headphones to avoid echo. Noise suppression is browser-dependent; a quiet room and a good microphone still make the biggest difference.</p>
-  </section>
+  <section class="mic-test-panel" aria-label="Microphone test"><div class="mic-test-actions"><button type="button" id="micTestStart" class="mic-test-primary">▶ Record 10-second Mic Test</button><button type="button" id="micTestStop" disabled>■ Stop Test</button><span id="micTestCountdown" role="status" aria-live="polite">10-second audio check</span></div><audio id="micTestPlayback" controls hidden></audio><span id="micTestStatus" class="hint" role="status" aria-live="polite">Enable the mic first, then record a short sample.</span></section>
   <div class="caption-options" id="autoCaptionControls">
     <label class="check"><input id="autoCaptionsEnabled" type="checkbox"> 🎞 Automatic captions during recording</label>
     <label class="small" for="captionLanguage">Language</label>
@@ -1034,6 +1016,8 @@ const inkCanvas=$('annotationCanvas'),ink=inkCanvas.getContext('2d'),stage=$('st
 const captureMode=$('captureMode'),quality=$('quality'),cameraSelect=$('cameraSelect'),micSelect=$('micSelect');
 const cameraBtn=$('cameraBtn'),micBtn=$('micBtn'),screenBtn=$('screenBtn'),screenShareHint=$('screenShareHint'),recordBtn=$('recordBtn'),pauseBtn=$('pauseBtn'),stopBtn=$('stopBtn');
 const muteBtn=$('muteBtn'),meterFill=$('meterFill'),micStatus=$('micStatus'),badge=$('badge'),timer=$('timer'),countdownLayer=$('countdownLayer'),countdownNumber=$('countdownNumber'),error=$('error');
+const micTestStart=$('micTestStart'),micTestStop=$('micTestStop'),micTestCountdown=$('micTestCountdown'),micTestStatus=$('micTestStatus'),micTestPlayback=$('micTestPlayback');
+let micTestRecorder=null,micTestChunks=[],micTestTimer=null;
 
 const slidesInput=$('slidesInput'),slideDisplayMode=$('slideDisplayMode'),slideTransitionsEnabled=$('slideTransitionsEnabled'),slideTransitionType=$('slideTransitionType'),slideMotionEnabled=$('slideMotionEnabled'),progressBarEnabled=$('progressBarEnabled'),progressDurationMinutes=$('progressDurationMinutes'),progressBarHint=$('progressBarHint'),prevSlide=$('prevSlide'),nextSlide=$('nextSlide'),slideCount=$('slideCount'),clearSlides=$('clearSlides'),slideJump=$('slideJump'),slideTotal=$('slideTotal'),goSlide=$('goSlide');
 const motionGraphicInput=$('motionGraphicInput'),motionGraphicSelect=$('motionGraphicSelect'),motionGraphicEnabled=$('motionGraphicEnabled'),motionGraphicPosition=$('motionGraphicPosition'),motionGraphicSize=$('motionGraphicSize'),motionGraphicSizeVal=$('motionGraphicSizeVal'),motionGraphicOpacity=$('motionGraphicOpacity'),motionGraphicOpacityVal=$('motionGraphicOpacityVal'),motionGraphicStatus=$('motionGraphicStatus'),clearMotionGraphics=$('clearMotionGraphics');
@@ -1691,9 +1675,7 @@ async function startMic(){
  }catch(e){micStream=null;showError(e.name==='NotAllowedError'?'Microphone permission denied. Allow microphone access in Chrome site settings.':'Could not start microphone: '+e.message);}
 }
 function stopMic(){
- if(micStream)micStream.getTracks().forEach(t=>t.stop());micStream=null;
- if(micSource){try{micSource.disconnect()}catch{}micSource=null;}if(micGain){try{micGain.disconnect()}catch{}micGain=null;}
- [micHighPassNode,micPresenceNode,micCompressorNode,micLimiterNode].forEach(node=>{if(node){try{node.disconnect()}catch{}}});micHighPassNode=micPresenceNode=micCompressorNode=micLimiterNode=null;
+ if(micStream)micStream.getTracks().forEach(t=>t.stop());micStream=null;if(micSource){try{micSource.disconnect()}catch{}micSource=null;}if(micGain){try{micGain.disconnect()}catch{}micGain=null;}
  micStatus.textContent='Mic: off';muteBtn.disabled=true;micBtn.textContent='🎙 Enable Microphone';micSelect.disabled=true;meterFill.style.width='0%';
 }
 async function startScreen(){
@@ -2259,6 +2241,19 @@ $('cameraSwitchBtn').onclick=async()=>{if(!cameraStream||recording)return;const 
 micBtn.onclick=()=>startMic();
 screenBtn.onclick=()=>screenStream?stopScreen():startScreen();
 $('muteBtn').onclick=()=>setMute($('muteBtn').dataset.muted!=='true');
+function stopMicTest(){if(micTestTimer){clearInterval(micTestTimer);micTestTimer=null;}if(micTestRecorder&&micTestRecorder.state!=='inactive'){try{micTestRecorder.stop();}catch{}}micTestStop.disabled=true;micTestStart.disabled=!micStream;}
+micTestStart.addEventListener('click',()=>{
+ if(!micStream){micTestStatus.textContent='Enable your microphone first.';return;}
+ if(recording||recordingStarting){micTestStatus.textContent='Stop the main recording before running a mic test.';return;}
+ const testStream=audioDestination?.stream||micStream;
+ try{if(micTestPlayback.src){URL.revokeObjectURL(micTestPlayback.src);micTestPlayback.removeAttribute('src');micTestPlayback.load();}
+ micTestChunks=[];micTestRecorder=new MediaRecorder(testStream);micTestRecorder.ondataavailable=e=>{if(e.data&&e.data.size)micTestChunks.push(e.data);};
+ micTestRecorder.onstop=()=>{const blob=new Blob(micTestChunks,{type:micTestRecorder.mimeType||'audio/webm'});if(blob.size){micTestPlayback.src=URL.createObjectURL(blob);micTestPlayback.hidden=false;micTestPlayback.load();micTestStatus.textContent='Test complete. Play it back and check volume and clarity.';}else micTestStatus.textContent='No audio captured. Try again.';micTestStart.disabled=!micStream;};
+ micTestRecorder.start();micTestStart.disabled=true;micTestStop.disabled=false;let remaining=10;micTestCountdown.textContent='Recording · '+remaining+' seconds';micTestStatus.textContent='Speak normally in Gujarati as if teaching a lesson.';
+ micTestTimer=setInterval(()=>{remaining--;micTestCountdown.textContent='Recording · '+remaining+' seconds';if(remaining<=0)stopMicTest();},1000);
+ }catch(err){micTestStatus.textContent='Mic test could not start: '+err.message;micTestStart.disabled=false;micTestStop.disabled=true;}
+});
+micTestStop.addEventListener('click',stopMicTest);
 recordBtn.onclick=()=>recording?stopRecording():startRecording();
 pauseBtn.onclick=pauseRecording;stopBtn.onclick=stopRecording;
 $('testBtn').onclick=()=>startRecording(true);
