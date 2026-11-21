@@ -731,6 +731,8 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
  .mic-enhance-footer{align-items:flex-start}
 }
 
+
+.mic-test-panel{margin-top:11px;padding:11px;background:#fff;border:1px solid #dbe5f1;border-radius:9px;display:flex;flex-direction:column;gap:8px}.mic-test-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px}.mic-test-actions button{font-size:10px;padding:8px 11px}.mic-test-primary{background:#2563eb;color:#fff;border-color:#2563eb}.mic-test-actions #micTestCountdown{font-size:10px;font-weight:750;color:#476584}.mic-test-panel audio{width:100%;max-width:480px}.mic-test-panel .hint{font-size:10px;margin:0}
 </style>
 </head>
 <body>
@@ -873,6 +875,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
       <label class="check"><input id="micEchoCancellation" type="checkbox" checked> Echo cancellation</label>
       <label class="check"><input id="micAutoGain" type="checkbox"> Automatic gain control</label>
     </div>
+    <div class="mic-test-panel"><div class="mic-test-actions"><button type="button" id="micTestStart" class="mic-test-primary">▶ Record 10-second Mic Test</button><button type="button" id="micTestStop" disabled>■ Stop Test</button><span id="micTestCountdown" role="status" aria-live="polite">10-second audio check</span></div><audio id="micTestPlayback" controls hidden></audio><span id="micTestStatus" class="hint" role="status" aria-live="polite">Enable the mic first, then record a short sample.</span></div>
     <div class="mic-enhance-footer"><button type="button" id="applyMicCaptureBtn">Apply mic capture settings</button><span id="micEnhanceStatus" class="hint" role="status" aria-live="polite">Voice Clarity is ready. Start the mic and speak at a steady distance.</span></div>
     <p class="hint">Keep the mic 15–20 cm away, slightly off-axis. Use headphones to avoid echo. Noise suppression is browser-dependent; a quiet room and a good microphone still make the biggest difference.</p>
   </section>
@@ -1056,6 +1059,8 @@ const captureMode=$('captureMode'),quality=$('quality'),cameraSelect=$('cameraSe
 const cameraBtn=$('cameraBtn'),micBtn=$('micBtn'),screenBtn=$('screenBtn'),screenShareHint=$('screenShareHint'),recordBtn=$('recordBtn'),pauseBtn=$('pauseBtn'),stopBtn=$('stopBtn');
 const muteBtn=$('muteBtn'),meterFill=$('meterFill'),micStatus=$('micStatus'),badge=$('badge'),timer=$('timer'),countdownLayer=$('countdownLayer'),countdownNumber=$('countdownNumber'),error=$('error');
 const audioProcessingEnabled=$('audioProcessingEnabled'),audioPreset=$('audioPreset'),micInputGain=$('micInputGain'),micInputGainValue=$('micInputGainValue'),micHighpass=$('micHighpass'),micHighpassValue=$('micHighpassValue'),micPresence=$('micPresence'),micPresenceValue=$('micPresenceValue'),micNoiseSuppression=$('micNoiseSuppression'),micEchoCancellation=$('micEchoCancellation'),micAutoGain=$('micAutoGain'),micEnhanceStatus=$('micEnhanceStatus'),applyMicCaptureBtn=$('applyMicCaptureBtn');
+const micTestStart=$('micTestStart'),micTestStop=$('micTestStop'),micTestCountdown=$('micTestCountdown'),micTestStatus=$('micTestStatus'),micTestPlayback=$('micTestPlayback');
+let micTestRecorder=null,micTestChunks=[],micTestTimer=null,micTestStream=null;
 const slidesInput=$('slidesInput'),slideDisplayMode=$('slideDisplayMode'),slideTransitionsEnabled=$('slideTransitionsEnabled'),slideTransitionType=$('slideTransitionType'),slideMotionEnabled=$('slideMotionEnabled'),progressBarEnabled=$('progressBarEnabled'),progressDurationMinutes=$('progressDurationMinutes'),progressBarHint=$('progressBarHint'),prevSlide=$('prevSlide'),nextSlide=$('nextSlide'),slideCount=$('slideCount'),clearSlides=$('clearSlides'),slideJump=$('slideJump'),slideTotal=$('slideTotal'),goSlide=$('goSlide');
 const motionGraphicInput=$('motionGraphicInput'),motionGraphicSelect=$('motionGraphicSelect'),motionGraphicEnabled=$('motionGraphicEnabled'),motionGraphicPosition=$('motionGraphicPosition'),motionGraphicSize=$('motionGraphicSize'),motionGraphicSizeVal=$('motionGraphicSizeVal'),motionGraphicOpacity=$('motionGraphicOpacity'),motionGraphicOpacityVal=$('motionGraphicOpacityVal'),motionGraphicStatus=$('motionGraphicStatus'),clearMotionGraphics=$('clearMotionGraphics');
 try{
@@ -2344,6 +2349,20 @@ micBtn.onclick=()=>startMic();
 screenBtn.onclick=()=>screenStream?stopScreen():startScreen();
 $('muteBtn').onclick=()=>setMute($('muteBtn').dataset.muted!=='true');
 applyMicCaptureBtn.onclick=async()=>{if(recording||recordingStarting){showError('Stop recording before applying microphone capture changes.');return;}const restart=!!micStream;if(restart)stopMic();await startMic();if(micStream)micEnhanceStatus.textContent='Microphone restarted with the selected browser capture settings and voice processing.';};
+function stopMicTest(){if(micTestTimer){clearInterval(micTestTimer);micTestTimer=null;}if(micTestRecorder&&micTestRecorder.state!=='inactive'){try{micTestRecorder.stop();}catch{}}micTestStop.disabled=true;micTestStart.disabled=!micStream;}
+micTestStart.addEventListener('click',async()=>{
+ if(!micStream){micTestStatus.textContent='Enable your microphone first.';return;}
+ if(recording||recordingStarting){micTestStatus.textContent='Stop the main recording before running a mic test.';return;}
+ const testStream=audioDestination?.stream||micStream;if(!testStream.getAudioTracks().length){micTestStatus.textContent='Processed microphone audio is not available. Re-enable the mic.';return;}
+ try{
+  if(micTestPlayback.src){URL.revokeObjectURL(micTestPlayback.src);micTestPlayback.removeAttribute('src');micTestPlayback.load();}
+  micTestChunks=[];micTestRecorder=new MediaRecorder(testStream);micTestRecorder.ondataavailable=e=>{if(e.data&&e.data.size)micTestChunks.push(e.data);};
+  micTestRecorder.onstop=()=>{const blob=new Blob(micTestChunks,{type:micTestRecorder.mimeType||'audio/webm'});if(blob.size){micTestPlayback.src=URL.createObjectURL(blob);micTestPlayback.hidden=false;micTestPlayback.load();micTestStatus.textContent='Test complete. Play it back and check clarity, background noise and volume.';}else micTestStatus.textContent='No test audio was captured. Try again.';micTestStart.disabled=!micStream;};
+  micTestRecorder.start();micTestStart.disabled=true;micTestStop.disabled=false;let remaining=10;micTestCountdown.textContent='Recording · '+remaining+' seconds';micTestStatus.textContent='Speak normally in Gujarati, as if teaching a lesson.';
+  micTestTimer=setInterval(()=>{remaining--;micTestCountdown.textContent='Recording · '+remaining+' seconds';if(remaining<=0)stopMicTest();},1000);
+ }catch(err){micTestStatus.textContent='Mic test could not start: '+err.message;micTestStart.disabled=false;micTestStop.disabled=true;}
+});
+micTestStop.addEventListener('click',stopMicTest);
 recordBtn.onclick=()=>recording?stopRecording():startRecording();
 pauseBtn.onclick=pauseRecording;stopBtn.onclick=stopRecording;
 $('testBtn').onclick=()=>startRecording(true);
