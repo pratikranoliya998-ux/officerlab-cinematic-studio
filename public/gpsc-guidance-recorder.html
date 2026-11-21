@@ -708,6 +708,29 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
  .default-prefs button{transition:none!important}
 }
 
+
+.mic-enhance-panel{margin-top:11px;padding:13px;border:1px solid #dbe5f1;border-radius:11px;background:linear-gradient(145deg,#f8fbff,#f2f7fd)}
+.mic-enhance-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.mic-enhance-head b{font-size:12px;color:#29415f}
+.mic-enhance-head .hint{margin:4px 0 0;font-size:10px}
+.mic-enhance-head>.check{font-size:10px;white-space:nowrap}
+.mic-enhance-grid{display:grid;grid-template-columns:minmax(120px,.7fr) minmax(130px,1.3fr);align-items:center;gap:9px 12px;margin-top:12px}
+.mic-enhance-grid>label{font-size:10px;color:#5c718d;font-weight:750;display:flex;justify-content:space-between;gap:9px}
+.mic-enhance-grid>label b{color:#244f82}
+.mic-enhance-grid select{min-width:0;padding:7px;font-size:11px}
+.mic-enhance-grid input[type=range]{width:100%;accent-color:#2563eb}
+.mic-capture-options{display:flex;gap:13px;flex-wrap:wrap;margin-top:12px;padding:10px;background:#fff;border:1px solid #e1e9f3;border-radius:9px}
+.mic-capture-options .check{font-size:10px}
+.mic-enhance-footer{display:flex;align-items:center;gap:11px;flex-wrap:wrap;margin-top:10px}
+.mic-enhance-footer button{font-size:10px;padding:7px 10px}
+.mic-enhance-footer .hint{margin:0;font-size:10px}
+@media(max-width:600px){
+ .mic-enhance-head{flex-direction:column}
+ .mic-enhance-grid{grid-template-columns:1fr;gap:5px}
+ .mic-enhance-grid input[type=range],.mic-enhance-grid select{margin-bottom:7px}
+ .mic-enhance-footer{align-items:flex-start}
+}
+
 </style>
 </head>
 <body>
@@ -833,6 +856,26 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
     <button id="muteBtn" type="button" disabled>Mute Mic</button>
     <label class="check"><input id="includeSystemAudio" type="checkbox" checked> Include shared screen audio</label>
   </div>
+  <section class="mic-enhance-panel" id="micEnhancePanel" aria-label="Microphone enhancement controls">
+    <div class="mic-enhance-head"><div><b>🎙 Voice Audio Enhancement</b><p class="hint">Optimised for lecture narration · local browser processing · no audio uploaded for enhancement</p></div><label class="check"><input id="audioProcessingEnabled" type="checkbox" checked> Process voice</label></div>
+    <div class="mic-enhance-grid">
+      <label for="audioPreset">Voice profile</label>
+      <select id="audioPreset"><option value="natural">Natural · gentle correction</option><option value="clarity" selected>Voice Clarity · teaching</option><option value="broadcast">Broadcast · stronger dynamics</option></select>
+      <label for="micInputGain">Mic input gain <b id="micInputGainValue">100%</b></label>
+      <input id="micInputGain" type="range" min="50" max="150" value="100">
+      <label for="micHighpass">Low rumble cut <b id="micHighpassValue">85 Hz</b></label>
+      <input id="micHighpass" type="range" min="50" max="160" step="5" value="85">
+      <label for="micPresence">Voice clarity <b id="micPresenceValue">+1.5 dB</b></label>
+      <input id="micPresence" type="range" min="0" max="5" step="0.5" value="1.5">
+    </div>
+    <div class="mic-capture-options">
+      <label class="check"><input id="micNoiseSuppression" type="checkbox" checked> Browser noise suppression</label>
+      <label class="check"><input id="micEchoCancellation" type="checkbox" checked> Echo cancellation</label>
+      <label class="check"><input id="micAutoGain" type="checkbox"> Automatic gain control</label>
+    </div>
+    <div class="mic-enhance-footer"><button type="button" id="applyMicCaptureBtn">Apply mic capture settings</button><span id="micEnhanceStatus" class="hint" role="status" aria-live="polite">Voice Clarity is ready. Start the mic and speak at a steady distance.</span></div>
+    <p class="hint">Keep the mic 15–20 cm away, slightly off-axis. Use headphones to avoid echo. Noise suppression is browser-dependent; a quiet room and a good microphone still make the biggest difference.</p>
+  </section>
   <div class="caption-options" id="autoCaptionControls">
     <label class="check"><input id="autoCaptionsEnabled" type="checkbox"> 🎞 Automatic captions during recording</label>
     <label class="small" for="captionLanguage">Language</label>
@@ -1012,6 +1055,7 @@ const inkCanvas=$('annotationCanvas'),ink=inkCanvas.getContext('2d'),stage=$('st
 const captureMode=$('captureMode'),quality=$('quality'),cameraSelect=$('cameraSelect'),micSelect=$('micSelect');
 const cameraBtn=$('cameraBtn'),micBtn=$('micBtn'),screenBtn=$('screenBtn'),screenShareHint=$('screenShareHint'),recordBtn=$('recordBtn'),pauseBtn=$('pauseBtn'),stopBtn=$('stopBtn');
 const muteBtn=$('muteBtn'),meterFill=$('meterFill'),micStatus=$('micStatus'),badge=$('badge'),timer=$('timer'),countdownLayer=$('countdownLayer'),countdownNumber=$('countdownNumber'),error=$('error');
+const audioProcessingEnabled=$('audioProcessingEnabled'),audioPreset=$('audioPreset'),micInputGain=$('micInputGain'),micInputGainValue=$('micInputGainValue'),micHighpass=$('micHighpass'),micHighpassValue=$('micHighpassValue'),micPresence=$('micPresence'),micPresenceValue=$('micPresenceValue'),micNoiseSuppression=$('micNoiseSuppression'),micEchoCancellation=$('micEchoCancellation'),micAutoGain=$('micAutoGain'),micEnhanceStatus=$('micEnhanceStatus'),applyMicCaptureBtn=$('applyMicCaptureBtn');
 const slidesInput=$('slidesInput'),slideDisplayMode=$('slideDisplayMode'),slideTransitionsEnabled=$('slideTransitionsEnabled'),slideTransitionType=$('slideTransitionType'),slideMotionEnabled=$('slideMotionEnabled'),progressBarEnabled=$('progressBarEnabled'),progressDurationMinutes=$('progressDurationMinutes'),progressBarHint=$('progressBarHint'),prevSlide=$('prevSlide'),nextSlide=$('nextSlide'),slideCount=$('slideCount'),clearSlides=$('clearSlides'),slideJump=$('slideJump'),slideTotal=$('slideTotal'),goSlide=$('goSlide');
 const motionGraphicInput=$('motionGraphicInput'),motionGraphicSelect=$('motionGraphicSelect'),motionGraphicEnabled=$('motionGraphicEnabled'),motionGraphicPosition=$('motionGraphicPosition'),motionGraphicSize=$('motionGraphicSize'),motionGraphicSizeVal=$('motionGraphicSizeVal'),motionGraphicOpacity=$('motionGraphicOpacity'),motionGraphicOpacityVal=$('motionGraphicOpacityVal'),motionGraphicStatus=$('motionGraphicStatus'),clearMotionGraphics=$('clearMotionGraphics');
 try{
@@ -1042,6 +1086,7 @@ const autoCaptionsEnabled=$('autoCaptionsEnabled'),captionLanguage=$('captionLan
 let cameraStream=null,micStream=null,screenStream=null,recorder=null,recordTimer=null,meterRAF=0,drawRAF=0,preferredFacing='user';
 let screenCropSource=null,screenCropResult=null,screenCropResolved=false,screenCropChecks=0;
 let audioContext=null,audioDestination=null,micGain=null,screenGain=null,micAnalyser=null,micSource=null,screenAudioSource=null;
+let micHighPassNode=null,micPresenceNode=null,micCompressorNode=null,micLimiterNode=null;
 let layout='pip',pip={x:.77,y:.73},activeTool='pen',drawing=false,slides=[],slideIndex=0,pdfDoc=null,slideSource=null,slideUrls=[],presentationSavedOutputRatio=null;
 let motionGraphics=[],activeMotionGraphicIndex=-1,lastInkMidpoint=null;
 let slideLoadVersion=0,slideTransitionFromFrame=null,slideTransitionToFrame=null,slideTransitionStartedAt=0,slideMotionStartedAt=performance.now();
@@ -1615,15 +1660,81 @@ async function createAudioGraph(){
  audioContext=new AC();audioDestination=audioContext.createMediaStreamDestination();micAnalyser=audioContext.createAnalyser();micAnalyser.fftSize=512;
  if(meterRAF)cancelAnimationFrame(meterRAF);drawMicMeter();
 }
+function updateMicAudioLabels(){
+ micInputGainValue.textContent=micInputGain.value+'%';
+ micHighpassValue.textContent=micHighpass.value+' Hz';
+ micPresenceValue.textContent='+'+Number(micPresence.value).toFixed(1)+' dB';
+}
+function configureMicAudioNodes(){
+ if(!audioContext||!micSource||!micGain||!micAnalyser)return;
+ const now=audioContext.currentTime;
+ const profile=audioPreset.value;
+ const enabled=audioProcessingEnabled.checked;
+ const settings={
+  natural:{highpass:70,presence:.5,threshold:-28,ratio:2.1,knee:24,attack:.012,release:.24,limit:-3},
+  clarity:{highpass:Number(micHighpass.value),presence:Number(micPresence.value),threshold:-23,ratio:3.2,knee:18,attack:.008,release:.19,limit:-4},
+  broadcast:{highpass:Math.max(95,Number(micHighpass.value)),presence:Math.max(2.5,Number(micPresence.value)),threshold:-19,ratio:4.5,knee:12,attack:.004,release:.15,limit:-5}
+ }[profile]||{highpass:85,presence:1.5,threshold:-23,ratio:3.2,knee:18,attack:.008,release:.19,limit:-4};
+ const targetGain=$('muteBtn').dataset.muted==='true'?0:Number(micInputGain.value)/100;
+ micGain.gain.setTargetAtTime(targetGain,now,.025);
+ if(micHighPassNode){
+  micHighPassNode.type='highpass';
+  micHighPassNode.frequency.setTargetAtTime(enabled?settings.highpass:25,now,.04);
+  micHighPassNode.Q.setTargetAtTime(.707,now,.04);
+ }
+ if(micPresenceNode){
+  micPresenceNode.type='peaking';micPresenceNode.frequency.setTargetAtTime(3200,now,.04);
+  micPresenceNode.Q.setTargetAtTime(.8,now,.04);
+  micPresenceNode.gain.setTargetAtTime(enabled?settings.presence:0,now,.04);
+ }
+ if(micCompressorNode){
+  micCompressorNode.threshold.setTargetAtTime(enabled?settings.threshold:0,now,.04);
+  micCompressorNode.knee.setTargetAtTime(enabled?settings.knee:0,now,.04);
+  micCompressorNode.ratio.setTargetAtTime(enabled?settings.ratio:1,now,.04);
+  micCompressorNode.attack.setTargetAtTime(enabled?settings.attack:.003,now,.04);
+  micCompressorNode.release.setTargetAtTime(enabled?settings.release:.18,now,.04);
+ }
+ if(micLimiterNode){
+  micLimiterNode.threshold.setTargetAtTime(enabled?settings.limit:0,now,.04);
+  micLimiterNode.knee.setTargetAtTime(0,now,.04);
+  micLimiterNode.ratio.setTargetAtTime(enabled?20:1,now,.04);
+  micLimiterNode.attack.setTargetAtTime(.002,now,.04);
+  micLimiterNode.release.setTargetAtTime(.08,now,.04);
+ }
+ try{
+  micSource.disconnect();micGain.disconnect();micHighPassNode.disconnect();micPresenceNode.disconnect();micCompressorNode.disconnect();micLimiterNode.disconnect();micAnalyser.disconnect();
+ }catch{}
+ // Keep the final analyser on the processed signal so the input meter reflects what is recorded.
+ micSource.connect(micGain);
+ if(enabled){
+  micGain.connect(micHighPassNode);micHighPassNode.connect(micPresenceNode);
+  micPresenceNode.connect(micCompressorNode);micCompressorNode.connect(micLimiterNode);
+  micLimiterNode.connect(micAnalyser);
+ }else micGain.connect(micAnalyser);
+ micAnalyser.connect(audioDestination);
+}
 async function connectMic(){
  if(!micStream)return;
  await createAudioGraph();if(!audioContext)return;
  await audioContext.resume();
  if(micSource){try{micSource.disconnect()}catch{}}
- micSource=audioContext.createMediaStreamSource(micStream);micGain=audioContext.createGain();micGain.gain.value=$('muteBtn').dataset.muted==='true'?0:1;
- micSource.connect(micAnalyser);micSource.connect(micGain);micGain.connect(audioDestination);
+ micSource=audioContext.createMediaStreamSource(micStream);
+ micGain=audioContext.createGain();micHighPassNode=audioContext.createBiquadFilter();
+ micPresenceNode=audioContext.createBiquadFilter();micCompressorNode=audioContext.createDynamicsCompressor();
+ micLimiterNode=audioContext.createDynamicsCompressor();
+ configureMicAudioNodes();
  micStatus.textContent='Mic: ready';muteBtn.disabled=recording;micBtn.textContent='✓ Microphone Ready';
+ const track=micStream.getAudioTracks()[0],settings=track?.getSettings?.()||{};
+ micEnhanceStatus.textContent=(audioProcessingEnabled.checked?'Voice processing ON':'Voice processing OFF')+' · '+(settings.sampleRate?settings.sampleRate+' Hz · ':'')+(settings.channelCount||1)+' channel(s) · '+(settings.noiseSuppression===undefined?'browser DSP':settings.noiseSuppression?'noise suppression on':'noise suppression unavailable');
 }
+function applyMicAudioControls(){
+ updateMicAudioLabels();
+ if(micStream&&micSource&&audioContext)configureMicAudioNodes();
+ if(micEnhanceStatus&&micStream)micEnhanceStatus.textContent=(audioProcessingEnabled.checked?'Voice processing ON':'Voice processing OFF')+' · '+audioPreset.options[audioPreset.selectedIndex].text;
+}
+[ audioProcessingEnabled,audioPreset,micInputGain,micHighpass,micPresence ].forEach(el=>el.addEventListener('input',applyMicAudioControls));
+[ audioProcessingEnabled,audioPreset ].forEach(el=>el.addEventListener('change',applyMicAudioControls));
+
 async function connectScreenAudio(){
  if(!screenStream)return;
  const tracks=screenStream.getAudioTracks();if(!tracks.length)return;
@@ -1659,13 +1770,14 @@ async function startMic(){
  clearError();if(micStream)return;
  if(!navigator.mediaDevices?.getUserMedia){showError('Microphone access requires HTTPS.');return;}
  try{
-  const a={echoCancellation:true,noiseSuppression:true,autoGainControl:true};if(micSelect.value)a.deviceId={exact:micSelect.value};
+  const a={echoCancellation:{ideal:micEchoCancellation.checked},noiseSuppression:{ideal:micNoiseSuppression.checked},autoGainControl:{ideal:micAutoGain.checked},channelCount:{ideal:1},sampleRate:{ideal:48000}};if(micSelect.value)a.deviceId={exact:micSelect.value};
   micStream=await navigator.mediaDevices.getUserMedia({audio:a,video:false});await connectMic();micStatus.textContent='Mic: live';muteBtn.disabled=false;micBtn.textContent='✓ Microphone Ready';await refreshDevices();
  }catch(e){micStream=null;showError(e.name==='NotAllowedError'?'Microphone permission denied. Allow microphone access in Chrome site settings.':'Could not start microphone: '+e.message);}
 }
 function stopMic(){
  if(micStream)micStream.getTracks().forEach(t=>t.stop());micStream=null;
  if(micSource){try{micSource.disconnect()}catch{}micSource=null;}if(micGain){try{micGain.disconnect()}catch{}micGain=null;}
+ [micHighPassNode,micPresenceNode,micCompressorNode,micLimiterNode].forEach(node=>{if(node){try{node.disconnect()}catch{}}});micHighPassNode=micPresenceNode=micCompressorNode=micLimiterNode=null;
  micStatus.textContent='Mic: off';muteBtn.disabled=true;micBtn.textContent='🎙 Enable Microphone';micSelect.disabled=true;meterFill.style.width='0%';
 }
 async function startScreen(){
@@ -2223,7 +2335,7 @@ async function loadLocalRecordings(){
 }
 function setMute(muted){
  $('muteBtn').dataset.muted=muted?'true':'false';muteBtn.textContent=muted?'Unmute Mic':'Mute Mic';
- if(micGain&&audioContext)micGain.gain.setTargetAtTime(muted?0:1,audioContext.currentTime,.015);else if(micStream)micStream.getAudioTracks().forEach(t=>t.enabled=!muted);
+ if(micGain&&audioContext)micGain.gain.setTargetAtTime(muted?0:Number(micInputGain.value)/100,audioContext.currentTime,.015);else if(micStream)micStream.getAudioTracks().forEach(t=>t.enabled=!muted);
  micStatus.textContent=micStream?(muted?'Mic: muted':'Mic: live'):'Mic: off';
 }
 cameraBtn.onclick=()=>cameraStream?stopCamera():startCamera();
@@ -2231,6 +2343,7 @@ $('cameraSwitchBtn').onclick=async()=>{if(!cameraStream||recording)return;const 
 micBtn.onclick=()=>startMic();
 screenBtn.onclick=()=>screenStream?stopScreen():startScreen();
 $('muteBtn').onclick=()=>setMute($('muteBtn').dataset.muted!=='true');
+applyMicCaptureBtn.onclick=async()=>{if(recording||recordingStarting){showError('Stop recording before applying microphone capture changes.');return;}const restart=!!micStream;if(restart)stopMic();await startMic();if(micStream)micEnhanceStatus.textContent='Microphone restarted with the selected browser capture settings and voice processing.';};
 recordBtn.onclick=()=>recording?stopRecording():startRecording();
 pauseBtn.onclick=pauseRecording;stopBtn.onclick=stopRecording;
 $('testBtn').onclick=()=>startRecording(true);
@@ -2670,7 +2783,7 @@ motionGraphicOpacityVal.textContent=motionGraphicOpacity.value+'%';
 
 async function init(){
  try{if(!recorderDefaultSnapshot?.values?.dataSaver)dataSaver.checked=!!navigator.connection?.saveData;}catch{}updateDownloadNetworkStatus();networkConnection()?.addEventListener?.('change',updateDownloadNetworkStatus);
- setCanvasQuality();syncSlideControls();updateControls();startDraw();drawMicMeter();await refreshDevices();
+ setCanvasQuality();syncSlideControls();updateControls();updateMicAudioLabels();startDraw();drawMicMeter();await refreshDevices();
  try{const saved=recorderDefaultSnapshot?.values||{};if(saved.cameraSelect?.value&&[...cameraSelect.options].some(o=>o.value===saved.cameraSelect.value))cameraSelect.value=saved.cameraSelect.value;if(saved.micSelect?.value&&[...micSelect.options].some(o=>o.value===saved.micSelect.value))micSelect.value=saved.micSelect.value;}catch{}
  await loadLocalRecordings();
  if('serviceWorker'in navigator)navigator.serviceWorker.register('/gpsc-recorder-sw.js',{scope:'/'}).catch(e=>console.warn('Service worker:',e));
