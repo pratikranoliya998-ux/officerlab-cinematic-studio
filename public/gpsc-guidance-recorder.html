@@ -1662,7 +1662,7 @@ function cameraError(e){
 async function refreshDevices(){
  try{
   const devices=await navigator.mediaDevices.enumerateDevices();
-  const fill=(select,kind,label)=>{const current=select.value;select.replaceChildren(new Option('Default '+label.toLowerCase(),''));devices.filter(d=>d.kind===kind).forEach((d,i)=>select.add(new Option(d.label||label+' '+(i+1),d.deviceId)));if([...select.options].some(o=>o.value===current))select.value=current;};
+  const fill=(select,kind,label)=>{const current=select.value;select.replaceChildren(new Option('Default '+label.toLowerCase(),''));devices.filter(d=>d.kind===kind).forEach((d,i)=>{let name=d.label||label+' '+(i+1);if(kind==='audioinput'&&/velomax|vilomox/i.test(name))name='VELOMAX / VILOMOX Wireless Type-C Mic';select.add(new Option(name,d.deviceId));});if([...select.options].some(o=>o.value===current))select.value=current;};
   fill(cameraSelect,'videoinput','Camera');fill(micSelect,'audioinput','Microphone');cameraSelect.disabled=!cameraStream||recording||recordingStarting;micSelect.disabled=!micStream||recording||recordingStarting;
  }catch{}
 }
