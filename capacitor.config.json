@@ -1,0 +1,22 @@
+{
+  "appId": "com.officerlab.cinematicstudio",
+  "appName": "OfficerLab Lecture Studio",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 1200,
+      "backgroundColor": "#f3f6fb",
+      "showSpinner": false
+    },
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#f3f6fb"
+    },
+    "CapacitorHttp": {
+      "enabled": true
+    }
+  }
+}
