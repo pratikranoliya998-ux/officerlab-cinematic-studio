@@ -1267,8 +1267,8 @@ const getAllChunks=()=>dbAction('chunks','readonly',s=>s.getAll());
 const deleteChunk=(id,index)=>dbAction('chunks','readwrite',s=>s.delete([id,index]));
 function getMime(){
  if(!window.MediaRecorder)return null;
- // Prefer WebM on Android/Chrome: MP4 MediaRecorder support varies.
- const candidates=['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm','video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4'];
+ // MP4-only recording mode. If the browser cannot record MP4, fail clearly.
+ const candidates=['video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4'];
  for(const type of candidates)try{if(MediaRecorder.isTypeSupported(type))return type}catch{}
  return '';
 }
@@ -2137,7 +2137,7 @@ async function startRecording(isTest=false){
  if(mode==='screen'&&!screenStream&&!slides.length){showError('Share your screen or upload a PDF/slides before recording.');return;}
  if(mode==='screen-camera'&&!screenStream&&!slides.length){showError('Share your screen or upload slides before recording.');return;}
  if(mode==='screen-camera'&&!cameraStream){showError('Screen + Face Cam mode also requires the camera. Start Camera first.');return;}
- const mime=getMime();if(mime===null){showError('MediaRecorder is not supported in this browser. Try current Chrome.');return;}
+ const mime=getMime();if(mime===null){showError('MediaRecorder is not supported in this browser. Try current Chrome.');return;}if(!mime){showError('MP4 recording is not supported by this browser/device. Please use a browser that supports MediaRecorder MP4. No WebM recording will be created.');return;}
  recordingStarting=true;updateControls();
  try{if(micStream)await connectMic();if(screenStream&&screenStream.getAudioTracks().length)await connectScreenAudio();if(audioContext)await audioContext.resume();}catch(e){recordingStarting=false;updateControls();showError('Audio could not be prepared: '+e.message);return;}
  await runRecordCountdown();recordingStarting=false;
