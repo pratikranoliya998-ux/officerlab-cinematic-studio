@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 760" fill="none">
+<defs>
+  <linearGradient id="bg" x1="80" y1="40" x2="1100" y2="740" gradientUnits="userSpaceOnUse"><stop stop-color="#183451"/><stop offset=".48" stop-color="#101d32"/><stop offset="1" stop-color="#080d18"/></linearGradient>
+  <linearGradient id="screen" x1="300" y1="140" x2="860" y2="510" gradientUnits="userSpaceOnUse"><stop stop-color="#163b59"/><stop offset="1" stop-color="#12172a"/></linearGradient>
+  <linearGradient id="gold" x1="270" y1="120" x2="880" y2="560" gradientUnits="userSpaceOnUse"><stop stop-color="#ffe0a0"/><stop offset="1" stop-color="#c58c42"/></linearGradient>
+  <linearGradient id="cyan" x1="740" y1="100" x2="1040" y2="560" gradientUnits="userSpaceOnUse"><stop stop-color="#6be6f5"/><stop offset="1" stop-color="#237bba"/></linearGradient>
+  <filter id="shadow" x="0" y="0" width="1200" height="760" filterUnits="userSpaceOnUse"><feGaussianBlur stdDeviation="22"/></filter>
+  <pattern id="grid" width="42" height="42" patternUnits="userSpaceOnUse"><path d="M42 0H0V42" stroke="#A8D5F4" stroke-opacity=".07"/></pattern>
+</defs>
+<rect width="1200" height="760" rx="42" fill="url(#bg)"/>
+<rect width="1200" height="760" rx="42" fill="url(#grid)"/>
+<circle cx="930" cy="185" r="190" fill="#31B9DC" fill-opacity=".13" filter="url(#shadow)"/>
+<circle cx="250" cy="600" r="220" fill="#D5A04F" fill-opacity=".13" filter="url(#shadow)"/>
+<path d="M82 620C280 520 400 700 590 590C760 492 900 580 1120 430" stroke="#55D3E7" stroke-opacity=".25" stroke-width="2"/>
+<path d="M105 665C300 565 410 744 625 632C805 538 960 620 1140 505" stroke="#D8AD66" stroke-opacity=".23" stroke-width="2"/>
+<rect x="180" y="128" width="704" height="444" rx="25" fill="#050A13" stroke="#5C7897" stroke-opacity=".65" stroke-width="8"/>
+<rect x="202" y="150" width="660" height="399" rx="13" fill="url(#screen)"/>
+<path d="M240 190H824" stroke="#B7D2E9" stroke-opacity=".2" stroke-width="2"/>
+<rect x="250" y="220" width="6" height="145" rx="3" fill="url(#gold)"/>
+<text x="282" y="245" fill="#EACB91" font-family="Arial,sans-serif" font-size="17" font-weight="700" letter-spacing="5">OFFICERLAB / LECTURE STUDIO</text>
+<text x="282" y="330" fill="#F4F6FB" font-family="Arial,sans-serif" font-size="51" font-weight="700">TEACH WITH</text>
+<text x="282" y="392" fill="#F1C77D" font-family="Arial,sans-serif" font-size="56" font-weight="800">CONFIDENCE</text>
+<text x="284" y="440" fill="#A9BED5" font-family="Arial,sans-serif" font-size="19">Slides · Camera · Voice · Annotation</text>
+<rect x="282" y="468" width="172" height="7" rx="3.5" fill="url(#gold)"/>
+<rect x="470" y="468" width="70" height="7" rx="3.5" fill="#55D3E7" fill-opacity=".8"/>
+<path d="M485 573L455 640H610L580 573" fill="#243B58" stroke="#7189A2" stroke-width="5"/>
+<rect x="400" y="638" width="265" height="24" rx="12" fill="#29415E" stroke="#8094AC" stroke-width="4"/>
+<path d="M900 345L1020 289L1087 326V470L1021 510L900 454V345Z" fill="#13243A" stroke="#79D6E5" stroke-width="7"/>
+<rect x="930" y="353" width="138" height="92" rx="18" fill="#1C4260" stroke="#8CE5F0" stroke-width="5"/>
+<circle cx="1000" cy="399" r="40" fill="#091827" stroke="url(#cyan)" stroke-width="12"/>
+<circle cx="1000" cy="399" r="20" fill="#3FC3DF" fill-opacity=".5"/>
+<path d="M936 327L956 287H1030L1050 327" stroke="#7DD7E7" stroke-width="7" stroke-linecap="round"/>
+<rect x="910" y="484" width="112" height="16" rx="8" fill="#C99850"/>
+<rect x="1050" y="204" width="72" height="72" rx="18" fill="#172E46" stroke="#5BD2E8" stroke-width="3"/>
+<circle cx="1086" cy="240" r="20" fill="#F25D63"/>
+<path d="M1080 228L1098 240L1080 252V228Z" fill="#FFF"/>
+<g fill="#A8DDF0"><circle cx="135" cy="220" r="5"/><circle cx="1010" cy="105" r="4"/><circle cx="1110" cy="590" r="6"/><circle cx="775" cy="670" r="4"/><circle cx=" ninety" cy="500" r="4"/></g>
+</svg>
