@@ -174,7 +174,7 @@ async def convert_legacy_recording(request: Request, file: UploadFile = File(...
     only from OfficerLab's deployed web origins, allows one active encode per worker,
     and applies a per-client cooldown and strict upload ceiling.
     """
-    if os.getenv("LEGACY_CONVERSION_ENABLED", "false").lower() != "true":
+    if os.getenv("LEGACY_CONVERSION_ENABLED", "true").lower() != "true":
         raise HTTPException(status_code=503, detail="Legacy recording conversion is not enabled on this worker")
     origin = request.headers.get("origin", "")
     if origin not in origins and not _LEGACY_ORIGIN_RE.fullmatch(origin):
