@@ -1056,7 +1056,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   </section></div></details>
   <div id="error" class="error" role="alert"></div>
   <div id="conversionNotice" class="conversion-note" role="status" aria-live="polite"></div>
-  <p class="screen-note">To enable Start Recording on PC: in the default Screen / slides mode, first click Share Screen and choose a tab, window or display, or upload PDF / image slides. In Camera only mode, click Start Camera first. MP4 recording also requires browser support for MP4 MediaRecorder; this recorder will not create WebM files.</p>
+  <p class="screen-note">To enable Start Recording on PC: in the default Screen / slides mode, first click Share Screen and choose a tab, window or display, or upload PDF / image slides. In Camera only mode, click Start Camera first. If this browser cannot record MP4 natively, Legacy PC Mode captures temporarily in a browser-compatible format and converts it on the OfficerLab server. Only the final MP4 is offered for playback and download; no WebM download is created.</p>
 <details class="setup-compartment" id="deviceCompartment"><summary><span class="compartment-number">05</span><span><strong>Device compatibility</strong><small>Check Android and browser media support</small></span><span class="compartment-chevron">⌄</span></summary><div class="compartment-body">
   <section class="device-diagnostic card" id="deviceDiagnosticPanel">
     <h2>Device / Browser Compatibility</h2>
@@ -2876,7 +2876,7 @@ async function runDeviceCheck(){
    deviceCheckLine('IndexedDB local recovery',db,'Required for local session/chunk storage'),
    deviceCheckLine('Native MP4 recording',mp4Supported,supportedMime||'Not supported natively by this browser',true),
    deviceCheckLine('Legacy WebM capture',legacyWebmSupported,legacyMime||'No supported temporary capture codec'),
-   deviceCheckLine('Cloud MP4 conversion',legacyWorkerReady,'OfficerLab FFmpeg worker '+(legacyWorkerReady?'ready':'not available'),!legacyWebmSupported),
+   deviceCheckLine('Cloud MP4 conversion',legacyWorkerReady,'OfficerLab FFmpeg worker '+(legacyWorkerReady?'ready':'not available'),mp4Supported),
    '',
    'OPTIONAL / BROWSER-DEPENDENT FEATURES',
    deviceCheckLine('Screen sharing',screen,screenDetail,true),
