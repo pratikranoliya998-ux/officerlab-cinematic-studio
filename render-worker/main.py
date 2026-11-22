@@ -153,7 +153,7 @@ _legacy_conversion_lock = threading.Lock()
 _legacy_conversion_last: dict[str, float] = {}
 _LEGACY_CONVERSION_INTERVAL_SECONDS = 60
 _LEGACY_CONVERSION_MAX_BYTES = 200 * 1024 * 1024
-_LEGACY_ORIGIN_RE = re.compile(r"^https://officerlab-cinematic-studio(?:-[a-z0-9-]+)*\\.vercel\\.app$")
+_LEGACY_ORIGIN_RE = re.compile(r"^https://officerlab-cinematic-studio(?:-[a-z0-9-]+)*\.vercel\.app$")
 
 
 @app.get("/health")
@@ -167,7 +167,7 @@ def health():
 
 
 @app.post("/convert-legacy-recording")
-async def convert_legacy_recording(file: UploadFile = File(...), request: Request = None):
+async def convert_legacy_recording(request: Request, file: UploadFile = File(...)):
     """Convert an older-browser WebM capture to the app's MP4-only final format.
 
     This narrowly scoped endpoint is enabled explicitly in Render, accepts requests
@@ -176,7 +176,7 @@ async def convert_legacy_recording(file: UploadFile = File(...), request: Reques
     """
     if os.getenv("LEGACY_CONVERSION_ENABLED", "false").lower() != "true":
         raise HTTPException(status_code=503, detail="Legacy recording conversion is not enabled on this worker")
-    origin = request.headers.get("origin", "") if request else ""
+    origin = request.headers.get("origin", "")
     if origin not in origins and not _LEGACY_ORIGIN_RE.fullmatch(origin):
         raise HTTPException(status_code=403, detail="Legacy conversion is available only from the OfficerLab app")
     if not shutil.which("ffmpeg"):
@@ -187,7 +187,7 @@ async def convert_legacy_recording(file: UploadFile = File(...), request: Reques
     if not _legacy_conversion_lock.acquire(blocking=False):
         raise HTTPException(status_code=429, detail="The MP4 conversion service is busy. Please retry in a moment.")
 
-    client_ip = request.client.host if request and request.client else "unknown"
+    client_ip = request.client.host if request.client else "unknown"
     now = time.monotonic()
     try:
         last = _legacy_conversion_last.get(client_ip, 0.0)
