@@ -133,3 +133,36 @@ The focused Presenter Studio records the user's webcam video and microphone audi
 Configure `VITE_RENDER_API_URL` in the Vercel project to the Render worker origin (for example, `https://YOUR-WORKER.onrender.com`) and redeploy the frontend. If the Render worker has `RENDER_API_TOKEN` enabled, configure the matching `VITE_RENDER_API_TOKEN` for the frontend. **A VITE_ token is public to browser visitors**, so do not treat it as a secret or enable a shared public deployment with a private token embedded in client code. For a private production service, put an authenticated server-side upload proxy in front of the worker.
 
 The worker accepts presenter recordings up to 300 MB. Conversion requires the Render worker to be deployed with FFmpeg. The original capture remains in the browser until the user downloads it or leaves the page; recordings are not cloud-saved.
+
+
+## Android APK build (Capacitor 8)
+
+The React/Vite lecture studio can also be packaged as an Android app with Capacitor.
+
+- App name: **OfficerLab Lecture Studio**
+- Android application ID: `com.officerlab.lecturestudio`
+- Bundled web assets are built from `src/` into `dist/`; the APK does not depend on the Vercel website to load its main screen.
+- The Android workflow adds camera, microphone, audio-settings and internet permissions to the generated native manifest. Capacitor's Android WebView bridge handles the runtime camera/microphone permission prompt.
+- The workflow builds a **debug APK** and uploads it as the GitHub Actions artifact named `OfficerLab-Lecture-Studio-Android-Debug-APK`.
+
+### Build / download
+
+Every relevant push to `main` starts **Build OfficerLab Android APK**. To build manually, open GitHub → Actions → Build OfficerLab Android APK → Run workflow. When the run succeeds, open that run's Artifacts section and download the APK ZIP. Extract `app-debug.apk` and install it on the Android device (allow installation from that source when Android asks).
+
+Local build requirements follow Capacitor 8: Node.js 22+, Java 21, Android SDK API 36, and Android Build Tools 36.0.0. Locally run:
+
+```bash
+npm install
+npm run build
+npx cap add android
+python3 scripts/configure_android.py
+npx cap sync android
+cd android
+./gradlew assembleDebug
+```
+
+The generated Android project is scaffolded in CI on each clean runner; it is not committed as a generated `android/` directory. The APK from this workflow is a debug build, not a Play Store-signed release.
+
+### Device validation still required
+
+Before treating the APK as production-ready, test camera + microphone permission prompts, front/rear camera switching, PDF and PPT upload, annotation while recording, long-session stability, and MP4 export on a physical Android device. The Render worker's existing CORS defaults include `https://localhost` for Capacitor's local Android origin; if the worker's `CORS_ORIGINS` value has been customised, retain that origin. PPT-to-PDF conversion and MP4 conversion require the Render worker and an internet connection. Browser-generated recording downloads should be tested on-device.
