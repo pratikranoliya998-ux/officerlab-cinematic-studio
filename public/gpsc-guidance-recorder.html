@@ -1055,11 +1055,11 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
     <p class="hint" id="motionGraphicStatus" role="status" aria-live="polite">No motion graphic attached. Uploaded files remain local to this browser session; attachment preferences are saved as defaults.</p>
   </section></div></details>
   <div id="error" class="error" role="alert"></div>
-  <p class="screen-note">Screen capture depends on browser support. Camera and microphone permission require HTTPS. Screen sharing must be started by the presenter.</p>
+  <p class="screen-note">To enable Start Recording on PC: in the default Screen / slides mode, first click Share Screen and choose a tab, window or display, or upload PDF / image slides. In Camera only mode, click Start Camera first. MP4 recording also requires browser support for MP4 MediaRecorder; this recorder will not create WebM files.</p>
 <details class="setup-compartment" id="deviceCompartment"><summary><span class="compartment-number">05</span><span><strong>Device compatibility</strong><small>Check Android and browser media support</small></span><span class="compartment-chevron">⌄</span></summary><div class="compartment-body">
   <section class="device-diagnostic card" id="deviceDiagnosticPanel">
-    <h2>Android / Browser Compatibility</h2>
-    <p class="hint">Run this check on the phone/browser used for recording. It checks capabilities without opening the camera or microphone or requesting permissions.</p>
+    <h2>Device / Browser Compatibility</h2>
+    <p class="hint">Run this check on the PC or phone used for recording. It checks browser capabilities without opening the camera or microphone or requesting permissions.</p>
     <div class="device-diagnostic-actions"><button type="button" id="deviceCheckBtn" class="primary">📱 Run Device Check</button><button type="button" id="deviceCheckCopyBtn" disabled>Copy Report</button></div>
     <pre id="deviceCheckResults" class="device-diagnostic-results" role="status" aria-live="polite">Not checked yet. Tap “Run Device Check” on your Android phone.</pre>
   </section></div></details>
@@ -1221,7 +1221,16 @@ function syncStagePresenterDock(){
  });
 }
 function updateControls(){
- const mode=captureMode.value;updateProgressBarHint();slideTransitionsEnabled.disabled=recording||recordingStarting;slideTransitionType.disabled=recording||recordingStarting||!slideTransitionsEnabled.checked;slideMotionEnabled.disabled=recording||recordingStarting;inkCanvas.style.opacity=recording?'0':'1';captureMode.disabled=recording||recordingStarting;quality.disabled=recording||recordingStarting;outputRatio.disabled=recording||recordingStarting;recordBtn.disabled=recording||recordingStarting||!baseAvailable()||((mode==='screen-camera'||mode==='camera-slides')&&!cameraStream);autoCaptionsEnabled.disabled=recording||recordingStarting;captionLanguage.disabled=recording||recordingStarting;[introCardEnabled,introCardDuration,introCardTitle,introCardSubtitle,outroCardEnabled,outroCardDuration,outroCardTitle,outroCardSubtitle].forEach(el=>el.disabled=recording||recordingStarting||stoppingRecording);
+ const mode=captureMode.value;updateProgressBarHint();slideTransitionsEnabled.disabled=recording||recordingStarting;slideTransitionType.disabled=recording||recordingStarting||!slideTransitionsEnabled.checked;slideMotionEnabled.disabled=recording||recordingStarting;inkCanvas.style.opacity=recording?'0':'1';captureMode.disabled=recording||recordingStarting;quality.disabled=recording||recordingStarting;outputRatio.disabled=recording||recordingStarting;recordBtn.disabled=recording||recordingStarting||!baseAvailable()||((mode==='screen-camera'||mode==='camera-slides')&&!cameraStream);
+ let startReason='';
+ if(mode==='camera'&&!cameraStream)startReason='Start Camera first.';
+ else if(mode==='camera-slides'&&!cameraStream)startReason='Start Camera and upload slides first.';
+ else if(mode==='camera-slides'&&!slides.length)startReason='Upload PDF slides or images first.';
+ else if(mode==='screen'&&!screenStream&&!slides.length)startReason='Share Screen or upload PDF / image slides first.';
+ else if(mode==='screen-camera'&&!cameraStream)startReason='Start Camera first, then share screen or upload slides.';
+ else if(mode==='screen-camera'&&!screenStream&&!slides.length)startReason='Share Screen or upload PDF / image slides first.';
+ recordBtn.title=recording?'Recording':recordingStarting?'Preparing MP4 recording…':(startReason||'Start MP4 recording');
+ autoCaptionsEnabled.disabled=recording||recordingStarting;captionLanguage.disabled=recording||recordingStarting;[introCardEnabled,introCardDuration,introCardTitle,introCardSubtitle,outroCardEnabled,outroCardDuration,outroCardTitle,outroCardSubtitle].forEach(el=>el.disabled=recording||recordingStarting||stoppingRecording);
  cameraBtn.disabled=recording||recordingStarting;micBtn.disabled=recording||recordingStarting;screenBtn.disabled=recording||recordingStarting||(!screenStream&&!screenShareCapability().supported);updateScreenShareHint();screenBtn.title=screenStream?'Stop the active screen share':screenShareCapability().message;$('cameraSwitchBtn').disabled=recording||recordingStarting||!cameraStream;
  $('muteBtn').disabled=!micStream;
  $('cameraBtn').textContent=cameraStream?'⏹ Stop Camera':'📷 Start Camera';
@@ -2140,13 +2149,23 @@ async function startRecording(isTest=false){
  const mime=getMime();if(mime===null){showError('MediaRecorder is not supported in this browser. Try current Chrome.');return;}if(!mime){showError('MP4 recording is not supported by this browser/device. Please use a browser that supports MediaRecorder MP4. No WebM recording will be created.');return;}
  recordingStarting=true;updateControls();
  try{if(micStream)await connectMic();if(screenStream&&screenStream.getAudioTracks().length)await connectScreenAudio();if(audioContext)await audioContext.resume();}catch(e){recordingStarting=false;updateControls();showError('Audio could not be prepared: '+e.message);return;}
- await runRecordCountdown();recordingStarting=false;
+ try{await runRecordCountdown();}catch(e){recordingStarting=false;updateControls();showError('Recording countdown failed: '+(e?.message||String(e)));return;}
  setCanvasQuality();if(!drawRAF)startDraw();
- const videoCapture=canvas.captureStream(30),audioTracks=await makeAudioTrack();
- const output=new MediaStream([...videoCapture.getVideoTracks(),...audioTracks]);
+ let videoCapture,output;
+ try{
+  videoCapture=canvas.captureStream(30);
+  const audioTracks=await makeAudioTrack();
+  output=new MediaStream([...videoCapture.getVideoTracks(),...audioTracks]);
+  if(!output.getVideoTracks().length)throw new Error('The lecture canvas did not provide a video track.');
+ }catch(e){
+  recordingStarting=false;
+  if(videoCapture)videoCapture.getTracks().forEach(t=>{try{t.stop();}catch{}});
+  updateControls();showError('Could not prepare the recording stream: '+(e?.message||String(e))+' Reopen the Recorder page and try again.');
+  return;
+ }
  const h=selectedOutputQuality(),isAppleMobile=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1),lowData=dataSaver.checked||!!navigator.connection?.saveData,videoBits=(isAppleMobile||lowData)?1200000:(h===1080?6500000:h===720?4000000:2200000);
  try{recorder=mime?new MediaRecorder(output,{mimeType:mime,videoBitsPerSecond:videoBits,audioBitsPerSecond:160000}):new MediaRecorder(output,{videoBitsPerSecond:videoBits,audioBitsPerSecond:160000});}
- catch(e){recordingStarting=false;videoCapture.getTracks().forEach(t=>t.stop());updateControls();showError('Recorder could not start: '+e.message);return;}
+ catch(e){recordingStarting=false;videoCapture.getTracks().forEach(t=>t.stop());updateControls();showError('MP4 recorder could not be created: '+(e?.message||String(e))+'. Run Device / Browser Compatibility and confirm MP4 recording support.');return;}
  sessionId=requestId();chunkIndex=0;localChunks=[];writeQueue=Promise.resolve();const session={id:sessionId,name:'officerlab-lecture-'+stamp()+(mime&&mime.includes('mp4')?'.mp4':'.webm'),status:'recording',mime:mime||'video/webm',quality:h,createdAt:Date.now(),duration:0,transcript:'',captions:[]};captionCues=[];captionLastCueEnd=0;captionSaveQueue=Promise.resolve();activeCaptionSession=session;captionStopAtMs=null;
  try{await putSession(session);}catch(e){recordingStarting=false;showError('Local recovery storage could not be initialized: '+e.message);recorder=null;videoCapture.getTracks().forEach(t=>t.stop());updateControls();return;}
  recorder.ondataavailable=e=>{
@@ -2172,7 +2191,17 @@ async function startRecording(isTest=false){
   localChunks=[];if(outroTimer){clearTimeout(outroTimer);outroTimer=null;}if(recorder&&recorder.stream)recorder.stream.getTracks().forEach(t=>{if(t.kind==='video'&&t.label.includes('Canvas'))t.stop()});recorder=null;recording=false;paused=false;recordingStarting=false;stoppingRecording=false;outroStartedAt=0;recordElapsedMs=0;recordSegmentStartedAt=0;sessionId=null;activeCaptionSession=null;captionRecognition=null;captionCues=[];captionLastCueEnd=0;captionStopAtMs=null;
   recordBtn.textContent='⏺ Start Recording';recordBtn.classList.remove('danger');recordBtn.classList.add('primary');pauseBtn.textContent='Ⅱ Pause';pauseBtn.disabled=true;stopBtn.disabled=true;cameraBtn.disabled=false;micBtn.disabled=false;screenBtn.disabled=false;cameraSelect.disabled=!cameraStream;micSelect.disabled=!micStream;badge.classList.remove('on');updateControls();restorePresentationOutputRatio();
  };
- recorder.start(3000);startedAt=Date.now();recordElapsedMs=0;recordSegmentStartedAt=startedAt;recording=true;paused=false;stoppingRecording=false;outroStartedAt=0;if(lowerThirdEnabled.checked){lowerThirdStartedAt=performance.now();lowerThirdRecordingStartedAt=0;}
+ try{recorder.start(3000);}
+ catch(e){
+  const detail=e?.message||String(e);
+  try{await putSession({...session,status:'failed',error:detail,failedAt:Date.now()});}catch{}
+  try{recorder.stream.getTracks().filter(t=>t.kind==='video').forEach(t=>t.stop());}catch{}
+  recorder=null;sessionId=null;activeCaptionSession=null;recordingStarting=false;recording=false;paused=false;stoppingRecording=false;
+  updateControls();
+  showError('MP4 recording could not start: '+detail+'. Run Device / Browser Compatibility and confirm that this PC browser supports MP4 MediaRecorder.');
+  return;
+ }
+ startedAt=Date.now();recordElapsedMs=0;recordSegmentStartedAt=startedAt;recording=true;recordingStarting=false;paused=false;stoppingRecording=false;outroStartedAt=0;if(lowerThirdEnabled.checked){lowerThirdStartedAt=performance.now();lowerThirdRecordingStartedAt=0;}
  recordBtn.textContent='● Recording';recordBtn.classList.add('danger');pauseBtn.disabled=false;stopBtn.disabled=false;cameraBtn.disabled=true;micBtn.disabled=true;screenBtn.disabled=true;cameraSelect.disabled=true;micSelect.disabled=true;badge.classList.add('on');timer.textContent='00:00';
  recordTimer=setInterval(()=>{timer.textContent=clock(recordingElapsedMs())},250);
  if(autoCaptionsEnabled.checked)startCaptionCapture();
@@ -2751,15 +2780,16 @@ async function runDeviceCheck(){
   const chrome=ua.match(/(?:Chrome|CriOS)\/([\d.]+)/i);
   const browser=navigator.userAgentData?.brands?.map(x=>x.brand+' '+x.version).join(', ')||(chrome?'Chrome '+chrome[1]:'Browser not identified');
   const secure=!!window.isSecureContext,media=!!navigator.mediaDevices?.getUserMedia,recorder=!!window.MediaRecorder,canvasCapture=!!HTMLCanvasElement.prototype.captureStream,db=!!window.indexedDB;
-  const candidates=['video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];
+  const candidates=['video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4'];
   let supportedMime='';
   if(recorder&&typeof MediaRecorder.isTypeSupported==='function'){for(const type of candidates){try{if(MediaRecorder.isTypeSupported(type)){supportedMime=type;break;}}catch{}}}
+  const mp4Supported=!!supportedMime;
   const getPermission=async name=>{try{return (await navigator.permissions.query({name})).state;}catch{return 'not exposed by browser';}};
   const [cameraPermission,micPermission]=await Promise.all([getPermission('camera'),getPermission('microphone')]);
   let storage='not exposed';try{const est=await navigator.storage?.estimate?.();if(est){const free=Math.max(0,(est.quota||0)-(est.usage||0));storage=(free/1048576).toFixed(0)+' MB estimated free';}}catch{}
   const audio=!!(window.AudioContext||window.webkitAudioContext),screen=!!navigator.mediaDevices?.getDisplayMedia&&secure,fullscreen=!!document.documentElement.requestFullscreen,speech=!!(window.SpeechRecognition||window.webkitSpeechRecognition),sw=('serviceWorker'in navigator);
   const screenDetail=screen?'getDisplayMedia API available':android?'Not supported by Android Chrome/mobile browser':'Not available in this browser or page context';
-  const required=[secure,media,recorder,canvasCapture,db],ready=required.every(Boolean);
+  const required=[secure,media,recorder,canvasCapture,db,mp4Supported],ready=required.every(Boolean);
   const rows=[
    'OFFICERLAB — DEVICE COMPATIBILITY REPORT',
    'Date: '+new Date().toLocaleString(),
@@ -2773,7 +2803,7 @@ async function runDeviceCheck(){
    deviceCheckLine('MediaRecorder',recorder,recorder?'Available':'Missing'),
    deviceCheckLine('Canvas video capture',canvasCapture,'Required for composited lecture recording'),
    deviceCheckLine('IndexedDB local recovery',db,'Required for local session/chunk storage'),
-   deviceCheckLine('Supported recording format',!!supportedMime||recorder,supportedMime||'Browser default codec will be selected',!supportedMime),
+   deviceCheckLine('MP4 recording support',mp4Supported,supportedMime||'MP4 MediaRecorder is not advertised by this browser. This recorder is MP4-only and will not fall back to WebM.'),
    '',
    'OPTIONAL / BROWSER-DEPENDENT FEATURES',
    deviceCheckLine('Screen sharing',screen,screenDetail,true),
@@ -2787,7 +2817,7 @@ async function runDeviceCheck(){
    'Microphone: '+micPermission,
    'Estimated free web storage: '+storage,
    '',
-   'OVERALL: '+(ready?'READY — core browser APIs are available. Run a short recording test to verify camera, microphone and file playback.':'CHECK REQUIRED ITEMS — one or more core APIs are missing. Use current Chrome over HTTPS and rerun.'),
+   'OVERALL: '+(ready?'READY — core browser APIs and MP4 encoding are available. Run a short recording test to verify camera, microphone and MP4 playback.':'CHECK REQUIRED ITEMS — one or more core APIs or MP4 encoding support are missing. Use an up-to-date desktop Chrome or Edge over HTTPS and rerun.'),
    'Note: This check does not grant permissions, start recording, or prove actual camera/microphone hardware operation.'
   ];
   latestDeviceReport=rows.join('\n');deviceCheckResults.textContent=latestDeviceReport;deviceCheckCopyBtn.disabled=false;
