@@ -3,7 +3,7 @@
   "appName": "OfficerLab Lecture Studio",
   "webDir": "dist",
   "server": {
-    "url": "https://deploy-preview-20--officerlab-cinematic-studio.netlify.app/gpsc-guidance-recorder.html",
+    "url": "https://officerlab-cinematic-studio-git-f-3c8a1d-pratikranoliya998-1015.vercel.app",
     "cleartext": false,
     "androidScheme": "https"
   },
