@@ -1039,7 +1039,7 @@ let micTestRecorder=null,micTestChunks=[],micTestTimer=null;
 
 const slidesInput=$('slidesInput'),slideDisplayMode=$('slideDisplayMode'),slideTransitionsEnabled=$('slideTransitionsEnabled'),slideTransitionType=$('slideTransitionType'),slideMotionEnabled=$('slideMotionEnabled'),progressBarEnabled=$('progressBarEnabled'),progressDurationMinutes=$('progressDurationMinutes'),progressBarHint=$('progressBarHint'),prevSlide=$('prevSlide'),nextSlide=$('nextSlide'),slideCount=$('slideCount'),clearSlides=$('clearSlides'),slideJump=$('slideJump'),slideTotal=$('slideTotal'),goSlide=$('goSlide');
 const motionGraphicInput=$('motionGraphicInput'),motionGraphicSelect=$('motionGraphicSelect'),motionGraphicEnabled=$('motionGraphicEnabled'),motionGraphicPosition=$('motionGraphicPosition'),motionGraphicSize=$('motionGraphicSize'),motionGraphicSizeVal=$('motionGraphicSizeVal'),motionGraphicOpacity=$('motionGraphicOpacity'),motionGraphicOpacityVal=$('motionGraphicOpacityVal'),motionGraphicStatus=$('motionGraphicStatus'),clearMotionGraphics=$('clearMotionGraphics');
-const motionGraphicStartAt=$('motionGraphicStartAt'),motionGraphicDuration=$('motionGraphicDuration'),motionGraphicPreviewAt=$('motionGraphicPreviewAt'),motionGraphicTimingHint=$('motionGraphicTimingHint');
+const motionGraphicStartAt=$('motionGraphicStartAt'),motionGraphicDuration=$('motionGraphicDuration'),motionGraphicPreviewAt=$('motionGraphicPreviewAt'),motionGraphicTimingHint=$('motionGraphicTimingHint');const motionGraphicList=$('motionGraphicList'),motionGraphicCount=$('motionGraphicCount');
 try{
  const crossfade=localStorage.getItem('officerlab-slide-crossfade'),motion=localStorage.getItem('officerlab-slide-motion'),transition=localStorage.getItem('officerlab-slide-transition-type');
  if(crossfade!==null)slideTransitionsEnabled.checked=crossfade==='1';
@@ -1882,6 +1882,39 @@ function releaseMotionGraphic(asset){
 function motionGraphicClockSeconds(){
  return recording?Math.max(0,recordingElapsedMs()/1000):Math.max(0,Number(motionGraphicPreviewAt.value)||0);
 }
+function refreshMotionGraphicSelect(){
+ const selected=activeMotionGraphicIndex;
+ motionGraphicSelect.innerHTML='';
+ if(!motionGraphics.length){
+  motionGraphicSelect.add(new Option('No attachment loaded',''));
+  motionGraphicSelect.disabled=true;motionGraphicEnabled.checked=false;motionGraphicEnabled.disabled=true;clearMotionGraphics.disabled=true;
+  return;
+ }
+ motionGraphics.forEach((asset,index)=>motionGraphicSelect.add(new Option((index+1)+'. '+asset.name,String(index))));
+ activeMotionGraphicIndex=Math.max(0,Math.min(motionGraphics.length-1,selected));
+ motionGraphicSelect.value=String(activeMotionGraphicIndex);
+ motionGraphicSelect.disabled=false;motionGraphicEnabled.disabled=false;clearMotionGraphics.disabled=false;
+}
+function renderMotionGraphicList(){
+ motionGraphicList.replaceChildren();
+ motionGraphicCount.textContent=motionGraphics.length+' attached';
+ if(!motionGraphics.length){
+  const empty=document.createElement('div');empty.className='motion-graphic-empty';
+  empty.textContent='No graphics added yet. Select multiple GIF, MP4, WebM, PNG, JPG or WebP files above.';
+  motionGraphicList.append(empty);return;
+ }
+ motionGraphics.forEach((asset,index)=>{
+  const row=document.createElement('div');row.className='motion-graphic-item'+(index===activeMotionGraphicIndex?' is-selected':'');
+  const pick=document.createElement('button');pick.type='button';pick.className='motion-graphic-item-main';pick.dataset.motionGraphicIndex=String(index);
+  const icon=document.createElement('span');icon.className='motion-graphic-item-icon';icon.textContent=asset.kind==='video'?'▶':'▧';
+  const copy=document.createElement('span');copy.className='motion-graphic-item-copy';
+  const name=document.createElement('span');name.className='motion-graphic-item-name';name.textContent=(index+1)+'. '+asset.name;
+  const meta=document.createElement('span');meta.className='motion-graphic-item-meta';meta.textContent='Starts '+(Number(asset.startAtSeconds)||0)+'s · visible '+(Number(asset.durationSeconds)||5)+'s';
+  copy.append(name,meta);pick.append(icon,copy);pick.setAttribute('aria-pressed',String(index===activeMotionGraphicIndex));
+  const remove=document.createElement('button');remove.type='button';remove.className='motion-graphic-item-remove';remove.textContent='Remove';remove.dataset.removeMotionGraphic=String(index);remove.setAttribute('aria-label','Remove '+asset.name);
+  row.append(pick,remove);motionGraphicList.append(row);
+ });
+}
 function syncMotionGraphicTimingControls(){
  const asset=motionGraphics[activeMotionGraphicIndex],hasAsset=!!asset;
  motionGraphicStartAt.disabled=!hasAsset;motionGraphicDuration.disabled=!hasAsset;motionGraphicPreviewAt.disabled=!hasAsset;
@@ -1898,9 +1931,9 @@ function saveActiveMotionGraphicTiming(){
  asset.startAtSeconds=Math.max(0,Math.min(21600,Number(motionGraphicStartAt.value)||0));
  asset.durationSeconds=Math.max(.5,Math.min(21600,Number(motionGraphicDuration.value)||5));
  if(asset.kind==='video'){asset.media.pause();asset._schedulePlaying=false;try{asset.media.currentTime=0;}catch{}}
- syncMotionGraphicTimingControls();
- motionGraphicStatus.textContent=asset.name+' scheduled from '+asset.startAtSeconds+'s for '+asset.durationSeconds+'s. All uploaded graphics follow their own timing.';
- if(!drawRAF)startDraw();else startDraw();
+ syncMotionGraphicTimingControls();renderMotionGraphicList();
+ motionGraphicStatus.textContent=asset.name+' scheduled from '+asset.startAtSeconds+'s for '+asset.durationSeconds+'s. Other attachments keep their own schedules; overlapping windows are allowed.';
+ startDraw();
 }
 function updateScheduledMotionGraphicPlayback(nowSeconds){
  motionGraphics.forEach(asset=>{
@@ -1919,65 +1952,75 @@ function updateScheduledMotionGraphicPlayback(nowSeconds){
  });
 }
 async function loadMotionGraphics(fileList){
- const files=[...fileList||[]];
- if(!files.length)return;
- clearMotionGraphicAttachments(false);
+ const files=[...fileList||[]];if(!files.length)return;
  const version=(loadMotionGraphics.version||0)+1;loadMotionGraphics.version=version;
- const accepted=[];
+ const accepted=[],existingCount=motionGraphics.length;
+ motionGraphicStatus.textContent='Loading '+files.length+' new file(s)…';
  for(const file of files){
-  const name=file.name.toLowerCase(),isVideo=file.type.startsWith('video/')||/\\.(mp4|webm)$/.test(name),isImage=file.type.startsWith('image/')||/\\.(gif|png|jpe?g|webp)$/.test(name);
+  const name=file.name.toLowerCase(),isVideo=file.type.startsWith('video/')||/\.(mp4|webm)$/.test(name),isImage=file.type.startsWith('image/')||/\.(gif|png|jpe?g|webp)$/.test(name);
   if(!isVideo&&!isImage)continue;
   if(file.size>120*1024*1024){motionGraphicStatus.textContent='Skipped '+file.name+' (larger than 120 MB).';continue;}
-  const asset={name:file.name,kind:isVideo?'video':'image',url:URL.createObjectURL(file),media:null,startAtSeconds:accepted.length*10,durationSeconds:5,_schedulePlaying:false};
+  const asset={name:file.name,kind:isVideo?'video':'image',url:URL.createObjectURL(file),media:null,startAtSeconds:(existingCount+accepted.length)*10,durationSeconds:5,_schedulePlaying:false};
   try{
    if(isVideo){
     const video=document.createElement('video');video.muted=true;video.loop=true;video.playsInline=true;video.preload='auto';video.src=asset.url;
-    await new Promise((resolve,reject)=>{if(video.readyState>=2){resolve();return;}video.addEventListener('loadeddata',resolve,{once:true});video.addEventListener('error',()=>reject(new Error('Video could not be decoded')), {once:true});});
+    await new Promise((resolve,reject)=>{if(video.readyState>=2){resolve();return;}video.addEventListener('loadeddata',resolve,{once:true});video.addEventListener('error',()=>reject(new Error('Video could not be decoded')),{once:true});});
     asset.media=video;
    }else{
     const img=new Image();img.src=asset.url;await img.decode();asset.media=img;
    }
-   if(version!==loadMotionGraphics.version){releaseMotionGraphic(asset);return;}
+   if(version!==loadMotionGraphics.version){releaseMotionGraphic(asset);accepted.forEach(releaseMotionGraphic);return;}
    accepted.push(asset);
   }catch(error){releaseMotionGraphic(asset);console.warn('Motion graphic attachment skipped:',file.name,error);}
  }
  if(version!==loadMotionGraphics.version){accepted.forEach(releaseMotionGraphic);return;}
- motionGraphics=accepted;activeMotionGraphicIndex=motionGraphics.length?0:-1;
- motionGraphicSelect.innerHTML='';
- if(!motionGraphics.length){
-  motionGraphicSelect.add(new Option('No supported attachment loaded',''));
-  motionGraphicSelect.disabled=true;motionGraphicEnabled.checked=false;motionGraphicEnabled.disabled=true;clearMotionGraphics.disabled=true;
-  syncMotionGraphicTimingControls();
-  motionGraphicStatus.textContent='No supported motion graphic could be loaded. Try GIF, MP4, WebM, PNG, JPG or WebP.';
-  return;
+ if(!accepted.length){
+  if(!motionGraphics.length){refreshMotionGraphicSelect();renderMotionGraphicList();syncMotionGraphicTimingControls();}
+  motionGraphicStatus.textContent='No new supported file could be loaded. Existing attachments were kept.';
+  motionGraphicInput.value='';return;
  }
- motionGraphics.forEach((asset,index)=>motionGraphicSelect.add(new Option(asset.name,String(index))));
- motionGraphicSelect.value='0';motionGraphicSelect.disabled=false;motionGraphicEnabled.disabled=false;motionGraphicEnabled.checked=true;clearMotionGraphics.disabled=false;
- syncMotionGraphicTimingControls();
- motionGraphicStatus.textContent=motionGraphics.length+' visual attachment(s) ready. Each attachment can have its own start time and visible duration.';
+ motionGraphics=[...motionGraphics,...accepted];
+ activeMotionGraphicIndex=existingCount;
+ refreshMotionGraphicSelect();renderMotionGraphicList();syncMotionGraphicTimingControls();
+ motionGraphicEnabled.checked=true;
+ motionGraphicStatus.textContent=accepted.length+' new attachment(s) added. '+motionGraphics.length+' total graphics are ready; add more files at any time.';
+ motionGraphicInput.value='';
  playActiveMotionGraphic();
- if(!drawRAF)startDraw();
 }
-function pauseMotionGraphics(){
- motionGraphics.forEach(asset=>{if(asset.kind==='video'){asset.media.pause();asset._schedulePlaying=false;}});
-}
+function pauseMotionGraphics(){motionGraphics.forEach(asset=>{if(asset.kind==='video'){asset.media.pause();asset._schedulePlaying=false;}});}
 function playActiveMotionGraphic(){
  updateScheduledMotionGraphicPlayback(motionGraphicClockSeconds());
- if(!drawRAF)startDraw();else startDraw();
+ startDraw();
 }
 function selectMotionGraphic(index){
- if(!Number.isInteger(index)||index<0||index>=motionGraphics.length){activeMotionGraphicIndex=-1;pauseMotionGraphics();syncMotionGraphicTimingControls();return;}
- activeMotionGraphicIndex=index;syncMotionGraphicTimingControls();playActiveMotionGraphic();
+ if(!Number.isInteger(index)||index<0||index>=motionGraphics.length){activeMotionGraphicIndex=-1;pauseMotionGraphics();syncMotionGraphicTimingControls();renderMotionGraphicList();return;}
+ activeMotionGraphicIndex=index;refreshMotionGraphicSelect();syncMotionGraphicTimingControls();renderMotionGraphicList();playActiveMotionGraphic();
 }
+function removeMotionGraphic(index){
+ if(!Number.isInteger(index)||index<0||index>=motionGraphics.length)return;
+ const removed=motionGraphics[index];releaseMotionGraphic(removed);motionGraphics.splice(index,1);
+ if(!motionGraphics.length){clearMotionGraphicAttachments(false);return;}
+ if(activeMotionGraphicIndex>index)activeMotionGraphicIndex--;
+ else if(activeMotionGraphicIndex===index)activeMotionGraphicIndex=Math.min(index,motionGraphics.length-1);
+ refreshMotionGraphicSelect();syncMotionGraphicTimingControls();renderMotionGraphicList();
+ motionGraphicStatus.textContent=removed.name+' removed. '+motionGraphics.length+' attachment(s) remain.';
+ startDraw();
+}
+motionGraphicList.addEventListener('click',event=>{
+ const remove=event.target.closest('[data-remove-motion-graphic]');
+ if(remove){removeMotionGraphic(Number(remove.dataset.removeMotionGraphic));return;}
+ const pick=event.target.closest('[data-motion-graphic-index]');
+ if(pick)selectMotionGraphic(Number(pick.dataset.motionGraphicIndex));
+});
 function clearMotionGraphicAttachments(clearInput=true){
  loadMotionGraphics.version=(loadMotionGraphics.version||0)+1;
  motionGraphics.forEach(releaseMotionGraphic);motionGraphics=[];activeMotionGraphicIndex=-1;
  motionGraphicSelect.innerHTML='';motionGraphicSelect.add(new Option('No attachment loaded',''));
  motionGraphicSelect.disabled=true;motionGraphicEnabled.checked=false;motionGraphicEnabled.disabled=true;clearMotionGraphics.disabled=true;
  if(clearInput)motionGraphicInput.value='';
- syncMotionGraphicTimingControls();
- motionGraphicStatus.textContent='No motion graphic attached. Upload an explanatory visual to add it to the recording.';
- if(!drawRAF)startDraw();else startDraw();
+ syncMotionGraphicTimingControls();renderMotionGraphicList();
+ motionGraphicStatus.textContent='No motion graphic attached. Upload one or more explanatory visuals to add them to the recording.';
+ startDraw();
 }
 function drawMotionGraphic(target){
  if(!motionGraphicEnabled.checked||!motionGraphics.length)return;
