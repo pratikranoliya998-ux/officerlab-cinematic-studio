@@ -167,4 +167,34 @@ function PresentationStudio() {
     </main>
   </div>;
 }
-const root=createRoot(document.getElementById("root"));root.render(<PresentationStudio/>);
+class OfficerLabErrorBoundary extends React.Component {
+  constructor(props){super(props);this.state={error:null};}
+  static getDerivedStateFromError(error){return {error};}
+  componentDidCatch(error,info){console.error("OfficerLab render failure",error,info);}
+  render(){
+    if(this.state.error){
+      return <div style={{minHeight:"100dvh",background:"#080d17",color:"#f5f7fb",fontFamily:"system-ui,sans-serif",padding:"24px",boxSizing:"border-box"}}>
+        <div style={{maxWidth:560,margin:"8vh auto",padding:24,border:"1px solid #273449",borderRadius:20,background:"#101827"}}>
+          <div style={{fontSize:14,color:"#f2c879",fontWeight:800,letterSpacing:2}}>OFFICERLAB / RECOVERY</div>
+          <h1 style={{margin:"12px 0"}}>The studio could not start</h1>
+          <p style={{color:"#aab6c8"}}>The app caught a startup error instead of showing a blank screen. Reload after checking the error below.</p>
+          <pre style={{whiteSpace:"pre-wrap",wordBreak:"break-word",background:"#080d17",padding:14,borderRadius:12,color:"#ffb3b3"}}>{String(this.state.error?.message||this.state.error)}</pre>
+          <button onClick={()=>location.reload()} style={{background:"#e4b75f",color:"#111827",border:0,borderRadius:12,padding:"12px 18px",fontWeight:800}}>Reload OfficerLab</button>
+        </div>
+      </div>;
+    }
+    return this.props.children;
+  }
+}
+const rootElement=document.getElementById("root");
+if(rootElement){
+  try{
+    const root=createRoot(rootElement);
+    root.render(<OfficerLabErrorBoundary><PresentationStudio/></OfficerLabErrorBoundary>);
+  }catch(error){
+    rootElement.innerHTML='<div style="background:#080d17;color:#fff;min-height:100vh;padding:24px;font-family:system-ui"><h2>OfficerLab startup failed</h2><pre style="white-space:pre-wrap"></pre></div>';
+    rootElement.querySelector("pre").textContent=String(error?.message||error);
+  }
+}else{
+  console.error("OfficerLab: #root mount element is missing.");
+}
