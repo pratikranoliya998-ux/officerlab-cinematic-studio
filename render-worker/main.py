@@ -162,7 +162,7 @@ def health():
         "ok": True,
         "service": "officerlab-render-worker",
         "ffmpeg": shutil.which("ffmpeg") is not None,
-        "legacy_conversion": os.getenv("LEGACY_CONVERSION_ENABLED", "false").lower() == "true",
+        "legacy_conversion": os.getenv("LEGACY_CONVERSION_ENABLED", "true").lower() == "true",
     }
 
 
