@@ -1,0 +1,11 @@
+{
+  "appId": "com.officerlab.lecturestudio",
+  "appName": "OfficerLab Lecture Studio",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": false
+  }
+}
