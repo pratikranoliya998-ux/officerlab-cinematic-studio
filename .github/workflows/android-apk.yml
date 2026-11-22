@@ -1,4 +1,4 @@
-name: Build OfficerLab Lecture Studio Android APK
+name: Build Android app for Netlify OfficerLab Lecture Studio
 
 on:
   workflow_dispatch:
@@ -8,6 +8,8 @@ on:
     paths:
       - "src/**"
       - "public/**"
+      - "assets/**"
+      - "scripts/generate_android_icons.py"
       - "package.json"
       - "capacitor.config.json"
       - "patch-android-manifest.py"
@@ -19,6 +21,8 @@ on:
     paths:
       - "src/**"
       - "public/**"
+      - "assets/**"
+      - "scripts/generate_android_icons.py"
       - "package.json"
       - "capacitor.config.json"
       - "patch-android-manifest.py"
@@ -44,6 +48,12 @@ jobs:
         with:
           distribution: temurin
           java-version: "21"
+      - name: Set up Python for Android icon generation
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Python image tooling
+        run: python -m pip install --disable-pip-version-check Pillow
       - name: Install dependencies
         run: npm install --no-audit --no-fund
       - name: Build web application
@@ -58,6 +68,8 @@ jobs:
         run: npx cap sync android
       - name: Apply Android camera and microphone permissions
         run: python3 patch-android-manifest.py
+      - name: Apply OfficerLab launcher logo
+        run: python scripts/generate_android_icons.py
       - name: Build debug APK
         working-directory: android
         run: |
