@@ -22,3 +22,5 @@ services:
         value: gemini-3.8-flash
       - key: API_RATE_LIMIT_PER_MINUTE
         value: "10"
+      - key: LEGACY_CONVERSION_ENABLED
+        value: "true"
