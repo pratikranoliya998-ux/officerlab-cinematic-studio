@@ -175,7 +175,7 @@ textarea{min-height:150px;resize:vertical;line-height:1.6}
 .progress-bar-settings input[type=number]{width:76px}
 .progress-bar-settings .progress-note{flex:1 1 100%;font-size:10px;color:var(--muted);line-height:1.4}
 @media(max-width:520px){.slide-animation-options .transition-picker{flex:1 1 100%}.slide-animation-options select{flex:1;width:100%}}
-.error{display:none;background:#f8514920;border:1px solid #f8514980;color:#ffb3ae;border-radius:10px;padding:10px;margin-top:10px;font-size:12px}
+.error{display:none;background:#f8514920;border:1px solid #f8514980;color:#ffb3ae;border-radius:10px;padding:10px;margin-top:10px;font-size:12px}.conversion-note{display:none;background:#2563eb18;border:1px solid #60a5fa66;color:#bfdbfe;border-radius:10px;padding:10px;margin-top:10px;font-size:12px;line-height:1.5}.conversion-note.on{display:block}
 .hint{font-size:11px;color:var(--muted);line-height:1.5;margin:7px 0 0}
 #recList{display:flex;flex-direction:column;gap:9px;max-height:420px;overflow:auto}
 .empty{padding:20px 9px;text-align:center;color:var(--muted);font-size:12px;line-height:1.55}
@@ -1055,6 +1055,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
     <p class="hint" id="motionGraphicStatus" role="status" aria-live="polite">No motion graphic attached. Uploaded files remain local to this browser session; attachment preferences are saved as defaults.</p>
   </section></div></details>
   <div id="error" class="error" role="alert"></div>
+  <div id="conversionNotice" class="conversion-note" role="status" aria-live="polite"></div>
   <p class="screen-note">To enable Start Recording on PC: in the default Screen / slides mode, first click Share Screen and choose a tab, window or display, or upload PDF / image slides. In Camera only mode, click Start Camera first. MP4 recording also requires browser support for MP4 MediaRecorder; this recorder will not create WebM files.</p>
 <details class="setup-compartment" id="deviceCompartment"><summary><span class="compartment-number">05</span><span><strong>Device compatibility</strong><small>Check Android and browser media support</small></span><span class="compartment-chevron">⌄</span></summary><div class="compartment-body">
   <section class="device-diagnostic card" id="deviceDiagnosticPanel">
@@ -1136,17 +1137,34 @@ let audioContext=null,audioDestination=null,micGain=null,screenGain=null,micAnal
 let layout='pip',pip={x:.77,y:.73},activeTool='pen',drawing=false,slides=[],slideIndex=0,pdfDoc=null,slideSource=null,slideUrls=[],presentationSavedOutputRatio=null;
 let motionGraphics=[],activeMotionGraphicIndex=-1,lastInkMidpoint=null;
 let slideLoadVersion=0,slideTransitionFromFrame=null,slideTransitionToFrame=null,slideTransitionStartedAt=0,slideMotionStartedAt=performance.now();
-let sessionId=null,chunkIndex=0,writeQueue=Promise.resolve(),localChunks=[],recording=false,paused=false,recordingStarting=false,stoppingRecording=false,startedAt=0,recordElapsedMs=0,recordSegmentStartedAt=0,testTimeout=null,outroStartedAt=0,outroTimer=null;
+let sessionId=null,chunkIndex=0,writeQueue=Promise.resolve(),localChunks=[],recording=false,paused=false,recordingStarting=false,stoppingRecording=false,startedAt=0,recordElapsedMs=0,recordSegmentStartedAt=0,testTimeout=null,outroStartedAt=0,outroTimer=null,legacyCaptureActive=false,legacyConverterReady=false;
 let saved=[],recoveryItems=[],activeMediaElement=null,mediaSessionReady=false;
 let teleprompterRAF=0,teleprompterLastFrame=0,lastInkPoint=null,lastInkPointerId=null,lowerThirdStartedAt=0,lowerThirdRecordingStartedAt=0;
 let captionRecognition=null,captionDesired=false,captionSuspended=false,captionRestartTimer=null,captionStopResolver=null,captionSaveQueue=Promise.resolve(),activeCaptionSession=null,captionCues=[],captionLastCueEnd=0,captionStopAtMs=null;
 const showError=message=>{error.textContent=message;error.style.display='block'};
 const clearError=()=>{error.textContent='';error.style.display='none'};
+const LEGACY_RENDER_API='https://officerlab-cinematic-studio.onrender.com';
+function setConversionNotice(message=''){const node=$('conversionNotice');node.textContent=message;node.classList.toggle('on',!!message);}
+async function checkLegacyConverter(){
+ try{const response=await fetch(LEGACY_RENDER_API+'/health',{method:'GET',cache:'no-store'});if(!response.ok)throw new Error('Render worker HTTP '+response.status);const data=await response.json();legacyConverterReady=!!(data.ok&&data.ffmpeg&&data.legacy_conversion);return legacyConverterReady;}
+ catch(e){legacyConverterReady=false;return false;}
+}
+async function convertLegacyWebMToMP4(sourceBlob){
+ if(!sourceBlob||sourceBlob.size<1024)throw new Error('Temporary recording is empty.');
+ if(sourceBlob.size>200*1024*1024)throw new Error('Temporary recording is larger than 200 MB. Record at 720p or split the lecture into shorter parts.');
+ const form=new FormData();form.append('file',sourceBlob,'officerlab-legacy-capture.webm');
+ setConversionNotice('Legacy PC mode: uploading the temporary capture and converting it to MP4 on the OfficerLab render server. Keep this tab open until the MP4 is ready.');
+ const response=await fetch(LEGACY_RENDER_API+'/convert-legacy-recording',{method:'POST',body:form});
+ if(!response.ok){let detail='MP4 conversion service returned HTTP '+response.status;try{const data=await response.json();detail=data.detail||detail;}catch{}throw new Error(detail);}
+ const converted=await response.blob();
+ if(converted.size<1024||String(converted.type||'').toLowerCase().indexOf('video/mp4')!==0)throw new Error('The conversion service did not return a valid MP4 file.');
+ return new Blob([converted],{type:'video/mp4'});
+}
 const clock=ms=>{const sec=Math.max(0,Math.floor(ms/1000));return String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0')};
 const fileSize=bytes=>bytes<1024?bytes+' B':bytes<1048576?(bytes/1024).toFixed(1)+' KB':(bytes/1048576).toFixed(1)+' MB';
 const stamp=()=>{const d=new Date(),p=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'_'+p(d.getHours())+p(d.getMinutes())+p(d.getSeconds())};
 function selectedOutputQuality(){const requested=Number(quality.value);return dataSaver.checked?Math.min(requested,720):requested;}
-function setCanvasQuality(){const h=selectedOutputQuality(),w=h===1080?1920:h===720?1280:854,hh=h===1080?1080:h===720?720:480;const portrait=outputRatio.value==='portrait';canvas.width=portrait?hh:w;canvas.height=portrait?w:hh;inkCanvas.width=canvas.width;inkCanvas.height=canvas.height;stage.style.aspectRatio=portrait?'9 / 16':'16 / 9';$('recResolution').textContent=canvas.width+'×'+canvas.height;}
+function setCanvasQuality(){const h=legacyCaptureActive?Math.min(selectedOutputQuality(),720):selectedOutputQuality(),w=h===1080?1920:h===720?1280:854,hh=h===1080?1080:h===720?720:480;const portrait=outputRatio.value==='portrait';canvas.width=portrait?hh:w;canvas.height=portrait?w:hh;inkCanvas.width=canvas.width;inkCanvas.height=canvas.height;stage.style.aspectRatio=portrait?'9 / 16':'16 / 9';$('recResolution').textContent=canvas.width+'×'+canvas.height;}
 function changePresentationOutputRatio(ratio){
  const snapshot=document.createElement('canvas');
  snapshot.width=inkCanvas.width;snapshot.height=inkCanvas.height;
@@ -1276,8 +1294,13 @@ const getAllChunks=()=>dbAction('chunks','readonly',s=>s.getAll());
 const deleteChunk=(id,index)=>dbAction('chunks','readwrite',s=>s.delete([id,index]));
 function getMime(){
  if(!window.MediaRecorder)return null;
- // MP4-only recording mode. If the browser cannot record MP4, fail clearly.
  const candidates=['video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4'];
+ for(const type of candidates)try{if(MediaRecorder.isTypeSupported(type))return type}catch{}
+ return '';
+}
+function getLegacyWebMMime(){
+ if(!window.MediaRecorder||typeof MediaRecorder.isTypeSupported!=='function')return '';
+ const candidates=['video/webm;codecs=vp8,opus','video/webm;codecs=vp8','video/webm'];
  for(const type of candidates)try{if(MediaRecorder.isTypeSupported(type))return type}catch{}
  return '';
 }
@@ -2146,11 +2169,14 @@ async function startRecording(isTest=false){
  if(mode==='screen'&&!screenStream&&!slides.length){showError('Share your screen or upload a PDF/slides before recording.');return;}
  if(mode==='screen-camera'&&!screenStream&&!slides.length){showError('Share your screen or upload slides before recording.');return;}
  if(mode==='screen-camera'&&!cameraStream){showError('Screen + Face Cam mode also requires the camera. Start Camera first.');return;}
- const mime=getMime();if(mime===null){showError('MediaRecorder is not supported in this browser. Try current Chrome.');return;}if(!mime){showError('MP4 recording is not supported by this browser/device. Please use a browser that supports MediaRecorder MP4. No WebM recording will be created.');return;}
+ const nativeMime=getMime();if(nativeMime===null){showError('MediaRecorder is not supported in this browser.');return;}
+ const legacyMime=nativeMime?'':getLegacyWebMMime(),useLegacy=!nativeMime,mime=nativeMime||legacyMime;
+ if(!mime){showError('This browser supports neither MP4 recording nor the legacy capture format. Please use a newer browser or device.');return;}
+ if(useLegacy){recordingStarting=true;updateControls();setConversionNotice('Checking the OfficerLab MP4 conversion service…');const ready=await checkLegacyConverter();setConversionNotice('');if(!ready){recordingStarting=false;updateControls();showError('This older browser needs the OfficerLab MP4 conversion service, but the service is not ready. Please retry when the render worker is available. No WebM file will be offered.');return;}}
  recordingStarting=true;updateControls();
  try{if(micStream)await connectMic();if(screenStream&&screenStream.getAudioTracks().length)await connectScreenAudio();if(audioContext)await audioContext.resume();}catch(e){recordingStarting=false;updateControls();showError('Audio could not be prepared: '+e.message);return;}
  try{await runRecordCountdown();}catch(e){recordingStarting=false;updateControls();showError('Recording countdown failed: '+(e?.message||String(e)));return;}
- setCanvasQuality();if(!drawRAF)startDraw();
+ legacyCaptureActive=useLegacy;setCanvasQuality();if(!drawRAF)startDraw();
  let videoCapture,output;
  try{
   videoCapture=canvas.captureStream(30);
@@ -2163,11 +2189,11 @@ async function startRecording(isTest=false){
   updateControls();showError('Could not prepare the recording stream: '+(e?.message||String(e))+' Reopen the Recorder page and try again.');
   return;
  }
- const h=selectedOutputQuality(),isAppleMobile=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1),lowData=dataSaver.checked||!!navigator.connection?.saveData,videoBits=(isAppleMobile||lowData)?1200000:(h===1080?6500000:h===720?4000000:2200000);
+ const h=selectedOutputQuality(),isAppleMobile=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1),lowData=dataSaver.checked||!!navigator.connection?.saveData,videoBits=useLegacy?1600000:((isAppleMobile||lowData)?1200000:(h===1080?6500000:h===720?4000000:2200000));
  try{recorder=mime?new MediaRecorder(output,{mimeType:mime,videoBitsPerSecond:videoBits,audioBitsPerSecond:160000}):new MediaRecorder(output,{videoBitsPerSecond:videoBits,audioBitsPerSecond:160000});}
- catch(e){recordingStarting=false;videoCapture.getTracks().forEach(t=>t.stop());updateControls();showError('MP4 recorder could not be created: '+(e?.message||String(e))+'. Run Device / Browser Compatibility and confirm MP4 recording support.');return;}
- sessionId=requestId();chunkIndex=0;localChunks=[];writeQueue=Promise.resolve();const session={id:sessionId,name:'officerlab-lecture-'+stamp()+(mime&&mime.includes('mp4')?'.mp4':'.webm'),status:'recording',mime:mime||'video/webm',quality:h,createdAt:Date.now(),duration:0,transcript:'',captions:[]};captionCues=[];captionLastCueEnd=0;captionSaveQueue=Promise.resolve();activeCaptionSession=session;captionStopAtMs=null;
- try{await putSession(session);}catch(e){recordingStarting=false;showError('Local recovery storage could not be initialized: '+e.message);recorder=null;videoCapture.getTracks().forEach(t=>t.stop());updateControls();return;}
+ catch(e){recordingStarting=false;legacyCaptureActive=false;videoCapture.getTracks().forEach(t=>t.stop());setCanvasQuality();updateControls();showError((useLegacy?'Legacy capture recorder':'MP4 recorder')+' could not be created: '+(e?.message||String(e)));return;}
+ sessionId=requestId();chunkIndex=0;localChunks=[];writeQueue=Promise.resolve();const session={id:sessionId,name:'officerlab-lecture-'+stamp()+'.mp4',status:'recording',mime,sourceMime:mime,legacyConvert:useLegacy,quality:useLegacy?Math.min(h,720):h,createdAt:Date.now(),duration:0,transcript:'',captions:[]};captionCues=[];captionLastCueEnd=0;captionSaveQueue=Promise.resolve();activeCaptionSession=session;captionStopAtMs=null;
+ try{await putSession(session);}catch(e){recordingStarting=false;legacyCaptureActive=false;setCanvasQuality();showError('Local recovery storage could not be initialized: '+e.message);recorder=null;videoCapture.getTracks().forEach(t=>t.stop());updateControls();return;}
  recorder.ondataavailable=e=>{
   if(!e.data||!e.data.size)return;
   const index=chunkIndex++,blob=e.data;
@@ -2178,25 +2204,44 @@ async function startRecording(isTest=false){
  recorder.onstop=async()=>{
   const finalDuration=recordingElapsedMs();recordElapsedMs=finalDuration;recordSegmentStartedAt=0;captionStopAtMs=finalDuration;
   clearInterval(recordTimer);recordTimer=null;
+  let sourceBlob=null;
   try{
    await stopCaptionCapture();await captionSaveQueue;await writeQueue;
-   const type=recorder?.mimeType||mime||'video/webm',persisted=await getAllChunks().catch(()=>[]),partsByIndex=new Map(persisted.filter(p=>p.sessionId===sessionId).map(p=>[p.index,{index:p.index,blob:p.blob}]));localChunks.forEach(p=>partsByIndex.set(p.index,p));const orderedParts=[...partsByIndex.values()].sort((a,b)=>a.index-b.index),blob=new Blob(orderedParts.map(p=>p.blob),{type}),duration=finalDuration;
-   const ext=type.includes('mp4')?'mp4':'webm',name='officerlab-lecture-'+stamp()+'.'+ext;
-   if(blob.size){
-    const row={...session,name,status:'complete',mime:type,duration,blob,completedAt:Date.now()};
-    await putSession(row);await addSaved(row);
-    for(let i=0;i<chunkIndex;i++)await deleteChunk(sessionId,i);
+   const type=recorder?.mimeType||mime,persisted=await getAllChunks().catch(()=>[]),partsByIndex=new Map(persisted.filter(p=>p.sessionId===sessionId).map(p=>[p.index,{index:p.index,blob:p.blob}]));
+   localChunks.forEach(p=>partsByIndex.set(p.index,p));
+   const orderedParts=[...partsByIndex.values()].sort((a,b)=>a.index-b.index),duration=finalDuration;
+   sourceBlob=new Blob(orderedParts.map(p=>p.blob),{type});
+   if(!sourceBlob.size)throw new Error('No video data was captured.');
+   let finalBlob=sourceBlob,finalMime=type;
+   if(session.legacyConvert){finalBlob=await convertLegacyWebMToMP4(sourceBlob);finalMime='video/mp4';}
+   const name='officerlab-lecture-'+stamp()+'.mp4';
+   const row={...session,name,status:'complete',mime:finalMime,legacyConvert:false,sourceMime:session.legacyConvert?type:undefined,quality:session.legacyConvert?Math.min(session.quality,720):session.quality,duration,blob:finalBlob,completedAt:Date.now()};
+   await putSession(row);await addSaved(row);
+   for(let i=0;i<chunkIndex;i++)await deleteChunk(sessionId,i);
+   setConversionNotice('');
+  }catch(e){
+   if(session.legacyConvert&&sourceBlob&&sourceBlob.size){
+    try{
+     const pending={...session,status:'conversion-failed',mime:sourceBlob.type||mime,sourceMime:sourceBlob.type||mime,blob:sourceBlob,duration:finalDuration,conversionError:e?.message||String(e),failedAt:Date.now()};
+     await putSession(pending);
+     for(let i=0;i<chunkIndex;i++)await deleteChunk(sessionId,i);
+     setConversionNotice('Your temporary capture is safely saved in Recordings & Recovery. MP4 conversion did not complete: '+(e?.message||String(e))+' Use Retry MP4 conversion there. The temporary capture is not offered as a download.');
+    }catch(saveError){showError('MP4 conversion failed and the temporary capture could not be saved for retry: '+(saveError?.message||String(saveError)));}
+   }else{
+    showError('Recording finished, but it could not be saved: '+(e?.message||String(e)));
    }
-  }catch(e){showError('Recording finished, but it could not be saved to local recovery storage: '+e.message);if(localChunks.length){const parts=localChunks.sort((a,b)=>a.index-b.index);const blob=new Blob(parts.map(p=>p.blob),{type:mime||'video/webm'});await addSaved({id:sessionId,name:session.name,status:'complete',mime:blob.type,duration:finalDuration,blob,captions:captionCues.map(c=>({...c}))});}}
-  localChunks=[];if(outroTimer){clearTimeout(outroTimer);outroTimer=null;}if(recorder&&recorder.stream)recorder.stream.getTracks().forEach(t=>{if(t.kind==='video'&&t.label.includes('Canvas'))t.stop()});recorder=null;recording=false;paused=false;recordingStarting=false;stoppingRecording=false;outroStartedAt=0;recordElapsedMs=0;recordSegmentStartedAt=0;sessionId=null;activeCaptionSession=null;captionRecognition=null;captionCues=[];captionLastCueEnd=0;captionStopAtMs=null;
-  recordBtn.textContent='⏺ Start Recording';recordBtn.classList.remove('danger');recordBtn.classList.add('primary');pauseBtn.textContent='Ⅱ Pause';pauseBtn.disabled=true;stopBtn.disabled=true;cameraBtn.disabled=false;micBtn.disabled=false;screenBtn.disabled=false;cameraSelect.disabled=!cameraStream;micSelect.disabled=!micStream;badge.classList.remove('on');updateControls();restorePresentationOutputRatio();
+  }
+  localChunks=[];if(outroTimer){clearTimeout(outroTimer);outroTimer=null;}
+  if(recorder&&recorder.stream)recorder.stream.getTracks().forEach(t=>{if(t.kind==='video'&&t.label.includes('Canvas'))t.stop()});
+  recorder=null;recording=false;paused=false;recordingStarting=false;stoppingRecording=false;legacyCaptureActive=false;outroStartedAt=0;recordElapsedMs=0;recordSegmentStartedAt=0;sessionId=null;activeCaptionSession=null;captionRecognition=null;captionCues=[];captionLastCueEnd=0;captionStopAtMs=null;
+  recordBtn.textContent='⏺ Start Recording';recordBtn.classList.remove('danger');recordBtn.classList.add('primary');pauseBtn.textContent='Ⅱ Pause';pauseBtn.disabled=true;stopBtn.disabled=true;cameraBtn.disabled=false;micBtn.disabled=false;screenBtn.disabled=false;cameraSelect.disabled=!cameraStream;micSelect.disabled=!micStream;badge.classList.remove('on');setCanvasQuality();updateControls();restorePresentationOutputRatio();
  };
  try{recorder.start(3000);}
  catch(e){
   const detail=e?.message||String(e);
   try{await putSession({...session,status:'failed',error:detail,failedAt:Date.now()});}catch{}
   try{recorder.stream.getTracks().filter(t=>t.kind==='video').forEach(t=>t.stop());}catch{}
-  recorder=null;sessionId=null;activeCaptionSession=null;recordingStarting=false;recording=false;paused=false;stoppingRecording=false;
+  recorder=null;sessionId=null;activeCaptionSession=null;recordingStarting=false;recording=false;paused=false;stoppingRecording=false;legacyCaptureActive=false;setCanvasQuality();
   updateControls();
   showError('MP4 recording could not start: '+detail+'. Run Device / Browser Compatibility and confirm that this PC browser supports MP4 MediaRecorder.');
   return;
@@ -2425,14 +2470,34 @@ async function loadLocalRecordings(){
  try{
   const sessions=await getAllSessions(),chunks=await getAllChunks();
   for(const row of sessions.filter(s=>s.status==='complete'&&s.blob).sort((a,b)=>(b.completedAt||0)-(a.completedAt||0)))await addSaved(row);
-  const interrupted=sessions.filter(s=>s.status==='recording');
+  const interrupted=sessions.filter(s=>s.status==='recording'||(s.status==='conversion-failed'&&s.legacyConvert&&s.blob));
   recoveryList.replaceChildren();
   for(const s of interrupted){
    const parts=chunks.filter(c=>c.sessionId===s.id).sort((a,b)=>a.index-b.index);
-   if(!parts.length)continue;
-   const blob=new Blob(parts.map(p=>p.blob),{type:s.mime||'video/webm'});
-   const card=document.createElement('div');card.className='recovery';const title=document.createElement('b');title.textContent='Interrupted recording found';const info=document.createElement('div');info.textContent=parts.length+' saved chunks · '+fileSize(blob.size);
-   const recover=document.createElement('button');recover.textContent='Recover & add to recordings';recover.className='success';recover.onclick=async()=>{const row={...s,status:'complete',blob,duration:0,completedAt:Date.now(),name:s.name.replace('officerlab-lecture-','officerlab-recovered-')};await putSession(row);await addSaved(row);for(const p of parts)await deleteChunk(s.id,p.index);card.remove();};
+   const blob=s.blob||new Blob(parts.map(p=>p.blob),{type:s.mime||'video/webm'});
+   if(!blob.size)continue;
+   const card=document.createElement('div');card.className='recovery';
+   const title=document.createElement('b');title.textContent=s.legacyConvert?'Legacy PC recording needs MP4 conversion':'Interrupted recording found';
+   const info=document.createElement('div');info.textContent=(s.status==='conversion-failed'?'Conversion needs retry · ':'')+parts.length+' saved chunks · '+fileSize(blob.size);
+   const recover=document.createElement('button');recover.textContent=s.legacyConvert?(s.status==='conversion-failed'?'↻ Retry MP4 conversion':'Recover & convert to MP4'):'Recover & add to recordings';recover.className='success';
+   recover.onclick=async()=>{
+    recover.disabled=true;recover.textContent=s.legacyConvert?'Converting to MP4…':'Recovering…';
+    try{
+     let row;
+     if(s.legacyConvert){
+      const mp4=await convertLegacyWebMToMP4(blob);
+      const baseName=(s.name||'officerlab-lecture.mp4').replace('.webm','').replace('.mp4','');
+      row={...s,name:baseName+'.mp4',status:'complete',mime:'video/mp4',legacyConvert:false,blob:mp4,duration:s.duration||0,completedAt:Date.now(),conversionError:undefined};
+     }else{
+      row={...s,status:'complete',blob,duration:0,completedAt:Date.now(),name:s.name.replace('officerlab-lecture-','officerlab-recovered-')};
+     }
+     await putSession(row);await addSaved(row);for(const p of parts)await deleteChunk(s.id,p.index);card.remove();setConversionNotice('');
+    }catch(e){
+     if(s.legacyConvert){s.status='conversion-failed';s.blob=blob;s.conversionError=e?.message||String(e);await putSession(s).catch(()=>{});info.textContent='MP4 conversion failed: '+(e?.message||String(e));}
+     else info.textContent='Recovery failed: '+(e?.message||String(e));
+     recover.disabled=false;recover.textContent='↻ Retry MP4 conversion';showError(e?.message||'Could not recover recording.');
+    }
+   };
    const discard=document.createElement('button');discard.textContent='Discard';discard.onclick=async()=>{for(const p of parts)await deleteChunk(s.id,p.index);await dbAction('sessions','readwrite',o=>o.delete(s.id));card.remove();};
    card.append(title,info,recover,discard);recoveryList.append(card);
   }
@@ -2784,12 +2849,18 @@ async function runDeviceCheck(){
   let supportedMime='';
   if(recorder&&typeof MediaRecorder.isTypeSupported==='function'){for(const type of candidates){try{if(MediaRecorder.isTypeSupported(type)){supportedMime=type;break;}}catch{}}}
   const mp4Supported=!!supportedMime;
+  const legacyCandidates=['video/webm;codecs=vp8,opus','video/webm;codecs=vp8','video/webm'];
+  let legacyMime='';
+  if(recorder&&typeof MediaRecorder.isTypeSupported==='function'){for(const type of legacyCandidates){try{if(MediaRecorder.isTypeSupported(type)){legacyMime=type;break;}}catch{}}}
+  const legacyWebmSupported=!!legacyMime;
+  const legacyWorkerReady=await checkLegacyConverter();
   const getPermission=async name=>{try{return (await navigator.permissions.query({name})).state;}catch{return 'not exposed by browser';}};
   const [cameraPermission,micPermission]=await Promise.all([getPermission('camera'),getPermission('microphone')]);
   let storage='not exposed';try{const est=await navigator.storage?.estimate?.();if(est){const free=Math.max(0,(est.quota||0)-(est.usage||0));storage=(free/1048576).toFixed(0)+' MB estimated free';}}catch{}
   const audio=!!(window.AudioContext||window.webkitAudioContext),screen=!!navigator.mediaDevices?.getDisplayMedia&&secure,fullscreen=!!document.documentElement.requestFullscreen,speech=!!(window.SpeechRecognition||window.webkitSpeechRecognition),sw=('serviceWorker'in navigator);
   const screenDetail=screen?'getDisplayMedia API available':android?'Not supported by Android Chrome/mobile browser':'Not available in this browser or page context';
-  const required=[secure,media,recorder,canvasCapture,db,mp4Supported],ready=required.every(Boolean);
+  const formatReady=mp4Supported||(legacyWebmSupported&&legacyWorkerReady);
+  const required=[secure,media,recorder,canvasCapture,db,formatReady],ready=required.every(Boolean);
   const rows=[
    'OFFICERLAB — DEVICE COMPATIBILITY REPORT',
    'Date: '+new Date().toLocaleString(),
@@ -2803,7 +2874,9 @@ async function runDeviceCheck(){
    deviceCheckLine('MediaRecorder',recorder,recorder?'Available':'Missing'),
    deviceCheckLine('Canvas video capture',canvasCapture,'Required for composited lecture recording'),
    deviceCheckLine('IndexedDB local recovery',db,'Required for local session/chunk storage'),
-   deviceCheckLine('MP4 recording support',mp4Supported,supportedMime||'MP4 MediaRecorder is not advertised by this browser. This recorder is MP4-only and will not fall back to WebM.'),
+   deviceCheckLine('Native MP4 recording',mp4Supported,supportedMime||'Not supported natively by this browser',true),
+   deviceCheckLine('Legacy WebM capture',legacyWebmSupported,legacyMime||'No supported temporary capture codec'),
+   deviceCheckLine('Cloud MP4 conversion',legacyWorkerReady,'OfficerLab FFmpeg worker '+(legacyWorkerReady?'ready':'not available'),!legacyWebmSupported),
    '',
    'OPTIONAL / BROWSER-DEPENDENT FEATURES',
    deviceCheckLine('Screen sharing',screen,screenDetail,true),
@@ -2817,7 +2890,7 @@ async function runDeviceCheck(){
    'Microphone: '+micPermission,
    'Estimated free web storage: '+storage,
    '',
-   'OVERALL: '+(ready?'READY — core browser APIs and MP4 encoding are available. Run a short recording test to verify camera, microphone and MP4 playback.':'CHECK REQUIRED ITEMS — one or more core APIs or MP4 encoding support are missing. Use an up-to-date desktop Chrome or Edge over HTTPS and rerun.'),
+   'OVERALL: '+(ready?'READY — recording and final MP4 output are available. Older browsers will use temporary capture and cloud MP4 conversion. Run a short test clip first.':'CHECK REQUIRED ITEMS — the browser APIs or both MP4 recording paths are unavailable. Use HTTPS and rerun.'),
    'Note: This check does not grant permissions, start recording, or prove actual camera/microphone hardware operation.'
   ];
   latestDeviceReport=rows.join('\n');deviceCheckResults.textContent=latestDeviceReport;deviceCheckCopyBtn.disabled=false;
