@@ -2006,7 +2006,8 @@ async function loadMotionGraphics(fileList){
   const name=file.name.toLowerCase(),isVideo=file.type.startsWith('video/')||/\.(mp4|webm)$/.test(name),isImage=file.type.startsWith('image/')||/\.(gif|png|jpe?g|webp)$/.test(name);
   if(!isVideo&&!isImage)continue;
   if(file.size>120*1024*1024){motionGraphicStatus.textContent='Skipped '+file.name+' (larger than 120 MB).';continue;}
-  const asset={name:file.name,kind:isVideo?'video':'image',url:URL.createObjectURL(file),media:null,startAtSeconds:(existingCount+accepted.length)*10,durationSeconds:5,_schedulePlaying:false};
+  const defaultStart=Math.max(0,Math.min(21600,Number(motionGraphicStartAt.value)||0)),defaultDuration=Math.max(.5,Math.min(21600,Number(motionGraphicDuration.value)||5));
+  const asset={name:file.name,kind:isVideo?'video':'image',url:URL.createObjectURL(file),media:null,startAtSeconds:defaultStart+(existingCount+accepted.length)*10,durationSeconds:defaultDuration,_schedulePlaying:false};
   try{
    if(isVideo){
     const video=document.createElement('video');video.muted=true;video.loop=true;video.playsInline=true;video.preload='auto';video.src=asset.url;
