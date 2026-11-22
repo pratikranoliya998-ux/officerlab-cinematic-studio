@@ -6,10 +6,12 @@ import re
 import shutil
 import subprocess
 import tempfile
+import time
+import threading
 from pathlib import Path
 from typing import List
 
-from fastapi import FastAPI, File, Form, Header, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, Header, HTTPException, UploadFile, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from PIL import Image, ImageDraw, ImageFont
@@ -147,9 +149,100 @@ def run_ffmpeg(args: list[str], timeout: int = 3600) -> None:
         raise RuntimeError(detail)
 
 
+_legacy_conversion_lock = threading.Lock()
+_legacy_conversion_last: dict[str, float] = {}
+_LEGACY_CONVERSION_INTERVAL_SECONDS = 60
+_LEGACY_CONVERSION_MAX_BYTES = 200 * 1024 * 1024
+_LEGACY_ORIGIN_RE = re.compile(r"^https://officerlab-cinematic-studio(?:-[a-z0-9-]+)*\\.vercel\\.app$")
+
+
 @app.get("/health")
 def health():
-    return {"ok": True, "service": "officerlab-render-worker", "ffmpeg": shutil.which("ffmpeg") is not None}
+    return {
+        "ok": True,
+        "service": "officerlab-render-worker",
+        "ffmpeg": shutil.which("ffmpeg") is not None,
+        "legacy_conversion": os.getenv("LEGACY_CONVERSION_ENABLED", "false").lower() == "true",
+    }
+
+
+@app.post("/convert-legacy-recording")
+async def convert_legacy_recording(file: UploadFile = File(...), request: Request = None):
+    """Convert an older-browser WebM capture to the app's MP4-only final format.
+
+    This narrowly scoped endpoint is enabled explicitly in Render, accepts requests
+    only from OfficerLab's deployed web origins, allows one active encode per worker,
+    and applies a per-client cooldown and strict upload ceiling.
+    """
+    if os.getenv("LEGACY_CONVERSION_ENABLED", "false").lower() != "true":
+        raise HTTPException(status_code=503, detail="Legacy recording conversion is not enabled on this worker")
+    origin = request.headers.get("origin", "") if request else ""
+    if origin not in origins and not _LEGACY_ORIGIN_RE.fullmatch(origin):
+        raise HTTPException(status_code=403, detail="Legacy conversion is available only from the OfficerLab app")
+    if not shutil.which("ffmpeg"):
+        raise HTTPException(status_code=503, detail="FFmpeg is not installed on this worker")
+    filename = Path(file.filename or "officerlab-legacy.webm").name.lower()
+    if not filename.endswith(".webm"):
+        raise HTTPException(status_code=415, detail="Legacy conversion accepts a temporary WebM capture only")
+    if not _legacy_conversion_lock.acquire(blocking=False):
+        raise HTTPException(status_code=429, detail="The MP4 conversion service is busy. Please retry in a moment.")
+
+    client_ip = request.client.host if request and request.client else "unknown"
+    now = time.monotonic()
+    try:
+        last = _legacy_conversion_last.get(client_ip, 0.0)
+        if now - last < _LEGACY_CONVERSION_INTERVAL_SECONDS:
+            raise HTTPException(status_code=429, detail="Please wait a minute before starting another MP4 conversion.")
+        _legacy_conversion_last[client_ip] = now
+        for key, stamp in list(_legacy_conversion_last.items()):
+            if now - stamp > 3600:
+                _legacy_conversion_last.pop(key, None)
+
+        work = Path(tempfile.mkdtemp(prefix="officerlab-legacy-convert-"))
+        try:
+            source = work / "officerlab-legacy-input.webm"
+            size = 0
+            with source.open("wb") as handle:
+                while True:
+                    chunk = await file.read(1024 * 1024)
+                    if not chunk:
+                        break
+                    size += len(chunk)
+                    if size > _LEGACY_CONVERSION_MAX_BYTES:
+                        raise HTTPException(status_code=413, detail="Temporary recording exceeds 200 MB. Use 720p or record a shorter segment.")
+                    handle.write(chunk)
+            if size < 1024:
+                raise HTTPException(status_code=400, detail="Temporary recording is empty or too small")
+
+            output = work / "officerlab-legacy-final.mp4"
+            run_ffmpeg([
+                "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
+                "-fflags", "+genpts", "-threads", "2", "-i", str(source),
+                "-map", "0:v:0", "-map", "0:a:0?",
+                "-vf", "fps=30,format=yuv420p",
+                "-c:v", "libx264", "-preset", "ultrafast", "-crf", "25",
+                "-threads", "2", "-c:a", "aac", "-b:a", "128k", "-ar", "48000",
+                "-movflags", "+faststart", str(output),
+            ], timeout=7200)
+            if not output.exists() or output.stat().st_size < 1024:
+                raise RuntimeError("FFmpeg did not produce a valid MP4 file")
+            return FileResponse(
+                output,
+                media_type="video/mp4",
+                filename="officerlab-lecture.mp4",
+                background=BackgroundTask(shutil.rmtree, work, ignore_errors=True),
+            )
+        except HTTPException:
+            shutil.rmtree(work, ignore_errors=True)
+            raise
+        except subprocess.TimeoutExpired:
+            shutil.rmtree(work, ignore_errors=True)
+            raise HTTPException(status_code=504, detail="MP4 conversion timed out. Try a shorter recording.")
+        except Exception as exc:
+            shutil.rmtree(work, ignore_errors=True)
+            raise HTTPException(status_code=500, detail=f"MP4 conversion failed: {str(exc)[-1200:]}")
+    finally:
+        _legacy_conversion_lock.release()
 
 
 
