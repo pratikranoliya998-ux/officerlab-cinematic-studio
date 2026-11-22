@@ -1499,6 +1499,7 @@ async function startRecording(isTest=false){
 }
 function stopRecording(){
  if(!recorder||!recording||stoppingRecording)return;
+ motionKeys.forEach(key=>{const video=motionAssets[key]?.video;if(video&&!video.paused)video.pause();});
  if(testTimeout){clearTimeout(testTimeout);testTimeout=null;}
  stoppingRecording=true;captionStopAtMs=recordingElapsedMs();
  pauseBtn.disabled=true;stopBtn.disabled=true;
