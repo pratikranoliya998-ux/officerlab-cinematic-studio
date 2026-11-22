@@ -697,6 +697,14 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .motion-graphic-controls input[type=range]{width:100%;min-width:75px;accent-color:#2563eb}
 .motion-graphic-controls button{grid-column:1/-1;justify-self:start;padding:7px 10px;font-size:10px}
 #motionGraphicStatus{margin:9px 0 0}
+.motion-graphic-timing{margin-top:10px;padding:11px;background:#f7faff;border:1px solid #e1e9f3;border-radius:10px}
+.motion-graphic-timing-heading{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;color:#30445f;font-size:11px}
+.motion-graphic-timing-heading span{color:#718198;font-size:10px}
+.motion-graphic-timing-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:9px}
+.motion-graphic-timing-fields label{display:flex;flex-direction:column;gap:5px;min-width:0;color:#61758f;font-size:10px;font-weight:800}
+.motion-graphic-timing-fields input{width:100%;min-width:0;padding:8px;border:1px solid #d8e3f1;border-radius:8px;background:#fff;color:#22354d;font:inherit;font-size:12px}
+.motion-graphic-timing-fields input:disabled{opacity:.5}
+.motion-graphic-timing-hint{margin:8px 0 0;color:#718198;font-size:10px;line-height:1.5}
 @media(max-width:760px){
  .default-prefs{margin-left:0;flex:1 1 100%;justify-content:space-between}
  .default-prefs span{white-space:normal}
@@ -971,6 +979,15 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
       <label for="motionGraphicOpacity">Opacity</label><input id="motionGraphicOpacity" type="range" min="35" max="100" value="96"><span id="motionGraphicOpacityVal" class="tool-val">96%</span>
       <button id="clearMotionGraphics" type="button" disabled>Remove Attachments</button>
     </div>
+    <div class="motion-graphic-timing" id="motionGraphicTiming">
+      <div class="motion-graphic-timing-heading"><strong>Timing &amp; duration</strong><span>Schedule each attachment against the recording timeline.</span></div>
+      <div class="motion-graphic-timing-fields">
+        <label for="motionGraphicStartAt">Show from (seconds)<input id="motionGraphicStartAt" type="number" min="0" max="21600" step="0.5" value="0" disabled></label>
+        <label for="motionGraphicDuration">Visible duration (seconds)<input id="motionGraphicDuration" type="number" min="0.5" max="21600" step="0.5" value="5" disabled></label>
+        <label for="motionGraphicPreviewAt">Preview at (seconds)<input id="motionGraphicPreviewAt" type="number" min="0" max="21600" step="0.5" value="0" disabled></label>
+      </div>
+      <p class="motion-graphic-timing-hint" id="motionGraphicTimingHint">Select an attachment to set its start time and duration. During recording, timing is measured from Start Recording; Preview at is used before recording.</p>
+    </div>
     <p class="hint" id="motionGraphicStatus" role="status" aria-live="polite">No motion graphic attached. Uploaded files remain local to this browser session; attachment preferences are saved as defaults.</p>
   </section>
   <div id="error" class="error" role="alert"></div>
@@ -1021,6 +1038,7 @@ let micTestRecorder=null,micTestChunks=[],micTestTimer=null;
 
 const slidesInput=$('slidesInput'),slideDisplayMode=$('slideDisplayMode'),slideTransitionsEnabled=$('slideTransitionsEnabled'),slideTransitionType=$('slideTransitionType'),slideMotionEnabled=$('slideMotionEnabled'),progressBarEnabled=$('progressBarEnabled'),progressDurationMinutes=$('progressDurationMinutes'),progressBarHint=$('progressBarHint'),prevSlide=$('prevSlide'),nextSlide=$('nextSlide'),slideCount=$('slideCount'),clearSlides=$('clearSlides'),slideJump=$('slideJump'),slideTotal=$('slideTotal'),goSlide=$('goSlide');
 const motionGraphicInput=$('motionGraphicInput'),motionGraphicSelect=$('motionGraphicSelect'),motionGraphicEnabled=$('motionGraphicEnabled'),motionGraphicPosition=$('motionGraphicPosition'),motionGraphicSize=$('motionGraphicSize'),motionGraphicSizeVal=$('motionGraphicSizeVal'),motionGraphicOpacity=$('motionGraphicOpacity'),motionGraphicOpacityVal=$('motionGraphicOpacityVal'),motionGraphicStatus=$('motionGraphicStatus'),clearMotionGraphics=$('clearMotionGraphics');
+const motionGraphicStartAt=$('motionGraphicStartAt'),motionGraphicDuration=$('motionGraphicDuration'),motionGraphicPreviewAt=$('motionGraphicPreviewAt'),motionGraphicTimingHint=$('motionGraphicTimingHint');
 try{
  const crossfade=localStorage.getItem('officerlab-slide-crossfade'),motion=localStorage.getItem('officerlab-slide-motion'),transition=localStorage.getItem('officerlab-slide-transition-type');
  if(crossfade!==null)slideTransitionsEnabled.checked=crossfade==='1';
@@ -1860,6 +1878,44 @@ function releaseMotionGraphic(asset){
  if(asset.media&&asset.kind==='video'){asset.media.pause();asset.media.removeAttribute('src');asset.media.load();}
  if(asset.url)URL.revokeObjectURL(asset.url);
 }
+function motionGraphicClockSeconds(){
+ return recording?Math.max(0,recordingElapsedMs()/1000):Math.max(0,Number(motionGraphicPreviewAt.value)||0);
+}
+function syncMotionGraphicTimingControls(){
+ const asset=motionGraphics[activeMotionGraphicIndex],hasAsset=!!asset;
+ motionGraphicStartAt.disabled=!hasAsset;motionGraphicDuration.disabled=!hasAsset;motionGraphicPreviewAt.disabled=!hasAsset;
+ if(!hasAsset){
+  motionGraphicTimingHint.textContent='Select an attachment to set its start time and duration. During recording, timing is measured from Start Recording; Preview at is used before recording.';
+  return;
+ }
+ motionGraphicStartAt.value=String(Math.max(0,Number(asset.startAtSeconds)||0));
+ motionGraphicDuration.value=String(Math.max(.5,Number(asset.durationSeconds)||5));
+ motionGraphicTimingHint.textContent=asset.name+' appears '+(Number(asset.startAtSeconds)||0)+'s after recording starts for '+(Number(asset.durationSeconds)||5)+'s. Preview at lets you test the schedule before recording.';
+}
+function saveActiveMotionGraphicTiming(){
+ const asset=motionGraphics[activeMotionGraphicIndex];if(!asset)return;
+ asset.startAtSeconds=Math.max(0,Math.min(21600,Number(motionGraphicStartAt.value)||0));
+ asset.durationSeconds=Math.max(.5,Math.min(21600,Number(motionGraphicDuration.value)||5));
+ asset._schedulePlaying=false;
+ syncMotionGraphicTimingControls();
+ motionGraphicStatus.textContent=asset.name+' scheduled from '+asset.startAtSeconds+'s for '+asset.durationSeconds+'s. All uploaded graphics follow their own timing.';
+ if(!drawRAF)startDraw();else startDraw();
+}
+function updateScheduledMotionGraphicPlayback(nowSeconds){
+ motionGraphics.forEach(asset=>{
+  if(asset.kind!=='video')return;
+  const start=Math.max(0,Number(asset.startAtSeconds)||0),duration=Math.max(.5,Number(asset.durationSeconds)||5);
+  const visible=motionGraphicEnabled.checked&&nowSeconds>=start&&nowSeconds<start+duration;
+  const shouldPlay=visible&&!paused;
+  if(shouldPlay&&!asset._schedulePlaying){
+   if(Number.isFinite(asset.media.duration)&&asset.media.currentTime>=asset.media.duration)try{asset.media.currentTime=0;}catch{}
+   asset.media.play().then(()=>{asset._schedulePlaying=true;}).catch(()=>{asset._schedulePlaying=false;motionGraphicStatus.textContent='Tap the preview or enable the attachment again if browser video playback was paused.';});
+  }else if(!shouldPlay&&asset._schedulePlaying){
+   asset.media.pause();asset._schedulePlaying=false;
+   if(nowSeconds>=start+duration)try{asset.media.currentTime=0;}catch{}
+  }
+ });
+}
 async function loadMotionGraphics(fileList){
  const files=[...fileList||[]];
  if(!files.length)return;
@@ -1867,10 +1923,10 @@ async function loadMotionGraphics(fileList){
  const version=(loadMotionGraphics.version||0)+1;loadMotionGraphics.version=version;
  const accepted=[];
  for(const file of files){
-  const name=file.name.toLowerCase(),isVideo=file.type.startsWith('video/')||/\.(mp4|webm)$/.test(name),isImage=file.type.startsWith('image/')||/\.(gif|png|jpe?g|webp)$/.test(name);
+  const name=file.name.toLowerCase(),isVideo=file.type.startsWith('video/')||/\\.(mp4|webm)$/.test(name),isImage=file.type.startsWith('image/')||/\\.(gif|png|jpe?g|webp)$/.test(name);
   if(!isVideo&&!isImage)continue;
   if(file.size>120*1024*1024){motionGraphicStatus.textContent='Skipped '+file.name+' (larger than 120 MB).';continue;}
-  const asset={name:file.name,kind:isVideo?'video':'image',url:URL.createObjectURL(file),media:null};
+  const asset={name:file.name,kind:isVideo?'video':'image',url:URL.createObjectURL(file),media:null,startAtSeconds:accepted.length*10,durationSeconds:5,_schedulePlaying:false};
   try{
    if(isVideo){
     const video=document.createElement('video');video.muted=true;video.loop=true;video.playsInline=true;video.preload='auto';video.src=asset.url;
@@ -1889,24 +1945,27 @@ async function loadMotionGraphics(fileList){
  if(!motionGraphics.length){
   motionGraphicSelect.add(new Option('No supported attachment loaded',''));
   motionGraphicSelect.disabled=true;motionGraphicEnabled.checked=false;motionGraphicEnabled.disabled=true;clearMotionGraphics.disabled=true;
+  syncMotionGraphicTimingControls();
   motionGraphicStatus.textContent='No supported motion graphic could be loaded. Try GIF, MP4, WebM, PNG, JPG or WebP.';
   return;
  }
  motionGraphics.forEach((asset,index)=>motionGraphicSelect.add(new Option(asset.name,String(index))));
  motionGraphicSelect.value='0';motionGraphicSelect.disabled=false;motionGraphicEnabled.disabled=false;motionGraphicEnabled.checked=true;clearMotionGraphics.disabled=false;
- motionGraphicStatus.textContent=motionGraphics.length+' visual attachment(s) ready. The selected visual will appear in the lesson preview and recorded video.';
+ syncMotionGraphicTimingControls();
+ motionGraphicStatus.textContent=motionGraphics.length+' visual attachment(s) ready. Each attachment can have its own start time and visible duration.';
  playActiveMotionGraphic();
  if(!drawRAF)startDraw();
 }
-function pauseMotionGraphics(){motionGraphics.forEach(asset=>{if(asset.kind==='video')asset.media.pause();});}
+function pauseMotionGraphics(){
+ motionGraphics.forEach(asset=>{if(asset.kind==='video'){asset.media.pause();asset._schedulePlaying=false;}});
+}
 function playActiveMotionGraphic(){
- pauseMotionGraphics();const asset=motionGraphics[activeMotionGraphicIndex];
- if(asset&&asset.kind==='video')asset.media.play().catch(()=>{motionGraphicStatus.textContent='Tap the motion graphic attachment again if browser playback was paused.';});
- if(!drawRAF)startDraw();
+ updateScheduledMotionGraphicPlayback(motionGraphicClockSeconds());
+ if(!drawRAF)startDraw();else startDraw();
 }
 function selectMotionGraphic(index){
- if(!Number.isInteger(index)||index<0||index>=motionGraphics.length){activeMotionGraphicIndex=-1;pauseMotionGraphics();return;}
- activeMotionGraphicIndex=index;playActiveMotionGraphic();
+ if(!Number.isInteger(index)||index<0||index>=motionGraphics.length){activeMotionGraphicIndex=-1;pauseMotionGraphics();syncMotionGraphicTimingControls();return;}
+ activeMotionGraphicIndex=index;syncMotionGraphicTimingControls();playActiveMotionGraphic();
 }
 function clearMotionGraphicAttachments(clearInput=true){
  loadMotionGraphics.version=(loadMotionGraphics.version||0)+1;
@@ -1914,28 +1973,36 @@ function clearMotionGraphicAttachments(clearInput=true){
  motionGraphicSelect.innerHTML='';motionGraphicSelect.add(new Option('No attachment loaded',''));
  motionGraphicSelect.disabled=true;motionGraphicEnabled.checked=false;motionGraphicEnabled.disabled=true;clearMotionGraphics.disabled=true;
  if(clearInput)motionGraphicInput.value='';
+ syncMotionGraphicTimingControls();
  motionGraphicStatus.textContent='No motion graphic attached. Upload an explanatory visual to add it to the recording.';
- if(!drawRAF)startDraw();
+ if(!drawRAF)startDraw();else startDraw();
 }
 function drawMotionGraphic(target){
- if(!motionGraphicEnabled.checked)return;
- const asset=motionGraphics[activeMotionGraphicIndex],media=asset&&asset.media;
- if(!media)return;
- const naturalW=asset.kind==='video'?media.videoWidth:media.naturalWidth;
- const naturalH=asset.kind==='video'?media.videoHeight:media.naturalHeight;
- if(!naturalW||!naturalH||(asset.kind==='video'&&media.readyState<2))return;
- const W=canvas.width,H=canvas.height,maxW=W*(Number(motionGraphicSize.value)/100),maxH=H*.42,scale=Math.min(maxW/naturalW,maxH/naturalH);
- const w=Math.max(1,naturalW*scale),h=Math.max(1,naturalH*scale),margin=Math.max(24,W*.035);
- const position=motionGraphicPosition.value;
- const x=position.endsWith('right')?W-margin-w:margin;
- const y=position.startsWith('top')?margin: H-margin-h;
- target.save();target.globalAlpha=Number(motionGraphicOpacity.value)/100;
- target.shadowColor='rgba(0,0,0,.48)';target.shadowBlur=W*.012;target.shadowOffsetY=H*.006;
- roundedPath(target,x,y,w,h,Math.max(12,W*.009));target.fillStyle='rgba(8,18,34,.72)';target.fill();target.clip();
- const pad=Math.max(3,W*.003);target.drawImage(media,x+pad,y+pad,Math.max(1,w-pad*2),Math.max(1,h-pad*2));
- target.shadowColor='transparent';target.shadowBlur=0;target.shadowOffsetY=0;
- roundedPath(target,x,y,w,h,Math.max(12,W*.009));target.strokeStyle='rgba(255,255,255,.9)';target.lineWidth=Math.max(2,W*.0018);target.stroke();
- target.restore();
+ if(!motionGraphicEnabled.checked||!motionGraphics.length)return;
+ const nowSeconds=motionGraphicClockSeconds(),W=canvas.width,H=canvas.height;
+ updateScheduledMotionGraphicPlayback(nowSeconds);
+ const maxW=W*(Number(motionGraphicSize.value)/100),maxH=H*.42,margin=Math.max(24,W*.035),position=motionGraphicPosition.value;
+ let visibleIndex=0;
+ motionGraphics.forEach(asset=>{
+  const start=Math.max(0,Number(asset.startAtSeconds)||0),duration=Math.max(.5,Number(asset.durationSeconds)||5);
+  if(nowSeconds<start||nowSeconds>=start+duration)return;
+  const media=asset.media;if(!media)return;
+  const naturalW=asset.kind==='video'?media.videoWidth:media.naturalWidth;
+  const naturalH=asset.kind==='video'?media.videoHeight:media.naturalHeight;
+  if(!naturalW||!naturalH||(asset.kind==='video'&&media.readyState<2))return;
+  const scale=Math.min(maxW/naturalW,maxH/naturalH),w=Math.max(1,naturalW*scale),h=Math.max(1,naturalH*scale);
+  const x=position.endsWith('right')?W-margin-w:margin;
+  const stackOffset=visibleIndex*(h+Math.max(12,margin*.22));
+  const y=position.startsWith('top')?margin+stackOffset:H-margin-h-stackOffset;
+  visibleIndex++;
+  target.save();target.globalAlpha=Number(motionGraphicOpacity.value)/100;
+  target.shadowColor='rgba(0,0,0,.48)';target.shadowBlur=W*.012;target.shadowOffsetY=H*.006;
+  roundedPath(target,x,y,w,h,Math.max(12,W*.009));target.fillStyle='rgba(8,18,34,.72)';target.fill();target.clip();
+  const pad=Math.max(3,W*.003);target.drawImage(media,x+pad,y+pad,Math.max(1,w-pad*2),Math.max(1,h-pad*2));
+  target.shadowColor='transparent';target.shadowBlur=0;target.shadowOffsetY=0;
+  roundedPath(target,x,y,w,h,Math.max(12,W*.009));target.strokeStyle='rgba(255,255,255,.9)';target.lineWidth=Math.max(2,W*.0018);target.stroke();
+  target.restore();
+ });
 }
 
 async function makeAudioTrack(){
@@ -2271,6 +2338,9 @@ slidesInput.onchange=()=>loadSlides(slidesInput.files);
 motionGraphicInput.onchange=()=>loadMotionGraphics(motionGraphicInput.files);
 motionGraphicSelect.onchange=()=>selectMotionGraphic(Number(motionGraphicSelect.value));
 motionGraphicEnabled.addEventListener('change',()=>{if(motionGraphicEnabled.checked)playActiveMotionGraphic();else pauseMotionGraphics();});
+motionGraphicStartAt.addEventListener('input',saveActiveMotionGraphicTiming);
+motionGraphicDuration.addEventListener('input',saveActiveMotionGraphicTiming);
+motionGraphicPreviewAt.addEventListener('input',()=>{if(!recording){if(!drawRAF)startDraw();else startDraw();}});
 motionGraphicSize.addEventListener('input',()=>{motionGraphicSizeVal.textContent=motionGraphicSize.value+'%';});
 motionGraphicOpacity.addEventListener('input',()=>{motionGraphicOpacityVal.textContent=motionGraphicOpacity.value+'%';});
 clearMotionGraphics.addEventListener('click',clearMotionGraphicAttachments);
