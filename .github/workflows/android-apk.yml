@@ -6,6 +6,7 @@ on:
     paths:
       - "src/**"
       - "public/**"
+      - "!public/officerlab.apk"
       - "assets/**"
       - "package.json"
       - "capacitor.config.json"
@@ -14,7 +15,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build-android:
@@ -71,6 +72,20 @@ jobs:
           test -s "$APK"
           sha256sum "$APK"
           ls -lh "$APK"
+
+      - name: Publish APK to the Vercel static site
+        run: |
+          mkdir -p public
+          cp android/app/build/outputs/apk/debug/app-debug.apk public/officerlab.apk
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/officerlab.apk
+          if ! git diff --cached --quiet; then
+            git commit -m "Publish OfficerLab Android APK for Vercel download"
+            git push origin HEAD:main
+          else
+            echo "Vercel APK is already up to date."
+          fi
 
       - name: Upload installable debug APK
         uses: actions/upload-artifact@v4
