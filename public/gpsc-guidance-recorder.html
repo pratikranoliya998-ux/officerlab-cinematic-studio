@@ -278,6 +278,489 @@ button.primary{background:linear-gradient(135deg,#3b82f6,#1d4ed8);border-color:#
 #toolTray,.teleprompter-settings,.teleprompter-overlay,.stage-fs-opacity-panel{background:#18181be0;border-color:#ffffff24;backdrop-filter:blur(22px)}
 input,select,textarea{border-color:#ffffff20!important;border-radius:9px}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid #60a5fa;outline-offset:2px}
 @media(prefers-reduced-motion:reduce){button{transition:none!important}}
+
+
+/* OfficerLab recorder workspace refresh — Gentelella-inspired dashboard hierarchy */
+:root{
+ --bg:#0a1220;
+ --panel:#101d30;
+ --panel2:#14243a;
+ --line:#283d58;
+ --text:#edf4ff;
+ --muted:#9aabc2;
+ --blue:#3b82f6;
+ --red:#ef5350;
+ --green:#35b779;
+ --amber:#d6a653;
+ color-scheme:dark;
+}
+html{scroll-behavior:smooth}
+body{
+ background:
+  radial-gradient(ellipse at 13% -16%,rgba(59,130,246,.14),transparent 35%),
+  radial-gradient(ellipse at 94% 8%,rgba(214,166,83,.08),transparent 28%),
+  var(--bg);
+ color:var(--text);
+ font-family:Inter,"Segoe UI",system-ui,sans-serif;
+ letter-spacing:.005em;
+}
+body:before{
+ content:"";
+ position:fixed;inset:0;pointer-events:none;z-index:-1;opacity:.1;
+ background-image:linear-gradient(rgba(148,173,205,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(148,173,205,.07) 1px,transparent 1px);
+ background-size:42px 42px;
+ mask-image:linear-gradient(to bottom,black,transparent 75%);
+}
+body>header{
+ position:sticky;top:0;z-index:55;
+ min-height:76px;padding:13px clamp(14px,2.4vw,34px);
+ gap:12px 16px;
+ background:rgba(8,17,31,.92);
+ border-bottom:1px solid rgba(147,174,211,.17);
+ box-shadow:0 10px 35px rgba(0,0,0,.18);
+ -webkit-backdrop-filter:blur(18px) saturate(145%);
+ backdrop-filter:blur(18px) saturate(145%);
+}
+body>header>div:first-child{display:flex;flex-direction:column;gap:4px;min-width:235px}
+body>header h1{font-size:17px;font-weight:850;letter-spacing:.01em;color:#f5f8ff;line-height:1.25}
+.brand-sub{font-size:10px;color:#91a6c1;letter-spacing:.09em;text-transform:uppercase}
+.tag{
+ border-color:#304763;background:#13243a;color:#b9cae0;
+ border-radius:7px;padding:6px 9px;font-size:10px;font-weight:700;
+}
+#connectivityStatus{border-color:rgba(53,183,121,.34);background:rgba(53,183,121,.09);color:#9ce4bf}
+.context-toggle{
+ margin-left:auto;background:#14243a;border-color:#344e70;color:#d8e7f9;
+ border-radius:8px;font-size:11px;font-weight:750;padding:9px 12px;
+}
+.context-toggle:hover{background:#1b3352;border-color:#5d86b9}
+body>main{
+ width:min(1740px,100%);max-width:1740px;
+ margin:0 auto;padding:22px clamp(12px,2vw,28px) 132px;
+ grid-template-columns:minmax(0,1.72fr) minmax(320px,.78fr);
+ gap:18px;align-items:start;
+}
+.card{
+ background:linear-gradient(155deg,rgba(19,34,54,.98),rgba(14,27,45,.98));
+ border:1px solid rgba(113,145,184,.23);
+ border-radius:15px;padding:16px;
+ box-shadow:0 12px 34px rgba(0,0,0,.17),inset 0 1px 0 rgba(255,255,255,.025);
+}
+.card h2{
+ display:flex;align-items:center;gap:9px;
+ color:#d9e7f8;font-size:10px;letter-spacing:.13em;font-weight:850;
+ margin:0 0 13px;text-transform:uppercase;
+}
+.card h2:before{content:"";width:3px;height:15px;border-radius:4px;background:linear-gradient(180deg,#83b7ff,#3b82f6);box-shadow:0 0 12px rgba(59,130,246,.28)}
+.stage{
+ border:1px solid rgba(123,158,202,.28);border-radius:12px;
+ background:#050b14;box-shadow:0 14px 38px rgba(0,0,0,.32);
+}
+.stage-toolbar{
+ margin:12px 0 2px;padding:10px;
+ background:rgba(20,36,58,.8);
+ border-color:rgba(113,145,184,.25);border-radius:11px;
+}
+.stage-toolbar button{border-radius:8px}
+.stage-toolbar button:hover,.layout-row button:hover,.device-actions button:hover{border-color:#5e8fce;filter:brightness(1.08)}
+.capture-panel{margin-top:15px;gap:11px}
+.field{min-width:150px}
+.field label,.field-label{font-size:9px;font-weight:800;letter-spacing:.1em;color:#91a8c5}
+select,textarea,input[type=text]{
+ background:#0b1728;border:1px solid #2d4564;border-radius:8px;color:#e9f1fc;
+ box-shadow:inset 0 1px 2px rgba(0,0,0,.16);
+}
+select:hover,textarea:hover,input[type=text]:hover{border-color:#4b6d98}
+select:focus,textarea:focus,input[type=text]:focus{outline:2px solid rgba(59,130,246,.28);border-color:#6298df}
+button{
+ background:linear-gradient(180deg,#1a2d47,#14253b);
+ border:1px solid #314a69;color:#dce9f8;
+ border-radius:8px;box-shadow:0 2px 5px rgba(0,0,0,.12);
+ transition:background .16s,border-color .16s,transform .16s,filter .16s;
+}
+button:hover:not(:disabled){transform:translateY(-1px);border-color:#557eaf;filter:brightness(1.08)}
+button.primary{
+ background:linear-gradient(135deg,#4b94fa,#2867d7);border-color:#5698f3;
+ color:white;box-shadow:0 7px 20px rgba(39,104,218,.23);
+}
+button.danger{background:linear-gradient(135deg,#ed6565,#c63d4b);border-color:#ed737b;color:#fff}
+button.success{background:linear-gradient(135deg,#43c68a,#229b69);border-color:#59d39e;color:#062b1b}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid #79b2ff;outline-offset:2px}
+.capture-options,.download-prefs,.audio-panel,.caption-options,.layout-panel,.slide-panel,.teleprompter-settings{
+ background:rgba(8,19,34,.56);border:1px solid rgba(113,145,184,.2);border-radius:10px;
+}
+.device-grid{gap:11px}
+.device-actions{gap:8px}
+.device-actions button{min-height:42px}
+.screen-share-hint{border-radius:8px;background:rgba(8,19,34,.65);border-color:#2a4260}
+.context-panel{
+ top:94px;max-height:calc(100dvh - 112px);gap:12px;
+ padding:0 4px 4px 0;
+ scrollbar-color:#3c5778 transparent;
+}
+.context-panel>.card{padding:15px}
+#contextPanel textarea#notes{
+ min-height:190px;
+ background:#0b1728;border-color:#2e4665;color:#e9f2fd;
+ font-size:12px;line-height:1.65;
+}
+#contextPanel .hint{font-size:10px;line-height:1.55}
+#contextPanel .small{font-size:10px;line-height:1.8}
+#contextPanel .empty{border:1px dashed #344e70;background:#0b1728;border-radius:9px;padding:15px;text-align:center;color:#9bb0ca}
+#contextPanel .rec{
+ padding:10px;border-radius:10px;background:#0b1728;border:1px solid #2b4260;
+}
+#contextPanel .rec+.rec{margin-top:8px}
+.layout-panel,.slide-panel{padding:12px}
+.layout-panel .field-label{margin-bottom:9px}
+.layout-row button,.slide-nav button{border-radius:7px}
+.check{color:#adbed3}
+.check input{accent-color:#5d9cf1}
+.tool-row{background:rgba(10,22,39,.74);border-color:#2d4564;border-radius:9px}
+#toolTray{background:rgba(9,20,36,.96);border:1px solid #4c6990;border-radius:12px;box-shadow:0 16px 38px #0009}
+#pipHandle{border-color:#8fc0ff;box-shadow:0 0 0 2px rgba(59,130,246,.2),0 8px 24px #0008}
+#pipHandle .drag-bar{background:rgba(13,30,52,.94);border-bottom:1px solid #8ab8ef;color:#e5f1ff}
+.error{border-radius:9px}
+.sticky-controls{
+ position:fixed;left:50%;right:auto;bottom:16px;transform:translateX(-50%);
+ width:max-content;max-width:calc(100vw - 28px);
+ display:flex;align-items:center;justify-content:center;flex-wrap:wrap;
+ gap:8px;padding:10px 12px;
+ background:rgba(8,18,32,.94);border:1px solid rgba(119,158,207,.36);
+ border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,.46),0 0 0 5px rgba(8,18,32,.22);
+ -webkit-backdrop-filter:blur(18px) saturate(150%);backdrop-filter:blur(18px) saturate(150%);
+}
+.sticky-controls button{min-height:42px;padding:9px 14px;border-radius:9px}
+#recordBtn{min-width:165px}
+@media(max-width:1100px){
+ body>main{grid-template-columns:minmax(0,1.35fr) minmax(285px,.85fr);gap:13px}
+}
+@media(max-width:950px){
+ body>main{grid-template-columns:minmax(0,1fr);padding-top:15px}
+ .context-panel{position:static;max-height:none;overflow:visible;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}
+ .context-panel>.card:first-child{grid-column:1/-1}
+}
+@media(max-width:650px){
+ body>header{position:relative;padding:11px 12px;gap:7px}
+ body>header>div:first-child{min-width:0;flex:1 1 100%}
+ body>header h1{font-size:15px}
+ .brand-sub{font-size:9px}
+ body>main{padding:12px 9px 120px;gap:10px}
+ .card{padding:11px;border-radius:12px}
+ .card h2{font-size:9px;margin-bottom:10px}
+ .context-panel{display:flex;gap:9px}
+ #contextPanel textarea#notes{min-height:130px}
+ .sticky-controls{
+  left:7px;right:7px;bottom:7px;transform:none;width:auto;max-width:none;
+  display:grid;grid-template-columns:.82fr 1.35fr .8fr .75fr .9fr;
+  gap:5px;padding:6px;border-radius:12px;
+ }
+ .sticky-controls button{min-width:0;width:100%;padding:8px 4px;font-size:10px;min-height:46px;white-space:normal;line-height:1.2}
+ #recordBtn{min-width:0;font-size:11px;font-weight:800}
+}
+@media(max-height:480px) and (orientation:landscape){
+ body>header{position:relative;min-height:52px}
+ .context-panel{position:static;max-height:none}
+ .sticky-controls{left:50%;right:auto;transform:translateX(-50%);width:max-content;max-width:calc(100vw - 12px);display:flex}
+}
+@media(prefers-reduced-motion:reduce){
+ button{transition:none!important}
+}
+
+
+/* OfficerLab education workspace skin — clean coaching-dashboard visual language */
+:root{
+ color-scheme:light;
+ --bg:#f3f6fb;
+ --panel:#ffffff;
+ --panel2:#f8faff;
+ --line:#dfe7f1;
+ --text:#172b4d;
+ --muted:#64748b;
+ --blue:#2563eb;
+ --red:#dc4654;
+ --green:#159b69;
+ --amber:#b7791f;
+}
+html{scroll-behavior:smooth}
+body{
+ background:
+  radial-gradient(ellipse at 8% -12%,rgba(37,99,235,.075),transparent 34%),
+  radial-gradient(ellipse at 98% 3%,rgba(14,165,233,.055),transparent 27%),
+  #f3f6fb;
+ color:#24364f;
+ font-family:Inter,"Segoe UI",system-ui,-apple-system,sans-serif;
+ letter-spacing:0;
+}
+body:before{
+ opacity:.38;
+ background-image:linear-gradient(rgba(117,143,177,.075) 1px,transparent 1px),linear-gradient(90deg,rgba(117,143,177,.075) 1px,transparent 1px);
+ background-size:36px 36px;
+ mask-image:linear-gradient(to bottom,black,transparent 68%);
+}
+body>header{
+ position:sticky;top:0;z-index:55;
+ min-height:72px;padding:12px clamp(14px,2.5vw,36px);
+ gap:10px 15px;
+ background:rgba(255,255,255,.94);
+ border-bottom:1px solid #e1e8f1;
+ box-shadow:0 5px 22px rgba(35,58,91,.07);
+ -webkit-backdrop-filter:blur(18px) saturate(145%);
+ backdrop-filter:blur(18px) saturate(145%);
+}
+body>header>div:first-child{display:flex;flex-direction:column;gap:3px;min-width:235px}
+body>header h1{font-size:17px;font-weight:850;letter-spacing:-.025em;color:#172b4d;line-height:1.25}
+.brand-sub{font-size:10px;color:#71819a;letter-spacing:.095em;text-transform:uppercase;font-weight:700}
+.tag{
+ border:1px solid #dce7f6;background:#f2f7ff;color:#45658f;
+ border-radius:8px;padding:6px 9px;font-size:10px;font-weight:750;
+}
+#connectivityStatus{border-color:#c9eadb;background:#effaf4;color:#16784e}
+.context-toggle{
+ margin-left:auto;background:#f0f6ff;border:1px solid #cdddf3;color:#285a9d;
+ border-radius:8px;font-size:11px;font-weight:800;padding:9px 12px;
+}
+.context-toggle:hover{background:#e5efff;border-color:#8fb4e9}
+body>main{
+ width:min(1740px,100%);max-width:1740px;
+ margin:0 auto;padding:22px clamp(12px,2vw,28px) 132px;
+ grid-template-columns:minmax(0,1.72fr) minmax(320px,.78fr);
+ gap:18px;align-items:start;
+}
+.card{
+ background:rgba(255,255,255,.97);
+ border:1px solid #e1e8f1;border-radius:14px;padding:16px;
+ box-shadow:0 5px 20px rgba(31,57,91,.055),0 1px 2px rgba(31,57,91,.04);
+}
+.card h2{
+ display:flex;align-items:center;gap:9px;
+ color:#29415f;font-size:10px;letter-spacing:.12em;font-weight:850;
+ margin:0 0 13px;text-transform:uppercase;
+}
+.card h2:before{
+ content:"";width:3px;height:15px;border-radius:4px;
+ background:linear-gradient(180deg,#60a5fa,#2563eb);
+ box-shadow:0 0 9px rgba(37,99,235,.13);
+}
+.stage{
+ border:1px solid #cbd6e4;border-radius:12px;
+ background:#060b14;box-shadow:0 12px 30px rgba(20,38,64,.13);
+ overflow:hidden;
+}
+.stage-toolbar{
+ margin:12px 0 2px;padding:10px;
+ background:#f7faff;border:1px solid #e0e8f2;border-radius:10px;
+}
+.stage-toolbar button{border-radius:8px}
+.stage-toolbar button:hover,.layout-row button:hover,.device-actions button:hover{border-color:#7eabe5;filter:brightness(.99)}
+.capture-panel{margin-top:15px;gap:11px}
+.field{min-width:150px}
+.field label,.field-label{font-size:9px;font-weight:850;letter-spacing:.09em;color:#687c98}
+select,textarea,input[type=text]{
+ background:#fff;border:1px solid #d5dfeb;border-radius:8px;color:#203653;
+ box-shadow:inset 0 1px 2px rgba(29,55,87,.025);
+}
+select:hover,textarea:hover,input[type=text]:hover{border-color:#9bb6d8}
+select:focus,textarea:focus,input[type=text]:focus{outline:2px solid rgba(37,99,235,.14);border-color:#6b9ce0}
+button{
+ background:linear-gradient(180deg,#fff,#f6f9fd);
+ border:1px solid #d7e1ed;color:#304967;
+ border-radius:8px;box-shadow:0 1px 2px rgba(25,49,78,.035);
+ transition:background .16s,border-color .16s,transform .16s,box-shadow .16s;
+}
+button:hover:not(:disabled){
+ transform:translateY(-1px);border-color:#9db8dc;
+ box-shadow:0 4px 10px rgba(39,76,122,.08);
+}
+button.primary{
+ background:linear-gradient(135deg,#347ff0,#245ed0);border-color:#3479e2;
+ color:#fff;box-shadow:0 5px 14px rgba(37,99,235,.19);
+}
+button.danger{
+ background:linear-gradient(135deg,#e35c68,#c9364b);
+ border-color:#d94b5b;color:#fff;box-shadow:0 4px 12px rgba(201,54,75,.13);
+}
+button.success{
+ background:linear-gradient(135deg,#2dbb83,#159b69);
+ border-color:#159b69;color:#fff;
+}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{
+ outline:2px solid #3b82f6;outline-offset:2px;
+}
+.capture-options,.download-prefs,.audio-panel,.caption-options,.layout-panel,.slide-panel,.teleprompter-settings{
+ background:#f8faff;border:1px solid #e3eaf3;border-radius:10px;
+}
+.device-grid{gap:11px}
+.device-actions{gap:8px}
+.device-actions button{min-height:42px}
+.screen-share-hint{border-radius:8px;background:#f5f9ff;border-color:#d8e5f5;color:#58708f}
+.context-panel{
+ top:92px;max-height:calc(100dvh - 108px);gap:12px;
+ padding:0 4px 4px 0;scrollbar-color:#c2d0e2 transparent;
+}
+.context-panel>.card{padding:15px}
+#contextPanel textarea#notes{
+ min-height:190px;background:#fbfdff;border-color:#d7e1ed;color:#243b59;
+ font-size:12px;line-height:1.7;
+}
+#contextPanel .hint{font-size:10px;line-height:1.55;color:#71819a}
+#contextPanel .small{font-size:10px;line-height:1.8;color:#62758f}
+#contextPanel .empty{
+ border:1px dashed #cbd8e8;background:#f8fbff;border-radius:9px;
+ padding:15px;text-align:center;color:#7587a0;
+}
+#contextPanel .rec{
+ padding:10px;border-radius:10px;background:#f8fbff;border:1px solid #e0e8f2;
+}
+#contextPanel .rec+.rec{margin-top:8px}
+.layout-panel,.slide-panel{padding:12px}
+.layout-panel .field-label{margin-bottom:9px}
+.layout-row button,.slide-nav button{border-radius:7px}
+.check{color:#526984}
+.check input{accent-color:#2563eb}
+.tool-row{background:rgba(255,255,255,.97);border-color:#dfe7f1;border-radius:9px}
+#toolTray{
+ background:rgba(255,255,255,.97);border:1px solid #d6e1ee;
+ border-radius:12px;box-shadow:0 12px 30px rgba(5,17,35,.2);color:#233b5a;
+}
+#pipHandle{border-color:#77a8e8;box-shadow:0 0 0 2px rgba(37,99,235,.14),0 8px 24px #0007}
+#pipHandle .drag-bar{background:rgba(17,39,69,.94);border-bottom:1px solid #77a8e8;color:#f2f7ff}
+.error{border-radius:9px}
+.sticky-controls{
+ position:fixed;left:50%;right:auto;bottom:16px;transform:translateX(-50%);
+ width:max-content;max-width:calc(100vw - 28px);
+ display:flex;align-items:center;justify-content:center;flex-wrap:wrap;
+ gap:8px;padding:10px 12px;
+ background:rgba(255,255,255,.94);border:1px solid #d5e0ed;
+ border-radius:14px;box-shadow:0 12px 38px rgba(29,53,84,.18),0 2px 7px rgba(29,53,84,.07);
+ -webkit-backdrop-filter:blur(18px) saturate(150%);backdrop-filter:blur(18px) saturate(150%);
+}
+.sticky-controls button{min-height:42px;padding:9px 14px;border-radius:9px}
+.sticky-controls #recordBtn{min-width:165px;background:linear-gradient(135deg,#e75b68,#c9364b);border-color:#d94b5b;color:#fff;box-shadow:0 6px 16px rgba(201,54,75,.2)}
+.sticky-controls #recordBtn:hover:not(:disabled){filter:brightness(1.04)}
+.sticky-controls #stopBtn{background:#fff3f3;border-color:#f1c7cc;color:#b72f43}
+.sticky-controls #pauseBtn{background:#fff8e8;border-color:#f0dfb6;color:#8b6423}
+@media(max-width:1100px){
+ body>main{grid-template-columns:minmax(0,1.35fr) minmax(285px,.85fr);gap:13px}
+}
+@media(max-width:950px){
+ body>main{grid-template-columns:minmax(0,1fr);padding-top:15px}
+ .context-panel{position:static;max-height:none;overflow:visible;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}
+ .context-panel>.card:first-child{grid-column:1/-1}
+}
+@media(max-width:650px){
+ body>header{position:relative;padding:11px 12px;gap:7px}
+ body>header>div:first-child{min-width:0;flex:1 1 100%}
+ body>header h1{font-size:15px}
+ .brand-sub{font-size:9px}
+ body>main{padding:12px 9px 120px;gap:10px}
+ .card{padding:11px;border-radius:12px}
+ .card h2{font-size:9px;margin-bottom:10px}
+ .context-panel{display:flex;gap:9px}
+ #contextPanel textarea#notes{min-height:130px}
+ .sticky-controls{
+  left:7px;right:7px;bottom:7px;transform:none;width:auto;max-width:none;
+  display:grid;grid-template-columns:.82fr 1.35fr .8fr .75fr .9fr;
+  gap:5px;padding:6px;border-radius:12px;
+ }
+ .sticky-controls button{min-width:0;width:100%;padding:8px 4px;font-size:10px;min-height:46px;white-space:normal;line-height:1.2}
+ .sticky-controls #recordBtn{min-width:0;font-size:11px;font-weight:850}
+}
+@media(max-height:480px) and (orientation:landscape){
+ body>header{position:relative;min-height:52px}
+ .context-panel{position:static;max-height:none}
+ .sticky-controls{left:50%;right:auto;transform:translateX(-50%);width:max-content;max-width:calc(100vw - 12px);display:flex}
+}
+@media(prefers-reduced-motion:reduce){
+ button{transition:none!important}
+}
+
+
+
+/* Modular setup compartments */
+.setup-compartment{margin:12px 0;border:1px solid #dce6f2;border-radius:15px;background:linear-gradient(180deg,#fff 0%,#fbfdff 100%);box-shadow:0 5px 18px rgba(38,69,110,.055);overflow:hidden}
+.setup-compartment>summary{list-style:none;display:flex;align-items:center;gap:12px;padding:15px 16px;cursor:pointer;user-select:none;background:linear-gradient(100deg,#f2f7ff 0%,#fff 72%);border-bottom:1px solid transparent}
+.setup-compartment>summary::-webkit-details-marker{display:none}
+.setup-compartment[open]>summary{border-bottom-color:#e4ebf5}
+.setup-compartment>summary:focus-visible{outline:2px solid #2563eb;outline-offset:-3px}
+.compartment-number{display:grid;place-items:center;flex:0 0 34px;height:34px;border-radius:10px;background:#e5efff;color:#245bb8;font-size:12px;font-weight:900}
+.setup-compartment>summary strong{display:block;color:#263d5c;font-size:13px;letter-spacing:.045em;text-transform:uppercase}
+.setup-compartment>summary small{display:block;margin-top:3px;color:#74849a;font-size:11px;font-weight:500;letter-spacing:0;text-transform:none}
+.compartment-chevron{margin-left:auto;color:#6280a7;font-size:18px;transition:transform .18s ease}
+.setup-compartment[open] .compartment-chevron{transform:rotate(180deg)}
+.compartment-body{padding:13px 14px 15px}
+.compartment-body>.layout-panel,.compartment-body>.slide-panel,.compartment-body>.motion-graphic-panel,.compartment-body>.device-diagnostic{margin-top:0}
+.motion-graphic-library{margin:10px 0 12px;padding:11px;background:#f4f8fe;border:1px solid #dfe8f4;border-radius:12px}
+.motion-graphic-library-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;color:#2c4464;font-size:11px}
+.motion-graphic-library-heading span{padding:4px 8px;border-radius:99px;background:#e5efff;color:#2c62b6;font-weight:800;font-variant-numeric:tabular-nums}
+.motion-graphic-list{display:grid;gap:7px;margin-top:9px}
+.motion-graphic-empty{padding:13px;border:1px dashed #cad8e9;border-radius:9px;color:#75859a;font-size:11px;line-height:1.5;text-align:center}
+.motion-graphic-item{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:7px;padding:8px;background:#fff;border:1px solid #dfe7f1;border-radius:10px}
+.motion-graphic-item.is-selected{border-color:#75a5f5;box-shadow:0 0 0 2px rgba(47,129,247,.1)}
+.motion-graphic-item-main{display:flex;align-items:center;gap:9px;min-width:0;padding:4px 5px;border:0;background:transparent;color:#324b6c;text-align:left;min-height:38px}
+.motion-graphic-item-main:hover{background:#f5f8fe}
+.motion-graphic-item-icon{display:grid;place-items:center;flex:0 0 30px;height:30px;border-radius:8px;background:#eaf2ff;color:#3264b1;font-size:12px;font-weight:900}
+.motion-graphic-item-copy{display:block;min-width:0}
+.motion-graphic-item-name{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;font-weight:800}
+.motion-graphic-item-meta{display:block;margin-top:3px;color:#79889c;font-size:10px;font-weight:500}
+.motion-graphic-item-remove{min-height:33px;padding:5px 9px;border-color:#e4eaf2;background:#fff;color:#8b5660;font-size:10px}
+.motion-graphic-item-remove:hover{background:#fff4f5;border-color:#f0ccd2}
+.motion-graphic-library-note{margin:8px 0 0;color:#718198;font-size:10px;line-height:1.45}
+@media(max-width:760px){.setup-compartment{margin:10px 0;border-radius:13px}.setup-compartment>summary{padding:13px 12px;gap:9px}.compartment-body{padding:10px}}
+@media(prefers-reduced-motion:reduce){.compartment-chevron{transition:none}}
+
+/* Saved defaults, low-latency ink and explanatory motion attachments */
+.default-prefs{display:flex;align-items:center;gap:7px;margin-left:auto;min-width:0}
+.default-prefs span{font-size:9px;color:#68809c;font-weight:700;white-space:nowrap}
+.default-prefs button{padding:7px 10px;font-size:10px;font-weight:800;white-space:nowrap;background:#edf4ff;border-color:#c9dbf4;color:#245b9f}
+.ink-settings-row{align-items:center;flex-wrap:wrap;gap:7px}
+.ink-settings-row label:not(.check){font-size:10px;font-weight:800;color:#60738d}
+.ink-settings-row input[type=color]{width:34px;height:30px;padding:2px;border-radius:7px;border:1px solid #d5dfeb;background:#fff}
+.ink-settings-row input[type=range]{width:110px;min-width:64px;accent-color:#2563eb}
+.ink-settings-row .ink-pressure{font-size:10px;margin-left:auto}
+.ink-quality-hint{margin:5px 0 0;color:#68809c;font-size:10px}
+#annotationCanvas{touch-action:none;user-select:none;-webkit-user-select:none}
+.motion-graphic-panel{margin-top:12px}
+.motion-graphic-section{margin:10px 0;border:1px solid #dce6f2;border-radius:12px;background:#fff;overflow:hidden}
+.motion-graphic-section>summary{display:flex;align-items:center;gap:10px;padding:12px;background:linear-gradient(90deg,#f5f9ff,#fff);cursor:pointer;list-style:none}
+.motion-graphic-section>summary::-webkit-details-marker{display:none}
+.motion-graphic-section>summary strong{display:block;font-size:11px;letter-spacing:.04em;color:#30445f}
+.motion-graphic-section>summary small{display:block;margin-top:3px;font-size:10px;color:#73839a;font-weight:500}
+.motion-graphic-section-icon{display:grid;place-items:center;flex:0 0 32px;height:32px;border-radius:9px;background:#e7f0ff;color:#3569bb;font-size:16px;font-weight:900}
+.motion-graphic-section[open]>summary{border-bottom:1px solid #e3ebf5}
+.motion-graphic-section-body{padding:10px}
+.motion-graphic-upload{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:8px 0 12px}
+.motion-graphic-upload input{max-width:100%;font-size:11px}
+.motion-graphic-controls{display:grid;grid-template-columns:auto minmax(120px,1fr) auto auto auto auto;align-items:center;gap:9px;padding:11px;background:#f7faff;border:1px solid #e1e9f3;border-radius:10px}
+.motion-graphic-controls>label:not(.check){font-size:10px;font-weight:800;color:#61758f}
+.motion-graphic-controls select{min-width:0;max-width:100%;padding:7px;font-size:11px}
+.motion-graphic-controls .check{grid-column:1/-1;font-size:11px}
+.motion-graphic-controls input[type=range]{width:100%;min-width:75px;accent-color:#2563eb}
+.motion-graphic-controls button{grid-column:1/-1;justify-self:start;padding:7px 10px;font-size:10px}
+#motionGraphicStatus{margin:9px 0 0}
+.motion-graphic-timing{margin-top:10px;padding:11px;background:#f7faff;border:1px solid #e1e9f3;border-radius:10px}
+.motion-graphic-timing-heading{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;color:#30445f;font-size:11px}
+.motion-graphic-timing-heading span{color:#718198;font-size:10px}
+.motion-graphic-timing-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:9px}
+.motion-graphic-timing-fields label{display:flex;flex-direction:column;gap:5px;min-width:0;color:#61758f;font-size:10px;font-weight:800}
+.motion-graphic-timing-fields input{width:100%;min-width:0;padding:8px;border:1px solid #d8e3f1;border-radius:8px;background:#fff;color:#22354d;font:inherit;font-size:12px}
+.motion-graphic-timing-fields input:disabled{opacity:.5}
+.motion-graphic-timing-hint{margin:8px 0 0;color:#718198;font-size:10px;line-height:1.5}
+@media(max-width:760px){
+ .default-prefs{margin-left:0;flex:1 1 100%;justify-content:space-between}
+ .default-prefs span{white-space:normal}
+ .motion-graphic-controls{grid-template-columns:auto minmax(0,1fr);gap:8px}
+ .motion-graphic-controls .check,.motion-graphic-controls button{grid-column:1/-1}
+ .motion-graphic-controls input[type=range]{max-width:100%}
+ .motion-graphic-timing-fields{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(prefers-reduced-motion:reduce){
+ .default-prefs button{transition:none!important}
+}
+
+
+
+.mic-test-panel{margin-top:11px;padding:11px;background:#fff;border:1px solid #dbe5f1;border-radius:9px;display:flex;flex-direction:column;gap:8px}.mic-test-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px}.mic-test-actions button{font-size:10px;padding:8px 11px}.mic-test-primary{background:#2563eb;color:#fff;border-color:#2563eb}.mic-test-actions #micTestCountdown{font-size:10px;font-weight:750;color:#476584}.mic-test-panel audio{width:100%;max-width:480px}.mic-test-panel .hint{font-size:10px;margin:0}
 </style>
 </head>
 <body>
@@ -286,6 +769,7 @@ input,select,textarea{border-color:#ffffff20!important;border-radius:9px}button:
   <span class="tag">16:9 · 1080p / 30fps target</span>
   <span class="tag" id="connectivityStatus" role="status" aria-live="polite">● Checking connection</span>
   <button id="contextToggle" class="context-toggle" type="button" aria-controls="contextPanel" aria-expanded="true" title="Hide context panel">▤ Hide Context</button>
+  <div class="default-prefs" aria-label="Recorder defaults"><span id="defaultsStatus" role="status" aria-live="polite">Settings auto-save on this device</span><button id="saveDefaultsBtn" type="button" title="Save all current recorder settings as your default setup">Save as Default</button></div>
   <button id="installApp" type="button" hidden style="margin-left:auto;padding:6px 10px;font-size:11px">⬇ Install App</button>
 </header>
 <div class="orientation-hint" id="orientationHint">
@@ -304,7 +788,9 @@ input,select,textarea{border-color:#ffffff20!important;border-radius:9px}button:
     <button id="annotationFab" type="button" aria-label="Open teaching tools" title="Teaching tools">✎</button>
     <div id="toolTray" hidden>
       <div class="tool-row"><button type="button" data-tool="pen" class="active" aria-pressed="true">✎ Pen</button><button type="button" data-tool="highlighter" aria-pressed="false">🖍 Highlighter</button><button type="button" data-tool="eraser" aria-pressed="false">⌫ Eraser</button><button type="button" data-tool="text" aria-pressed="false">T Text</button><button type="button" id="clearInk">Clear</button></div>
-      <div class="tool-row"><label for="inkColor">Pen colour</label><input type="color" id="inkColor" value="#ff3b30"><label for="inkWidth">Pen thickness</label><input type="range" id="inkWidth" min="2" max="32" value="5"><span class="tool-val" id="inkWidthVal">5 px</span><span class="small">Highlighter uses transparent yellow ink.</span></div>
+      <div class="tool-row ink-settings-row"><label for="inkColor">Pen</label><input type="color" id="inkColor" value="#ff3b30" aria-label="Pen colour"><label for="inkWidth">Width</label><input type="range" id="inkWidth" min="1" max="32" value="5"><span class="tool-val" id="inkWidthVal">5 px</span><label class="check ink-pressure"><input id="inkPressure" type="checkbox" checked> Stylus pressure</label></div>
+      <div class="tool-row ink-settings-row"><label for="highlightColor">Highlighter</label><input type="color" id="highlightColor" value="#ffe45c" aria-label="Highlighter colour"><label for="highlightWidth">Width</label><input type="range" id="highlightWidth" min="10" max="72" value="30"><span class="tool-val" id="highlightWidthVal">30 px</span><label for="highlightOpacity">Opacity</label><input type="range" id="highlightOpacity" min="12" max="65" value="34"><span class="tool-val" id="highlightOpacityVal">34%</span></div>
+      <p class="small ink-quality-hint">Smooth real-time strokes · Coalesced stylus/touch samples · Separate pen and marker presets</p>
     </div>
     <div class="stage-placeholder" id="placeholder">Choose a capture mode, start the required source,<br>and your lecture preview will appear here.</div>
     <div class="rec-badge" id="badge"><span class="rec-dot"></span>REC <span id="timer">00:00</span><span id="recResolution">1920×1080</span></div>
@@ -372,12 +858,14 @@ input,select,textarea{border-color:#ffffff20!important;border-radius:9px}button:
     <p class="hint">The scrolling script is a presenter-only overlay; it is not burned into the recorded lecture video.</p>
   </section>
 
-  <div class="capture-panel">
+  <details class="setup-compartment" open id="captureCompartment">
+<summary><span class="compartment-number">01</span><span><strong>Capture &amp; audio</strong><small>Source, quality, microphone and captions</small></span><span class="compartment-chevron">⌄</span></summary><div class="compartment-body">
+<div class="capture-panel">
     <div class="field"><label for="captureMode">Capture mode</label><select id="captureMode">
       <option value="camera">Camera only</option>
       <option value="camera-slides">Camera + Slide Overlay</option>
-      <option value="screen">Screen / slides only</option>
-      <option value="screen-camera" selected>Screen + Face Cam (PiP)</option>
+      <option value="screen" selected>Screen / slides only</option>
+      <option value="screen-camera">Screen + Face Cam (PiP)</option>
     </select></div>
     <div class="field"><label for="quality">Recording quality</label><select id="quality"><option value="1080">1080p · 30 fps</option><option value="720">720p · 30 fps</option><option value="480">480p · 30 fps</option></select></div>
     <div class="field"><label for="outputRatio">Output format</label><select id="outputRatio"><option value="landscape">Landscape · 16:9</option><option value="portrait">Portrait · 9:16</option></select></div>
@@ -400,6 +888,7 @@ input,select,textarea{border-color:#ffffff20!important;border-radius:9px}button:
     <button id="muteBtn" type="button" disabled>Mute Mic</button>
     <label class="check"><input id="includeSystemAudio" type="checkbox" checked> Include shared screen audio</label>
   </div>
+  <section class="mic-test-panel" aria-label="Microphone test"><div class="mic-test-actions"><button type="button" id="micTestStart" class="mic-test-primary">▶ Record 10-second Mic Test</button><button type="button" id="micTestStop" disabled>■ Stop Test</button><span id="micTestCountdown" role="status" aria-live="polite">10-second audio check</span></div><audio id="micTestPlayback" controls hidden></audio><span id="micTestStatus" class="hint" role="status" aria-live="polite">Enable the mic first, then record a short sample.</span></section>
   <div class="caption-options" id="autoCaptionControls">
     <label class="check"><input id="autoCaptionsEnabled" type="checkbox"> 🎞 Automatic captions during recording</label>
     <label class="small" for="captionLanguage">Language</label>
@@ -410,6 +899,9 @@ input,select,textarea{border-color:#ffffff20!important;border-radius:9px}button:
     </select>
     <span class="caption-status" id="captionStatus" role="status">Optional. Uses the browser's speech-recognition service when supported. Recognition may require internet and separate microphone permission; check your browser privacy settings.</span>
   </div>
+  </div></details>
+<details class="setup-compartment" id="visualCompartment">
+<summary><span class="compartment-number">02</span><span><strong>Camera, layout &amp; branding</strong><small>Face Cam, instructor overlays and brand identity</small></span><span class="compartment-chevron">⌄</span></summary><div class="compartment-body">
   <div class="layout-panel">
     <div class="field-label">Switch layout during recording</div>
     <div class="layout-row" id="layoutButtons">
@@ -488,6 +980,9 @@ input,select,textarea{border-color:#ffffff20!important;border-radius:9px}button:
     <p class="hint">The name/title graphic animates once at recording start: 600ms entrance, 3.5s hold, then 500ms fade-out. Reduced-motion devices use a simple fade. Leave it unchecked for a clean video.</p>
   </div>
 
+  </div></details>
+<details class="setup-compartment" id="slidesCompartment">
+<summary><span class="compartment-number">03</span><span><strong>Presentation &amp; slide effects</strong><small>Upload slides, transitions and lesson pacing</small></span><span class="compartment-chevron">⌄</span></summary><div class="compartment-body">
   <div class="slide-panel">
     <h2 style="margin-bottom:8px">Presentation slides</h2>
     <div class="slide-top"><input id="slidesInput" type="file" accept="application/pdf,image/*" multiple><span class="small">PDF or image files · PPT/PPTX: export to PDF first</span></div>
@@ -522,14 +1017,52 @@ input,select,textarea{border-color:#ffffff20!important;border-radius:9px}button:
     </div>
     <p class="hint" id="slideDisplayHint">Smart Fit keeps the complete slide readable and fills spare space with a soft background. Fit Entire Slide adds dark margins when needed. Fill Screen fills the frame but may crop slide edges. Choose one restrained canvas transition per lesson. Optional Ken Burns adds slow alternating pan and zoom to image slides only; PDF pages and tables remain still.</p>
   </div>
+  </div></details>
+<details class="setup-compartment" id="motionCompartment">
+<summary><span class="compartment-number">04</span><span><strong>Motion graphics &amp; overlays</strong><small>Add several visuals and schedule each one</small></span><span class="compartment-chevron">⌄</span></summary><div class="compartment-body">
+  <section class="motion-graphic-panel card" id="motionGraphicPanel">
+    <h2>Motion Graphic Attachments</h2>
+    <p class="hint">Attach a GIF, MP4, WebM or transparent/static image as an explanatory visual. It appears as a picture-in-picture graphic on the lesson canvas and is included in the recorded video.</p>
+    <div class="motion-graphic-upload"><input id="motionGraphicInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm,.gif,.mp4,.webm" multiple><span class="small">Add one or more files. You can add more later without replacing existing graphics.</span></div>
+    <div class="motion-graphic-library" aria-live="polite"><div class="motion-graphic-library-heading"><strong>Attached graphics</strong><span id="motionGraphicCount">0 attached</span></div><div id="motionGraphicList" class="motion-graphic-list"><div class="motion-graphic-empty">No graphics added yet. Select multiple files above.</div></div><p class="motion-graphic-library-note">Select an item to edit its timing. Graphics can overlap; each follows its own start time and duration.</p></div>
+    <details class="motion-graphic-section">
+      <summary><span class="motion-graphic-section-icon">⚙</span><span><strong>Selected graphic &amp; appearance</strong><small>Enable, position, size, opacity and remove</small></span><span class="compartment-chevron">⌄</span></summary>
+      <div class="motion-graphic-section-body">
+        <div class="motion-graphic-controls">
+          <label for="motionGraphicSelect">Attachment</label><select id="motionGraphicSelect" disabled><option value="">No attachment loaded</option></select>
+          <label class="check"><input id="motionGraphicEnabled" type="checkbox" checked disabled> Show in preview and recording</label>
+          <label for="motionGraphicPosition">Position</label><select id="motionGraphicPosition"><option value="bottom-right" selected>Bottom right</option><option value="bottom-left">Bottom left</option><option value="top-right">Top right</option><option value="top-left">Top left</option></select>
+          <label for="motionGraphicSize">Size</label><input id="motionGraphicSize" type="range" min="12" max="45" value="28"><span id="motionGraphicSizeVal" class="tool-val">28%</span>
+          <label for="motionGraphicOpacity">Opacity</label><input id="motionGraphicOpacity" type="range" min="35" max="100" value="96"><span id="motionGraphicOpacityVal" class="tool-val">96%</span>
+          <button id="clearMotionGraphics" type="button" disabled>Remove Attachments</button>
+        </div>
+      </div>
+    </details>
+    <details class="motion-graphic-section">
+      <summary><span class="motion-graphic-section-icon">⏱</span><span><strong>Timing &amp; duration</strong><small>Choose start time, display duration and preview</small></span><span class="compartment-chevron">⌄</span></summary>
+      <div class="motion-graphic-section-body">
+        <div class="motion-graphic-timing" id="motionGraphicTiming">
+          <div class="motion-graphic-timing-heading"><strong>Schedule selected attachment</strong><span>Relative to recording start</span></div>
+          <div class="motion-graphic-timing-fields">
+            <label for="motionGraphicStartAt">Show from (seconds)<input id="motionGraphicStartAt" type="number" min="0" max="21600" step="0.5" value="0" disabled></label>
+            <label for="motionGraphicDuration">Visible duration (seconds)<input id="motionGraphicDuration" type="number" min="0.5" max="21600" step="0.5" value="5" disabled></label>
+            <label for="motionGraphicPreviewAt">Preview at (seconds)<input id="motionGraphicPreviewAt" type="number" min="0" max="21600" step="0.5" value="0" disabled></label>
+          </div>
+          <p class="motion-graphic-timing-hint" id="motionGraphicTimingHint">Select an attachment to set its start time and duration. During recording, timing is measured from Start Recording; Preview at is used before recording.</p>
+        </div>
+      </div>
+    </details>
+    <p class="hint" id="motionGraphicStatus" role="status" aria-live="polite">No motion graphic attached. Uploaded files remain local to this browser session; attachment preferences are saved as defaults.</p>
+  </section></div></details>
   <div id="error" class="error" role="alert"></div>
   <p class="screen-note">Screen capture depends on browser support. Camera and microphone permission require HTTPS. Screen sharing must be started by the presenter.</p>
+<details class="setup-compartment" id="deviceCompartment"><summary><span class="compartment-number">05</span><span><strong>Device compatibility</strong><small>Check Android and browser media support</small></span><span class="compartment-chevron">⌄</span></summary><div class="compartment-body">
   <section class="device-diagnostic card" id="deviceDiagnosticPanel">
     <h2>Android / Browser Compatibility</h2>
     <p class="hint">Run this check on the phone/browser used for recording. It checks capabilities without opening the camera or microphone or requesting permissions.</p>
     <div class="device-diagnostic-actions"><button type="button" id="deviceCheckBtn" class="primary">📱 Run Device Check</button><button type="button" id="deviceCheckCopyBtn" disabled>Copy Report</button></div>
     <pre id="deviceCheckResults" class="device-diagnostic-results" role="status" aria-live="polite">Not checked yet. Tap “Run Device Check” on your Android phone.</pre>
-  </section>
+  </section></div></details>
 </section>
 
 <aside id="contextPanel" class="context-panel" aria-label="Lecture context panel">
@@ -565,7 +1098,12 @@ const inkCanvas=$('annotationCanvas'),ink=inkCanvas.getContext('2d'),stage=$('st
 const captureMode=$('captureMode'),quality=$('quality'),cameraSelect=$('cameraSelect'),micSelect=$('micSelect');
 const cameraBtn=$('cameraBtn'),micBtn=$('micBtn'),screenBtn=$('screenBtn'),screenShareHint=$('screenShareHint'),recordBtn=$('recordBtn'),pauseBtn=$('pauseBtn'),stopBtn=$('stopBtn');
 const muteBtn=$('muteBtn'),meterFill=$('meterFill'),micStatus=$('micStatus'),badge=$('badge'),timer=$('timer'),countdownLayer=$('countdownLayer'),countdownNumber=$('countdownNumber'),error=$('error');
+const micTestStart=$('micTestStart'),micTestStop=$('micTestStop'),micTestCountdown=$('micTestCountdown'),micTestStatus=$('micTestStatus'),micTestPlayback=$('micTestPlayback');
+let micTestRecorder=null,micTestChunks=[],micTestTimer=null;
+
 const slidesInput=$('slidesInput'),slideDisplayMode=$('slideDisplayMode'),slideTransitionsEnabled=$('slideTransitionsEnabled'),slideTransitionType=$('slideTransitionType'),slideMotionEnabled=$('slideMotionEnabled'),progressBarEnabled=$('progressBarEnabled'),progressDurationMinutes=$('progressDurationMinutes'),progressBarHint=$('progressBarHint'),prevSlide=$('prevSlide'),nextSlide=$('nextSlide'),slideCount=$('slideCount'),clearSlides=$('clearSlides'),slideJump=$('slideJump'),slideTotal=$('slideTotal'),goSlide=$('goSlide');
+const motionGraphicInput=$('motionGraphicInput'),motionGraphicSelect=$('motionGraphicSelect'),motionGraphicEnabled=$('motionGraphicEnabled'),motionGraphicPosition=$('motionGraphicPosition'),motionGraphicSize=$('motionGraphicSize'),motionGraphicSizeVal=$('motionGraphicSizeVal'),motionGraphicOpacity=$('motionGraphicOpacity'),motionGraphicOpacityVal=$('motionGraphicOpacityVal'),motionGraphicStatus=$('motionGraphicStatus'),clearMotionGraphics=$('clearMotionGraphics');
+const motionGraphicStartAt=$('motionGraphicStartAt'),motionGraphicDuration=$('motionGraphicDuration'),motionGraphicPreviewAt=$('motionGraphicPreviewAt'),motionGraphicTimingHint=$('motionGraphicTimingHint');const motionGraphicList=$('motionGraphicList'),motionGraphicCount=$('motionGraphicCount');
 try{
  const crossfade=localStorage.getItem('officerlab-slide-crossfade'),motion=localStorage.getItem('officerlab-slide-motion'),transition=localStorage.getItem('officerlab-slide-transition-type');
  if(crossfade!==null)slideTransitionsEnabled.checked=crossfade==='1';
@@ -594,7 +1132,9 @@ const autoCaptionsEnabled=$('autoCaptionsEnabled'),captionLanguage=$('captionLan
 let cameraStream=null,micStream=null,screenStream=null,recorder=null,recordTimer=null,meterRAF=0,drawRAF=0,preferredFacing='user';
 let screenCropSource=null,screenCropResult=null,screenCropResolved=false,screenCropChecks=0;
 let audioContext=null,audioDestination=null,micGain=null,screenGain=null,micAnalyser=null,micSource=null,screenAudioSource=null;
+
 let layout='pip',pip={x:.77,y:.73},activeTool='pen',drawing=false,slides=[],slideIndex=0,pdfDoc=null,slideSource=null,slideUrls=[],presentationSavedOutputRatio=null;
+let motionGraphics=[],activeMotionGraphicIndex=-1,lastInkMidpoint=null;
 let slideLoadVersion=0,slideTransitionFromFrame=null,slideTransitionToFrame=null,slideTransitionStartedAt=0,slideMotionStartedAt=performance.now();
 let sessionId=null,chunkIndex=0,writeQueue=Promise.resolve(),localChunks=[],recording=false,paused=false,recordingStarting=false,stoppingRecording=false,startedAt=0,recordElapsedMs=0,recordSegmentStartedAt=0,testTimeout=null,outroStartedAt=0,outroTimer=null;
 let saved=[],recoveryItems=[],activeMediaElement=null,mediaSessionReady=false;
@@ -1134,6 +1674,7 @@ function drawScene(){
    drawPip(canvas.width*pip.x,canvas.height*pip.y,w,hh);
   }
  }
+ drawMotionGraphic(ctx);
  if(recording&&inkCanvas.style.display!=='none'&&mode!=='camera')ctx.drawImage(inkCanvas,0,0,canvas.width,canvas.height);
  drawGuides();
  drawLowerThird();
@@ -1170,7 +1711,10 @@ async function connectMic(){
  await createAudioGraph();if(!audioContext)return;
  await audioContext.resume();
  if(micSource){try{micSource.disconnect()}catch{}}
- micSource=audioContext.createMediaStreamSource(micStream);micGain=audioContext.createGain();micGain.gain.value=$('muteBtn').dataset.muted==='true'?0:1;
+ if(micGain){try{micGain.disconnect()}catch{}}
+ micSource=audioContext.createMediaStreamSource(micStream);
+ micGain=audioContext.createGain();
+ micGain.gain.value=$('muteBtn').dataset.muted==='true'?0:1;
  micSource.connect(micAnalyser);micSource.connect(micGain);micGain.connect(audioDestination);
  micStatus.textContent='Mic: ready';muteBtn.disabled=recording;micBtn.textContent='✓ Microphone Ready';
 }
@@ -1201,7 +1745,7 @@ function cameraError(e){
 async function refreshDevices(){
  try{
   const devices=await navigator.mediaDevices.enumerateDevices();
-  const fill=(select,kind,label)=>{const current=select.value;select.replaceChildren(new Option('Default '+label.toLowerCase(),''));devices.filter(d=>d.kind===kind).forEach((d,i)=>select.add(new Option(d.label||label+' '+(i+1),d.deviceId)));if([...select.options].some(o=>o.value===current))select.value=current;};
+  const fill=(select,kind,label)=>{const current=select.value;select.replaceChildren(new Option(kind==='audioinput'?'Samsung phone microphone (default)':'Default '+label.toLowerCase(),''));devices.filter(d=>d.kind===kind).forEach((d,i)=>{const name=d.label||label+' '+(i+1);select.add(new Option(name,d.deviceId));});if([...select.options].some(o=>o.value===current))select.value=current;};
   fill(cameraSelect,'videoinput','Camera');fill(micSelect,'audioinput','Microphone');cameraSelect.disabled=!cameraStream||recording||recordingStarting;micSelect.disabled=!micStream||recording||recordingStarting;
  }catch{}
 }
@@ -1214,8 +1758,7 @@ async function startMic(){
  }catch(e){micStream=null;showError(e.name==='NotAllowedError'?'Microphone permission denied. Allow microphone access in Chrome site settings.':'Could not start microphone: '+e.message);}
 }
 function stopMic(){
- if(micStream)micStream.getTracks().forEach(t=>t.stop());micStream=null;
- if(micSource){try{micSource.disconnect()}catch{}micSource=null;}if(micGain){try{micGain.disconnect()}catch{}micGain=null;}
+ if(micStream)micStream.getTracks().forEach(t=>t.stop());micStream=null;if(micSource){try{micSource.disconnect()}catch{}micSource=null;}if(micGain){try{micGain.disconnect()}catch{}micGain=null;}
  micStatus.textContent='Mic: off';muteBtn.disabled=true;micBtn.textContent='🎙 Enable Microphone';micSelect.disabled=true;meterFill.style.width='0%';
 }
 async function startScreen(){
@@ -1321,26 +1864,34 @@ function setLayout(name){
  layout=name;
  $('layoutButtons').querySelectorAll('[data-layout]').forEach(b=>b.classList.toggle('active',b.dataset.layout===name));
  updateControls();
+ if(typeof scheduleRecorderDefaultsSave==='function')scheduleRecorderDefaultsSave();
 }
 function movePip(position){
  const d=pipDimensions(),g=.03;const map={br:[1-d.w-g,1-d.h-g],bl:[g,1-d.h-g],tr:[1-d.w-g,g],tl:[g,g]};
  if(map[position])pip={x:map[position][0],y:map[position][1]};updatePipHandle();
+ if(typeof scheduleRecorderDefaultsSave==='function')scheduleRecorderDefaultsSave();
 }
 function startDrag(e){
  if(!cameraStream)return;e.preventDefault();pipDragBar.setPointerCapture(e.pointerId);
  const rect=stage.getBoundingClientRect(),startX=e.clientX,startY=e.clientY,start={...pip};
  const move=ev=>{const dx=(ev.clientX-startX)/rect.width,dy=(ev.clientY-startY)/rect.height;const d=pipDimensions();pip.x=Math.max(0,Math.min(1-d.w,start.x+dx));pip.y=Math.max(0,Math.min(1-d.h,start.y+dy));updatePipHandle();};
- const end=()=>{pipDragBar.removeEventListener('pointermove',move);pipDragBar.removeEventListener('pointerup',end);pipDragBar.removeEventListener('pointercancel',end);};
+ const end=()=>{pipDragBar.removeEventListener('pointermove',move);pipDragBar.removeEventListener('pointerup',end);pipDragBar.removeEventListener('pointercancel',end);if(typeof scheduleRecorderDefaultsSave==='function')scheduleRecorderDefaultsSave();};
  pipDragBar.addEventListener('pointermove',move);pipDragBar.addEventListener('pointerup',end);pipDragBar.addEventListener('pointercancel',end);
 }
 function getInkPoint(e){const r=inkCanvas.getBoundingClientRect();return{x:(e.clientX-r.left)*inkCanvas.width/r.width,y:(e.clientY-r.top)*inkCanvas.height/r.height};}
-function inkStyle(){
- ink.lineCap=activeTool==='highlighter'?'butt':'round';
- ink.lineJoin='round';
- ink.lineWidth=activeTool==='highlighter'?Math.max(22,Number($('inkWidth').value)*4):Number($('inkWidth').value);
- ink.globalCompositeOperation=activeTool==='eraser'?'destination-out':'source-over';
- ink.globalAlpha=activeTool==='highlighter'?.34:1;
- ink.strokeStyle=activeTool==='highlighter'?'#ffeb3b':$('inkColor').value;
+function inkPressureScale(point){
+ if(!$('inkPressure').checked||point.pointerType!=='pen'||!Number.isFinite(point.pressure)||point.pressure<=0)return 1;
+ return .48+Math.max(0,Math.min(1,point.pressure))*.92;
+}
+function inkStyle(point){
+ ink.lineCap='round';ink.lineJoin='round';
+ const marker=activeTool==='highlighter',eraser=activeTool==='eraser';
+ const base=marker?Number($('highlightWidth').value):Number($('inkWidth').value);
+ ink.lineWidth=Math.max(1,base*inkPressureScale(point||{}));
+ ink.globalCompositeOperation=eraser?'destination-out':'source-over';
+ ink.globalAlpha=marker?Number($('highlightOpacity').value)/100:1;
+ ink.strokeStyle=marker?$('highlightColor').value:$('inkColor').value;
+ ink.fillStyle=ink.strokeStyle;
 }
 function inkStart(e){
  if(toolTray.contains(e.target)||drawing)return;
@@ -1350,31 +1901,220 @@ function inkStart(e){
  }
  e.preventDefault();drawing=true;lastInkPointerId=e.pointerId;
  try{inkCanvas.setPointerCapture(e.pointerId);}catch{}
- const p=getInkPoint(e);lastInkPoint=p;inkStyle();
- // One single dab on pointer-down; do not paint an extra zero-length stroke.
- ink.beginPath();ink.arc(p.x,p.y,Math.max(1,ink.lineWidth/2),0,Math.PI*2);ink.fillStyle=ink.strokeStyle;ink.fill();
+ const p=getInkPoint(e);lastInkPoint=p;lastInkMidpoint=p;inkStyle(e);
+ // Round dab prevents an unpainted first frame on touch and stylus input.
+ ink.beginPath();ink.arc(p.x,p.y,Math.max(1,ink.lineWidth/2),0,Math.PI*2);ink.fill();
 }
 function inkMove(e){
  if(!drawing||!lastInkPoint||e.pointerId!==lastInkPointerId)return;
  const coalesced=typeof e.getCoalescedEvents==='function'?e.getCoalescedEvents():[];
- const events=coalesced.length?coalesced:[e];inkStyle();
- ink.beginPath();ink.moveTo(lastInkPoint.x,lastInkPoint.y);
- let moved=false;
+ const events=coalesced.length?coalesced:[e];
  for(const point of events){
-  const p=getInkPoint(point);
-  const dx=p.x-lastInkPoint.x,dy=p.y-lastInkPoint.y;
-  // Ignore duplicate/coalesced samples so the same touch position is never painted twice.
-  if(dx*dx+dy*dy<0.75*0.75)continue;
-  ink.lineTo(p.x,p.y);lastInkPoint=p;moved=true;
+  const p=getInkPoint(point),dx=p.x-lastInkPoint.x,dy=p.y-lastInkPoint.y;
+  if(dx*dx+dy*dy<.35*.35)continue;
+  const midpoint={x:(lastInkPoint.x+p.x)/2,y:(lastInkPoint.y+p.y)/2};
+  inkStyle(point);
+  // Quadratic midpoint interpolation smooths uneven touch/stylus samples without delaying the stroke.
+  ink.beginPath();ink.moveTo(lastInkMidpoint.x,lastInkMidpoint.y);
+  ink.quadraticCurveTo(lastInkPoint.x,lastInkPoint.y,midpoint.x,midpoint.y);ink.stroke();
+  lastInkPoint=p;lastInkMidpoint=midpoint;
  }
- if(moved)ink.stroke();
 }
 function inkEnd(e){
  if(!drawing)return;
  if(e&&e.pointerId!==undefined&&e.pointerId!==lastInkPointerId)return;
- drawing=false;lastInkPoint=null;lastInkPointerId=null;
+ if(lastInkPoint&&lastInkMidpoint){
+  ink.beginPath();ink.moveTo(lastInkMidpoint.x,lastInkMidpoint.y);
+  ink.quadraticCurveTo(lastInkPoint.x,lastInkPoint.y,lastInkPoint.x,lastInkPoint.y);ink.stroke();
+ }
+ drawing=false;lastInkPoint=null;lastInkMidpoint=null;lastInkPointerId=null;
  ink.globalAlpha=1;ink.globalCompositeOperation='source-over';
 }
+function updateInkSettingLabels(){
+ $('inkWidthVal').textContent=$('inkWidth').value+' px';
+ $('highlightWidthVal').textContent=$('highlightWidth').value+' px';
+ $('highlightOpacityVal').textContent=$('highlightOpacity').value+'%';
+}
+$('inkWidth').addEventListener('input',updateInkSettingLabels);
+$('highlightWidth').addEventListener('input',updateInkSettingLabels);
+$('highlightOpacity').addEventListener('input',updateInkSettingLabels);
+function releaseMotionGraphic(asset){
+ if(!asset)return;
+ if(asset.media&&asset.kind==='video'){asset.media.pause();asset.media.removeAttribute('src');asset.media.load();}
+ if(asset.url)URL.revokeObjectURL(asset.url);
+}
+function motionGraphicClockSeconds(){
+ return recording?Math.max(0,recordingElapsedMs()/1000):Math.max(0,Number(motionGraphicPreviewAt.value)||0);
+}
+function refreshMotionGraphicSelect(){
+ const selected=activeMotionGraphicIndex;
+ motionGraphicSelect.innerHTML='';
+ if(!motionGraphics.length){
+  motionGraphicSelect.add(new Option('No attachment loaded',''));
+  motionGraphicSelect.disabled=true;motionGraphicEnabled.checked=false;motionGraphicEnabled.disabled=true;clearMotionGraphics.disabled=true;
+  return;
+ }
+ motionGraphics.forEach((asset,index)=>motionGraphicSelect.add(new Option((index+1)+'. '+asset.name,String(index))));
+ activeMotionGraphicIndex=Math.max(0,Math.min(motionGraphics.length-1,selected));
+ motionGraphicSelect.value=String(activeMotionGraphicIndex);
+ motionGraphicSelect.disabled=false;motionGraphicEnabled.disabled=false;clearMotionGraphics.disabled=false;
+}
+function renderMotionGraphicList(){
+ motionGraphicList.replaceChildren();
+ motionGraphicCount.textContent=motionGraphics.length+' attached';
+ if(!motionGraphics.length){
+  const empty=document.createElement('div');empty.className='motion-graphic-empty';
+  empty.textContent='No graphics added yet. Select multiple GIF, MP4, WebM, PNG, JPG or WebP files above.';
+  motionGraphicList.append(empty);return;
+ }
+ motionGraphics.forEach((asset,index)=>{
+  const row=document.createElement('div');row.className='motion-graphic-item'+(index===activeMotionGraphicIndex?' is-selected':'');
+  const pick=document.createElement('button');pick.type='button';pick.className='motion-graphic-item-main';pick.dataset.motionGraphicIndex=String(index);
+  const icon=document.createElement('span');icon.className='motion-graphic-item-icon';icon.textContent=asset.kind==='video'?'▶':'▧';
+  const copy=document.createElement('span');copy.className='motion-graphic-item-copy';
+  const name=document.createElement('span');name.className='motion-graphic-item-name';name.textContent=(index+1)+'. '+asset.name;
+  const meta=document.createElement('span');meta.className='motion-graphic-item-meta';meta.textContent='Starts '+(Number(asset.startAtSeconds)||0)+'s · visible '+(Number(asset.durationSeconds)||5)+'s';
+  copy.append(name,meta);pick.append(icon,copy);pick.setAttribute('aria-pressed',String(index===activeMotionGraphicIndex));
+  const remove=document.createElement('button');remove.type='button';remove.className='motion-graphic-item-remove';remove.textContent='Remove';remove.dataset.removeMotionGraphic=String(index);remove.setAttribute('aria-label','Remove '+asset.name);
+  row.append(pick,remove);motionGraphicList.append(row);
+ });
+}
+function syncMotionGraphicTimingControls(){
+ const asset=motionGraphics[activeMotionGraphicIndex],hasAsset=!!asset;
+ motionGraphicStartAt.disabled=!hasAsset;motionGraphicDuration.disabled=!hasAsset;motionGraphicPreviewAt.disabled=!hasAsset;
+ if(!hasAsset){
+  motionGraphicTimingHint.textContent='Select an attachment to set its start time and duration. During recording, timing is measured from Start Recording; Preview at is used before recording.';
+  return;
+ }
+ motionGraphicStartAt.value=String(Math.max(0,Number(asset.startAtSeconds)||0));
+ motionGraphicDuration.value=String(Math.max(.5,Number(asset.durationSeconds)||5));
+ motionGraphicTimingHint.textContent=asset.name+' appears '+(Number(asset.startAtSeconds)||0)+'s after recording starts for '+(Number(asset.durationSeconds)||5)+'s. Preview at lets you test the schedule before recording.';
+}
+function saveActiveMotionGraphicTiming(){
+ const asset=motionGraphics[activeMotionGraphicIndex];if(!asset)return;
+ asset.startAtSeconds=Math.max(0,Math.min(21600,Number(motionGraphicStartAt.value)||0));
+ asset.durationSeconds=Math.max(.5,Math.min(21600,Number(motionGraphicDuration.value)||5));
+ if(asset.kind==='video'){asset.media.pause();asset._schedulePlaying=false;try{asset.media.currentTime=0;}catch{}}
+ syncMotionGraphicTimingControls();renderMotionGraphicList();
+ motionGraphicStatus.textContent=asset.name+' scheduled from '+asset.startAtSeconds+'s for '+asset.durationSeconds+'s. Other attachments keep their own schedules; overlapping windows are allowed.';
+ startDraw();
+}
+function updateScheduledMotionGraphicPlayback(nowSeconds){
+ motionGraphics.forEach(asset=>{
+  if(asset.kind!=='video')return;
+  const start=Math.max(0,Number(asset.startAtSeconds)||0),duration=Math.max(.5,Number(asset.durationSeconds)||5);
+  const visible=motionGraphicEnabled.checked&&nowSeconds>=start&&nowSeconds<start+duration;
+  const shouldPlay=visible&&!paused;
+  if(shouldPlay&&!asset._schedulePlaying){
+   if(Number.isFinite(asset.media.duration)&&asset.media.currentTime>=asset.media.duration)try{asset.media.currentTime=0;}catch{}
+   asset._schedulePlaying=true;
+   asset.media.play().catch(()=>{asset._schedulePlaying=false;motionGraphicStatus.textContent='Tap the preview or enable the attachment again if browser video playback was paused.';});
+  }else if(!shouldPlay&&asset._schedulePlaying){
+   asset.media.pause();asset._schedulePlaying=false;
+   if(nowSeconds>=start+duration)try{asset.media.currentTime=0;}catch{}
+  }
+ });
+}
+async function loadMotionGraphics(fileList){
+ const files=[...fileList||[]];if(!files.length)return;
+ const version=(loadMotionGraphics.version||0)+1;loadMotionGraphics.version=version;
+ const accepted=[],existingCount=motionGraphics.length;
+ motionGraphicStatus.textContent='Loading '+files.length+' new file(s)…';
+ for(const file of files){
+  const name=file.name.toLowerCase(),isVideo=file.type.startsWith('video/')||/\.(mp4|webm)$/.test(name),isImage=file.type.startsWith('image/')||/\.(gif|png|jpe?g|webp)$/.test(name);
+  if(!isVideo&&!isImage)continue;
+  if(file.size>120*1024*1024){motionGraphicStatus.textContent='Skipped '+file.name+' (larger than 120 MB).';continue;}
+  const defaultStart=Math.max(0,Math.min(21600,Number(motionGraphicStartAt.value)||0)),defaultDuration=Math.max(.5,Math.min(21600,Number(motionGraphicDuration.value)||5));
+  const asset={name:file.name,kind:isVideo?'video':'image',url:URL.createObjectURL(file),media:null,startAtSeconds:defaultStart+(existingCount+accepted.length)*10,durationSeconds:defaultDuration,_schedulePlaying:false};
+  try{
+   if(isVideo){
+    const video=document.createElement('video');video.muted=true;video.loop=true;video.playsInline=true;video.preload='auto';video.src=asset.url;
+    await new Promise((resolve,reject)=>{if(video.readyState>=2){resolve();return;}video.addEventListener('loadeddata',resolve,{once:true});video.addEventListener('error',()=>reject(new Error('Video could not be decoded')),{once:true});});
+    asset.media=video;
+   }else{
+    const img=new Image();img.src=asset.url;await img.decode();asset.media=img;
+   }
+   if(version!==loadMotionGraphics.version){releaseMotionGraphic(asset);accepted.forEach(releaseMotionGraphic);return;}
+   accepted.push(asset);
+  }catch(error){releaseMotionGraphic(asset);console.warn('Motion graphic attachment skipped:',file.name,error);}
+ }
+ if(version!==loadMotionGraphics.version){accepted.forEach(releaseMotionGraphic);return;}
+ if(!accepted.length){
+  if(!motionGraphics.length){refreshMotionGraphicSelect();renderMotionGraphicList();syncMotionGraphicTimingControls();}
+  motionGraphicStatus.textContent='No new supported file could be loaded. Existing attachments were kept.';
+  motionGraphicInput.value='';return;
+ }
+ motionGraphics=[...motionGraphics,...accepted];
+ activeMotionGraphicIndex=existingCount;
+ refreshMotionGraphicSelect();renderMotionGraphicList();syncMotionGraphicTimingControls();
+ motionGraphicEnabled.checked=true;
+ motionGraphicStatus.textContent=accepted.length+' new attachment(s) added. '+motionGraphics.length+' total graphics are ready; add more files at any time.';
+ motionGraphicInput.value='';
+ playActiveMotionGraphic();
+}
+function pauseMotionGraphics(){motionGraphics.forEach(asset=>{if(asset.kind==='video'){asset.media.pause();asset._schedulePlaying=false;}});}
+function playActiveMotionGraphic(){
+ updateScheduledMotionGraphicPlayback(motionGraphicClockSeconds());
+ startDraw();
+}
+function selectMotionGraphic(index){
+ if(!Number.isInteger(index)||index<0||index>=motionGraphics.length){activeMotionGraphicIndex=-1;pauseMotionGraphics();syncMotionGraphicTimingControls();renderMotionGraphicList();return;}
+ activeMotionGraphicIndex=index;refreshMotionGraphicSelect();syncMotionGraphicTimingControls();renderMotionGraphicList();playActiveMotionGraphic();
+}
+function removeMotionGraphic(index){
+ if(!Number.isInteger(index)||index<0||index>=motionGraphics.length)return;
+ const removed=motionGraphics[index];releaseMotionGraphic(removed);motionGraphics.splice(index,1);
+ if(!motionGraphics.length){clearMotionGraphicAttachments(false);return;}
+ if(activeMotionGraphicIndex>index)activeMotionGraphicIndex--;
+ else if(activeMotionGraphicIndex===index)activeMotionGraphicIndex=Math.min(index,motionGraphics.length-1);
+ refreshMotionGraphicSelect();syncMotionGraphicTimingControls();renderMotionGraphicList();
+ motionGraphicStatus.textContent=removed.name+' removed. '+motionGraphics.length+' attachment(s) remain.';
+ startDraw();
+}
+motionGraphicList.addEventListener('click',event=>{
+ const remove=event.target.closest('[data-remove-motion-graphic]');
+ if(remove){removeMotionGraphic(Number(remove.dataset.removeMotionGraphic));return;}
+ const pick=event.target.closest('[data-motion-graphic-index]');
+ if(pick)selectMotionGraphic(Number(pick.dataset.motionGraphicIndex));
+});
+function clearMotionGraphicAttachments(clearInput=true){
+ loadMotionGraphics.version=(loadMotionGraphics.version||0)+1;
+ motionGraphics.forEach(releaseMotionGraphic);motionGraphics=[];activeMotionGraphicIndex=-1;
+ motionGraphicSelect.innerHTML='';motionGraphicSelect.add(new Option('No attachment loaded',''));
+ motionGraphicSelect.disabled=true;motionGraphicEnabled.checked=false;motionGraphicEnabled.disabled=true;clearMotionGraphics.disabled=true;
+ if(clearInput)motionGraphicInput.value='';
+ syncMotionGraphicTimingControls();renderMotionGraphicList();
+ motionGraphicStatus.textContent='No motion graphic attached. Upload one or more explanatory visuals to add them to the recording.';
+ startDraw();
+}
+function drawMotionGraphic(target){
+ if(!motionGraphicEnabled.checked||!motionGraphics.length)return;
+ const nowSeconds=motionGraphicClockSeconds(),W=canvas.width,H=canvas.height;
+ updateScheduledMotionGraphicPlayback(nowSeconds);
+ const maxW=W*(Number(motionGraphicSize.value)/100),maxH=H*.42,margin=Math.max(24,W*.035),position=motionGraphicPosition.value;
+ let visibleIndex=0;
+ motionGraphics.forEach(asset=>{
+  const start=Math.max(0,Number(asset.startAtSeconds)||0),duration=Math.max(.5,Number(asset.durationSeconds)||5);
+  if(nowSeconds<start||nowSeconds>=start+duration)return;
+  const media=asset.media;if(!media)return;
+  const naturalW=asset.kind==='video'?media.videoWidth:media.naturalWidth;
+  const naturalH=asset.kind==='video'?media.videoHeight:media.naturalHeight;
+  if(!naturalW||!naturalH||(asset.kind==='video'&&media.readyState<2))return;
+  const scale=Math.min(maxW/naturalW,maxH/naturalH),w=Math.max(1,naturalW*scale),h=Math.max(1,naturalH*scale);
+  const x=position.endsWith('right')?W-margin-w:margin;
+  const stackOffset=visibleIndex*(h+Math.max(12,margin*.22));
+  const y=position.startsWith('top')?margin+stackOffset:H-margin-h-stackOffset;
+  visibleIndex++;
+  target.save();target.globalAlpha=Number(motionGraphicOpacity.value)/100;
+  target.shadowColor='rgba(0,0,0,.48)';target.shadowBlur=W*.012;target.shadowOffsetY=H*.006;
+  roundedPath(target,x,y,w,h,Math.max(12,W*.009));target.fillStyle='rgba(8,18,34,.72)';target.fill();target.clip();
+  const pad=Math.max(3,W*.003);target.drawImage(media,x+pad,y+pad,Math.max(1,w-pad*2),Math.max(1,h-pad*2));
+  target.shadowColor='transparent';target.shadowBlur=0;target.shadowOffsetY=0;
+  roundedPath(target,x,y,w,h,Math.max(12,W*.009));target.strokeStyle='rgba(255,255,255,.9)';target.lineWidth=Math.max(2,W*.0018);target.stroke();
+  target.restore();
+ });
+}
+
 async function makeAudioTrack(){
  const tracks=[];
  if(audioDestination)audioDestination.stream.getAudioTracks().forEach(t=>tracks.push(t));
@@ -1678,6 +2418,19 @@ $('cameraSwitchBtn').onclick=async()=>{if(!cameraStream||recording)return;const 
 micBtn.onclick=()=>startMic();
 screenBtn.onclick=()=>screenStream?stopScreen():startScreen();
 $('muteBtn').onclick=()=>setMute($('muteBtn').dataset.muted!=='true');
+function stopMicTest(){if(micTestTimer){clearInterval(micTestTimer);micTestTimer=null;}if(micTestRecorder&&micTestRecorder.state!=='inactive'){try{micTestRecorder.stop();}catch{}}micTestStop.disabled=true;micTestStart.disabled=!micStream;}
+micTestStart.addEventListener('click',()=>{
+ if(!micStream){micTestStatus.textContent='Enable your microphone first.';return;}
+ if(recording||recordingStarting){micTestStatus.textContent='Stop the main recording before running a mic test.';return;}
+ const testStream=audioDestination?.stream||micStream;
+ try{if(micTestPlayback.src){URL.revokeObjectURL(micTestPlayback.src);micTestPlayback.removeAttribute('src');micTestPlayback.load();}
+ micTestChunks=[];micTestRecorder=new MediaRecorder(testStream);micTestRecorder.ondataavailable=e=>{if(e.data&&e.data.size)micTestChunks.push(e.data);};
+ micTestRecorder.onstop=()=>{const blob=new Blob(micTestChunks,{type:micTestRecorder.mimeType||'audio/webm'});if(blob.size){micTestPlayback.src=URL.createObjectURL(blob);micTestPlayback.hidden=false;micTestPlayback.load();micTestStatus.textContent='Test complete. Play it back and check volume and clarity.';}else micTestStatus.textContent='No audio captured. Try again.';micTestStart.disabled=!micStream;};
+ micTestRecorder.start();micTestStart.disabled=true;micTestStop.disabled=false;let remaining=10;micTestCountdown.textContent='Recording · '+remaining+' seconds';micTestStatus.textContent='Speak normally in Gujarati as if teaching a lesson.';
+ micTestTimer=setInterval(()=>{remaining--;micTestCountdown.textContent='Recording · '+remaining+' seconds';if(remaining<=0)stopMicTest();},1000);
+ }catch(err){micTestStatus.textContent='Mic test could not start: '+err.message;micTestStart.disabled=false;micTestStop.disabled=true;}
+});
+micTestStop.addEventListener('click',stopMicTest);
 recordBtn.onclick=()=>recording?stopRecording():startRecording();
 pauseBtn.onclick=pauseRecording;stopBtn.onclick=stopRecording;
 $('testBtn').onclick=()=>startRecording(true);
@@ -1692,6 +2445,15 @@ cameraSelect.onchange=()=>{if(cameraStream&&!recording){stopCamera();startCamera
 micSelect.onchange=async()=>{if(micStream&&!recording){stopMic();await startMic();}};
 $('includeSystemAudio').onchange=()=>{if(screenStream){showError('To change system audio selection, stop screen sharing and share again.');}};
 slidesInput.onchange=()=>loadSlides(slidesInput.files);
+motionGraphicInput.onchange=()=>loadMotionGraphics(motionGraphicInput.files);
+motionGraphicSelect.onchange=()=>selectMotionGraphic(Number(motionGraphicSelect.value));
+motionGraphicEnabled.addEventListener('change',()=>{if(motionGraphicEnabled.checked)playActiveMotionGraphic();else pauseMotionGraphics();});
+motionGraphicStartAt.addEventListener('input',saveActiveMotionGraphicTiming);
+motionGraphicDuration.addEventListener('input',saveActiveMotionGraphicTiming);
+motionGraphicPreviewAt.addEventListener('input',()=>{if(!recording){if(!drawRAF)startDraw();else startDraw();}});
+motionGraphicSize.addEventListener('input',()=>{motionGraphicSizeVal.textContent=motionGraphicSize.value+'%';});
+motionGraphicOpacity.addEventListener('input',()=>{motionGraphicOpacityVal.textContent=motionGraphicOpacity.value+'%';});
+clearMotionGraphics.addEventListener('click',clearMotionGraphicAttachments);
 slideDisplayMode.onchange=()=>{clearSlideTransition();try{localStorage.setItem('officerlab-slide-display-mode',slideDisplayMode.value);}catch{}syncVisuals();};
 function saveSlideAnimationSettings(){
  clearSlideTransition();slideMotionStartedAt=performance.now();
@@ -2044,10 +2806,76 @@ let noteTimer;
  contextToggle.addEventListener('click',()=>setContextPanelOpen(document.body.classList.contains('context-collapsed')));
  try{setContextPanelOpen(localStorage.getItem('officerlab-context-panel')!=='closed',false);}catch{setContextPanelOpen(true,false);}$('notes').oninput=()=>{clearTimeout(noteTimer);noteTimer=setTimeout(()=>{try{localStorage.setItem('officerlab-lecture-notes',$('notes').value);}catch{}},350);};
 window.addEventListener('beforeunload',e=>{if(recording){e.preventDefault();e.returnValue='';}});
-window.addEventListener('pagehide',()=>{stopDraw();stopTeleprompterScroll();if(cameraStream)cameraStream.getTracks().forEach(t=>t.stop());if(micStream)micStream.getTracks().forEach(t=>t.stop());if(screenStream)screenStream.getTracks().forEach(t=>t.stop());if(audioContext)audioContext.close().catch(()=>{});saved.forEach(r=>URL.revokeObjectURL(r.url));slideUrls.forEach(URL.revokeObjectURL);});
+window.addEventListener('pagehide',()=>{stopDraw();stopTeleprompterScroll();if(cameraStream)cameraStream.getTracks().forEach(t=>t.stop());if(micStream)micStream.getTracks().forEach(t=>t.stop());if(screenStream)screenStream.getTracks().forEach(t=>t.stop());if(audioContext)audioContext.close().catch(()=>{});saved.forEach(r=>URL.revokeObjectURL(r.url));slideUrls.forEach(URL.revokeObjectURL);motionGraphics.forEach(releaseMotionGraphic);});
+
+const RECORDER_DEFAULTS_KEY='officerlab-recorder-defaults-v1';
+const defaultsStatus=$('defaultsStatus'),saveDefaultsBtn=$('saveDefaultsBtn');
+let recorderDefaultSnapshot=null,defaultsSaveTimer=0;
+function isRecorderPreferenceControl(el){
+ if(!el||!el.id||el.hasAttribute('data-no-persist'))return false;
+ if(el.tagName==='TEXTAREA')return false;
+ if(!['INPUT','SELECT'].includes(el.tagName))return false;
+ const type=(el.type||'').toLowerCase();
+ return !['file','button','submit','reset','password','hidden'].includes(type);
+}
+function collectRecorderDefaults(){
+ const values={};
+ document.querySelectorAll('input,select').forEach(el=>{
+  if(!isRecorderPreferenceControl(el))return;
+  values[el.id]={type:(el.type||el.tagName).toLowerCase(),value:el.type==='checkbox'||el.type==='radio'?undefined:el.value,checked:el.type==='checkbox'||el.type==='radio'?el.checked:undefined};
+ });
+ return {version:1,savedAt:new Date().toISOString(),values,workspace:{layout,pip:{...pip},activeTool}};
+}
+function persistRecorderDefaults(showStatus=true){
+ try{
+  recorderDefaultSnapshot=collectRecorderDefaults();
+  localStorage.setItem(RECORDER_DEFAULTS_KEY,JSON.stringify(recorderDefaultSnapshot));
+  if(showStatus&&defaultsStatus)defaultsStatus.textContent='✓ All setup settings saved';
+ }catch(error){
+  if(defaultsStatus)defaultsStatus.textContent='Could not save settings · Browser storage full';
+ }
+}
+function restoreRecorderDefaults(){
+ try{
+  const raw=localStorage.getItem(RECORDER_DEFAULTS_KEY);
+  if(!raw)return false;
+  const snapshot=JSON.parse(raw);
+  if(!snapshot||snapshot.version!==1||!snapshot.values)return false;
+  recorderDefaultSnapshot=snapshot;
+  Object.entries(snapshot.values).forEach(([id,state])=>{
+   const el=$(id);if(!el||!isRecorderPreferenceControl(el)||!state)return;
+   if(el.type==='checkbox'||el.type==='radio')el.checked=!!state.checked;
+   else if(state.value!==undefined){
+    if(el.tagName!=='SELECT'||[...el.options].some(option=>option.value===state.value))el.value=state.value;
+   }
+  });
+  const workspace=snapshot.workspace||{};
+  if(['pip','screen','face','split'].includes(workspace.layout))setLayout(workspace.layout);
+  if(workspace.pip&&Number.isFinite(workspace.pip.x)&&Number.isFinite(workspace.pip.y))pip={x:Math.max(0,Math.min(.95,workspace.pip.x)),y:Math.max(0,Math.min(.95,workspace.pip.y))};
+  if(['pen','highlighter','eraser','text'].includes(workspace.activeTool)){const tool=document.querySelector('[data-tool="'+workspace.activeTool+'"]');if(tool)tool.click();}
+  updatePipHandle();
+  if(defaultsStatus)defaultsStatus.textContent='✓ Your saved setup was restored';
+  return true;
+ }catch(error){if(defaultsStatus)defaultsStatus.textContent='Saved setup could not be restored';return false;}
+}
+function scheduleRecorderDefaultsSave(){
+ if(defaultsSaveTimer)clearTimeout(defaultsSaveTimer);
+ if(defaultsStatus)defaultsStatus.textContent='Saving setup…';
+ defaultsSaveTimer=setTimeout(()=>persistRecorderDefaults(true),180);
+}
+document.addEventListener('input',event=>{if(isRecorderPreferenceControl(event.target))scheduleRecorderDefaultsSave();},true);
+document.addEventListener('change',event=>{if(isRecorderPreferenceControl(event.target))scheduleRecorderDefaultsSave();},true);
+saveDefaultsBtn.addEventListener('click',()=>persistRecorderDefaults(true));
+restoreRecorderDefaults();
+updateInkSettingLabels();
+motionGraphicSizeVal.textContent=motionGraphicSize.value+'%';
+motionGraphicOpacityVal.textContent=motionGraphicOpacity.value+'%';
+
 async function init(){
- try{dataSaver.checked=!!navigator.connection?.saveData;}catch{}updateDownloadNetworkStatus();networkConnection()?.addEventListener?.('change',updateDownloadNetworkStatus);
- setCanvasQuality();syncSlideControls();updateControls();startDraw();drawMicMeter();await refreshDevices();await loadLocalRecordings();
+ try{if(!recorderDefaultSnapshot?.values?.dataSaver)dataSaver.checked=!!navigator.connection?.saveData;}catch{}updateDownloadNetworkStatus();networkConnection()?.addEventListener?.('change',updateDownloadNetworkStatus);
+ setCanvasQuality();syncSlideControls();updateControls();updateMicAudioLabels();startDraw();drawMicMeter();await refreshDevices();
+ try{const saved=recorderDefaultSnapshot?.values||{};if(saved.cameraSelect?.value&&[...cameraSelect.options].some(o=>o.value===saved.cameraSelect.value))cameraSelect.value=saved.cameraSelect.value;if(saved.micSelect?.value&&[...micSelect.options].some(o=>o.value===saved.micSelect.value))micSelect.value=saved.micSelect.value;}catch{}
+ await loadLocalRecordings();
  if('serviceWorker'in navigator)navigator.serviceWorker.register('/gpsc-recorder-sw.js',{scope:'/'}).catch(e=>console.warn('Service worker:',e));
 }
 init();
