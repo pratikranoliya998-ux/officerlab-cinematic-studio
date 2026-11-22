@@ -278,6 +278,28 @@ button.primary{background:linear-gradient(135deg,#3b82f6,#1d4ed8);border-color:#
 #toolTray,.teleprompter-settings,.teleprompter-overlay,.stage-fs-opacity-panel{background:#18181be0;border-color:#ffffff24;backdrop-filter:blur(22px)}
 input,select,textarea{border-color:#ffffff20!important;border-radius:9px}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid #60a5fa;outline-offset:2px}
 @media(prefers-reduced-motion:reduce){button{transition:none!important}}
+
+/* OfficerLab Vice City preset + functional overlay and mic-test UI */
+:root{--blue:#00e5ff;--amber:#ff0055}
+body{background:radial-gradient(ellipse at 82% -10%,rgba(0,229,255,.16),transparent 38%),radial-gradient(ellipse at 8% 34%,rgba(255,0,85,.09),transparent 32%),#07090f}
+header{box-shadow:0 1px 0 rgba(0,229,255,.12)}
+header h1{color:#eafcff;text-shadow:0 0 22px rgba(0,229,255,.16)}
+button.primary{background:linear-gradient(135deg,#00e5ff,#1477ff);border-color:#00e5ff;color:#041018;box-shadow:0 7px 24px rgba(0,229,255,.2)}
+button.active{background:#07333c;border-color:#00e5ff}
+.stage{border-color:rgba(0,229,255,.34);box-shadow:0 0 0 1px rgba(0,229,255,.07),0 18px 50px rgba(0,0,0,.6)}
+.motion-graphics-panel{margin-top:12px;padding:14px;border:1px solid rgba(0,229,255,.2);border-radius:15px;background:linear-gradient(145deg,rgba(10,22,31,.94),rgba(20,13,27,.94));box-shadow:0 12px 35px #0005}
+.motion-panel-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.motion-panel-heading h2{margin:4px 0;font-size:16px}.motion-panel-heading .hint{margin:5px 0 10px;max-width:760px}
+.motion-live-chip,.motion-chip{display:inline-flex;align-items:center;border-radius:30px;padding:5px 9px;font-size:9px;font-weight:850;letter-spacing:.1em;border:1px solid rgba(0,229,255,.28);color:#a8f5ff;background:rgba(0,229,255,.08);white-space:nowrap}
+.motion-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.motion-asset-card{min-width:0;padding:11px;border:1px solid rgba(255,255,255,.1);border-radius:12px;background:rgba(5,9,16,.68)}
+.motion-card-title{display:flex;justify-content:space-between;align-items:center;gap:7px;margin-bottom:10px;font-size:12px}.motion-chip.warning{color:#ffb5c6;border-color:#ff005566;background:#ff00551b}.motion-chip.countdown{color:#a7f5ff}
+.motion-file-label{display:block;margin-bottom:5px;font-size:11px;font-weight:750;color:#dcebf3}.motion-asset-card input[type=file]{display:block;width:100%;min-width:0;font-size:10px;padding:8px;border:1px dashed #00e5ff55!important;background:#07131c;border-radius:8px}
+.motion-asset-status{min-height:18px;margin:7px 0;color:#9eabb8;font-size:10px;overflow-wrap:anywhere}
+.motion-timing-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.motion-timing-grid label{display:grid;gap:4px;font-size:10px;color:#9eabb8}.motion-timing-grid input,.motion-timing-grid select{width:100%;min-width:0;min-height:36px;padding:6px 8px;font-size:11px;color:#f4f4f5;background:#111b27;border:1px solid #ffffff20;border-radius:8px}
+.motion-footnote{display:flex;gap:8px;margin-top:10px;padding:9px 10px;border-radius:9px;background:rgba(0,229,255,.06);color:#a9bdc9;font-size:10px;line-height:1.5}
+.mic-test-playback{flex:1 1 100%;min-width:100%}.mic-test-playback audio{display:block;width:100%;height:36px;margin-top:8px}
+.preflight-checklist{display:grid;gap:5px}.preflight-checklist label{display:flex;align-items:flex-start;gap:8px}.preflight-checklist input{margin-top:3px;accent-color:#00e5ff}.preflight-checklist p{margin:4px 0 0;color:#8feeff;font-size:10px}
+@media(max-width:650px){.motion-grid{grid-template-columns:1fr}.motion-graphics-panel{padding:10px}.motion-panel-heading{gap:6px}.motion-timing-grid{grid-template-columns:1fr 1fr}}
+
 </style>
 </head>
 <body>
@@ -377,10 +399,10 @@ input,select,textarea{border-color:#ffffff20!important;border-radius:9px}button:
       <option value="camera">Camera only</option>
       <option value="camera-slides">Camera + Slide Overlay</option>
       <option value="screen">Screen / slides only</option>
-      <option value="screen-camera" selected>Screen + Face Cam (PiP)</option>
+      <option value="screen-camera" selected>Slides + Face Cam (uploaded slides; no screen share required)</option>
     </select></div>
     <div class="field"><label for="quality">Recording quality</label><select id="quality"><option value="1080">1080p · 30 fps</option><option value="720">720p · 30 fps</option><option value="480">480p · 30 fps</option></select></div>
-    <div class="field"><label for="outputRatio">Output format</label><select id="outputRatio"><option value="landscape">Landscape · 16:9</option><option value="portrait">Portrait · 9:16</option></select></div>
+    <div class="field"><label for="outputRatio">Output format</label><select id="outputRatio"><option value="landscape">Landscape · 16:9</option><option value="portrait" disabled>Portrait · 9:16 (disabled — landscape only)</option></select></div>
   </div>
   <div class="capture-options"><label class="check"><input id="dataSaver" type="checkbox"> Data Saver · cap output at 720p / 1.2 Mbps</label><span class="small">Use this on mobile data or when storage is limited.</span></div>
   <div class="device-grid">
@@ -396,12 +418,15 @@ input,select,textarea{border-color:#ffffff20!important;border-radius:9px}button:
   <p id="screenShareHint" class="screen-share-hint" data-state="checking" role="status" aria-live="polite">Checking browser screen-capture support…</p>
   <div class="audio-panel">
     <span class="small" id="micStatus">Mic: off</span>
+    <button id="micTestBtn" type="button">🎙 10-sec Mic Test</button>
+    <span class="small" id="micTestStatus" role="status" aria-live="polite">Record a short sample, then play it back to verify sound.</span>
+    <div id="micTestPlayback" class="mic-test-playback"></div>
     <div class="meter waveform" role="meter" aria-label="Microphone input level" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><div id="meterFill" hidden></div></div>
     <button id="muteBtn" type="button" disabled>Mute Mic</button>
     <label class="check"><input id="includeSystemAudio" type="checkbox" checked> Include shared screen audio</label>
   </div>
   <div class="caption-options" id="autoCaptionControls">
-    <label class="check"><input id="autoCaptionsEnabled" type="checkbox"> 🎞 Automatic captions during recording</label>
+    <label class="check"><input id="autoCaptionsEnabled" type="checkbox" checked> 🎞 Automatic captions during recording</label>
     <label class="small" for="captionLanguage">Language</label>
     <select id="captionLanguage" aria-label="Automatic caption language">
       <option value="gu-IN">Gujarati (India)</option>
@@ -444,17 +469,17 @@ input,select,textarea{border-color:#ffffff20!important;border-radius:9px}button:
   <div class="layout-panel" id="lowerThirdPanel">
     <div class="field-label">Animated instructor lower third</div>
     <div class="lower-third-fields">
-      <div class="field"><label for="lowerThirdName">Instructor name</label><input id="lowerThirdName" type="text" maxlength="48" placeholder="Your name"></div>
-      <div class="field"><label for="lowerThirdTitle">Designation / subject</label><input id="lowerThirdTitle" type="text" maxlength="64" placeholder="Agriculture Officer · GPSC Mentor"></div>
+      <div class="field"><label for="lowerThirdName">Instructor name</label><input id="lowerThirdName" type="text" maxlength="48" value="Pratik Ranoliya" placeholder="Your name"></div>
+      <div class="field"><label for="lowerThirdTitle">Designation / subject</label><input id="lowerThirdTitle" type="text" maxlength="64" value="Mentor" placeholder="Agriculture Officer · GPSC Mentor"></div>
       <div class="field"><label for="lowerThirdPosition">Position</label><select id="lowerThirdPosition"><option value="lower-left">Lower left</option><option value="lower-centre">Lower centre</option><option value="top-right">Top right corner</option></select></div>
-      <div class="field"><label for="lowerThirdAnimation">Entrance animation</label><select id="lowerThirdAnimation"><option value="slide">Slide + fade</option><option value="fade">Fade</option><option value="rise">Rise up</option><option value="zoom">Zoom in</option><option value="static">Static · stay visible</option></select></div>
+      <div class="field"><label for="lowerThirdAnimation">Entrance animation</label><select id="lowerThirdAnimation"><option value="slide">Slide + fade</option><option value="fade">Fade</option><option value="rise" selected>Rise up</option><option value="zoom">Zoom in</option><option value="static">Static · stay visible</option></select></div>
       <div class="field"><label for="lowerThirdSize">Instructor graphic size <span id="lowerThirdSizeVal" class="tool-val">100%</span></label><input id="lowerThirdSize" type="range" min="65" max="150" step="1" value="100"></div>
       <div class="field"><label for="lowerThirdOpacity">Instructor graphic opacity <span id="lowerThirdOpacityVal" class="tool-val">100%</span></label><input id="lowerThirdOpacity" type="range" min="0" max="100" step="1" value="100"></div>
     </div>
     <div class="brand-kit" id="brandKitPanel">
       <div class="brand-kit-title">🎨 OfficerLab Brand Kit</div>
       <div class="brand-kit-fields">
-        <div class="field"><label for="brandAccent">Brand accent colour</label><input id="brandAccent" type="color" value="#55a3ff"></div>
+        <div class="field"><label for="brandAccent">Brand accent colour</label><input id="brandAccent" type="color" value="#00e5ff"></div>
         <div class="field"><label for="brandPanel">Graphic background</label><input id="brandPanel" type="color" value="#050c18"></div>
         <div class="field"><label for="brandFont">Brand font</label><select id="brandFont"><option value="system">Modern sans</option><option value="rounded">Rounded</option><option value="serif">Editorial serif</option><option value="mono">Technical mono</option></select></div>
       </div>
@@ -469,14 +494,14 @@ input,select,textarea{border-color:#ffffff20!important;border-radius:9px}button:
       <div class="brand-card-grid">
         <div class="brand-card-config">
           <strong>Opening card</strong>
-          <label class="check"><input id="introCardEnabled" type="checkbox"> Enable opening card</label>
+          <label class="check"><input id="introCardEnabled" type="checkbox" checked> Enable opening card</label>
           <div class="field"><label for="introCardDuration">Duration</label><select id="introCardDuration"><option value="2">2 seconds</option><option value="3" selected>3 seconds</option><option value="5">5 seconds</option></select></div>
           <div class="field"><label for="introCardTitle">Main title</label><input id="introCardTitle" type="text" maxlength="64" value="OfficerLab"></div>
           <div class="field"><label for="introCardSubtitle">Subtitle</label><input id="introCardSubtitle" type="text" maxlength="100" value="Learn • Prepare • Lead"></div>
         </div>
         <div class="brand-card-config">
           <strong>Closing card</strong>
-          <label class="check"><input id="outroCardEnabled" type="checkbox"> Enable closing card</label>
+          <label class="check"><input id="outroCardEnabled" type="checkbox" checked> Enable closing card</label>
           <div class="field"><label for="outroCardDuration">Duration</label><select id="outroCardDuration"><option value="2">2 seconds</option><option value="3" selected>3 seconds</option><option value="5">5 seconds</option></select></div>
           <div class="field"><label for="outroCardTitle">Main title</label><input id="outroCardTitle" type="text" maxlength="64" value="Thank You"></div>
           <div class="field"><label for="outroCardSubtitle">Subtitle</label><input id="outroCardSubtitle" type="text" maxlength="100" value="Subscribe for more learning"></div>
@@ -484,7 +509,7 @@ input,select,textarea{border-color:#ffffff20!important;border-radius:9px}button:
       </div>
       <p class="brand-card-note">Cards use your Brand Kit logo, colours and font. The opening card plays at the start; the closing card plays after you press Stop. Both are included in the saved video.</p>
     </div>
-    <label class="check lower-third-enable"><input id="lowerThirdEnabled" type="checkbox"> Show on preview and include in recording</label>
+    <label class="check lower-third-enable"><input id="lowerThirdEnabled" type="checkbox" checked> Show on preview and include in recording</label>
     <p class="hint">The name/title graphic animates once at recording start: 600ms entrance, 3.5s hold, then 500ms fade-out. Reduced-motion devices use a simple fade. Leave it unchecked for a clean video.</p>
   </div>
 
@@ -504,24 +529,56 @@ input,select,textarea{border-color:#ffffff20!important;border-radius:9px}button:
       <label class="check"><input id="slideTransitionsEnabled" type="checkbox" checked> Canvas transition</label>
       <label class="transition-picker" for="slideTransitionType">Effect
         <select id="slideTransitionType" aria-label="Slide transition effect">
-          <option value="crossfade" selected>Crossfade · 500ms</option>
+          <option value="crossfade">Crossfade · 500ms</option>
           <option value="slide-left">Slide Left · 450ms</option>
-          <option value="push-left">Push Left · 550ms</option>
+          <option value="push-left" selected>Push Left · 550ms</option>
           <option value="wipe">Wipe · 400ms</option>
           <option value="zoom">Zoom · 600ms</option>
         </select>
       </label>
-      <label class="check"><input id="slideMotionEnabled" type="checkbox"> Ken Burns · gentle pan + zoom (image slides only)</label>
+      <label class="check"><input id="slideMotionEnabled" type="checkbox" checked> Ken Burns · gentle pan + zoom (image slides only)</label>
     </div>
     <div class="progress-bar-settings">
-      <label class="check"><input id="progressBarEnabled" type="checkbox"> Include canvas progress bar</label>
+      <label class="check"><input id="progressBarEnabled" type="checkbox" checked> Include canvas progress bar</label>
       <label for="progressDurationMinutes">Planned length
-        <input id="progressDurationMinutes" type="number" min="1" max="360" step="1" placeholder="minutes" inputmode="numeric" aria-label="Planned lesson duration in minutes">
+        <input id="progressDurationMinutes" type="number" min="1" max="360" step="1" value="15" placeholder="minutes" inputmode="numeric" aria-label="Planned lesson duration in minutes">
       </label>
       <span class="progress-note" id="progressBarHint">Optional. Enter the planned lesson length in minutes; the thin progress indicator is rendered into the recorded video and stops at 100%.</span>
     </div>
     <p class="hint" id="slideDisplayHint">Smart Fit keeps the complete slide readable and fills spare space with a soft background. Fit Entire Slide adds dark margins when needed. Fill Screen fills the frame but may crop slide edges. Choose one restrained canvas transition per lesson. Optional Ken Burns adds slow alternating pan and zoom to image slides only; PDF pages and tables remain still.</p>
   </div>
+
+  <section class="motion-graphics-panel" id="motionGraphicsPanel">
+    <div class="motion-panel-heading"><div><span class="eyebrow">TIMED OVERLAYS</span><h2>🎬 Motion Graphics</h2><p class="hint">Upload transparent PNG/GIF warning art or animated MP4/WebM overlays. They are composited into the same canvas as your slides and camera, so they appear in the recording too.</p></div><span class="motion-live-chip">CANVAS FX</span></div>
+    <div class="motion-grid">
+      <article class="motion-asset-card">
+        <div class="motion-card-title"><b>01 · Neon Warning Sign</b><span class="motion-chip warning">WARNING</span></div>
+        <label class="motion-file-label" for="motionWarningFile">Upload warning graphic</label>
+        <input id="motionWarningFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm,video/quicktime">
+        <div id="motionWarningStatus" class="motion-asset-status" role="status">No warning asset loaded</div>
+        <div class="motion-timing-grid">
+          <label>Start time (seconds)<input id="motionWarningStart" type="number" min="0" max="36000" step="1" value="0"></label>
+          <label>Duration (seconds)<input id="motionWarningDuration" type="number" min="1" max="600" step="1" value="6"></label>
+          <label>Position<select id="motionWarningPosition"><option value="top-right" selected>Top right</option><option value="top-left">Top left</option><option value="bottom-right">Bottom right</option><option value="bottom-left">Bottom left</option><option value="center">Center</option></select></label>
+          <label>Size<input id="motionWarningSize" type="number" min="8" max="45" step="1" value="24"></label>
+        </div>
+      </article>
+      <article class="motion-asset-card">
+        <div class="motion-card-title"><b>02 · Deadline Countdown</b><span class="motion-chip countdown">COUNTDOWN</span></div>
+        <label class="motion-file-label" for="motionCountdownFile">Upload countdown animation</label>
+        <input id="motionCountdownFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm,video/quicktime">
+        <div id="motionCountdownStatus" class="motion-asset-status" role="status">No countdown asset loaded</div>
+        <div class="motion-timing-grid">
+          <label>Start time (seconds)<input id="motionCountdownStart" type="number" min="0" max="36000" step="1" value="0"></label>
+          <label>Duration (seconds)<input id="motionCountdownDuration" type="number" min="1" max="600" step="1" value="6"></label>
+          <label>Position<select id="motionCountdownPosition"><option value="top-left" selected>Top left</option><option value="top-right">Top right</option><option value="bottom-left">Bottom left</option><option value="bottom-right">Bottom right</option><option value="center">Center</option></select></label>
+          <label>Size<input id="motionCountdownSize" type="number" min="8" max="45" step="1" value="20"></label>
+        </div>
+      </article>
+    </div>
+    <div class="motion-footnote"><span>⏱</span><span>Timeline values are measured from the moment recording begins. Video overlay audio is muted so your lecture microphone remains the main audio track. Upload assets again after a page reload.</span></div>
+  </section>
+
   <div id="error" class="error" role="alert"></div>
   <p class="screen-note">Screen capture depends on browser support. Camera and microphone permission require HTTPS. Screen sharing must be started by the presenter.</p>
   <section class="device-diagnostic card" id="deviceDiagnosticPanel">
@@ -536,12 +593,13 @@ input,select,textarea{border-color:#ffffff20!important;border-radius:9px}button:
   <section class="card"><h2>Script / Talking Points</h2><textarea id="notes" placeholder="Paste your GPSC lecture outline here…&#10;&#10;1. Introduction&#10;2. Key concepts&#10;3. Examples and diagrams&#10;4. Revision questions"></textarea><p class="hint">Notes auto-save in this browser.</p></section>
   <section class="card"><h2>Recordings & Recovery</h2><div class="download-prefs"><label class="check"><input id="wifiOnlyDownloads" type="checkbox"> Wi-Fi-only downloads</label><span class="small" id="downloadNetworkStatus">Network type: checking…</span></div><p class="hint">Some browsers do not expose Wi-Fi status; when unknown, the app will ask before downloading.</p><div id="recoveryList"></div><div id="recList"><div class="empty" id="empty">No recordings yet.<br>Start a capture source and press Start Recording.</div></div></section>
   <section class="card"><h2>Pre-recording checklist</h2>
-    <div class="small" style="line-height:1.9">
-      <div>☐ Camera at eye level, head and shoulders visible</div>
-      <div>☐ Light in front of your face</div>
-      <div>☐ Quiet room and microphone level checked</div>
-      <div>☐ Slides readable in 16:9 landscape</div>
-      <div>☐ Webcam overlay not covering slide text</div>
+    <div class="small preflight-checklist" style="line-height:1.9">
+      <label><input type="checkbox" class="preflight-check"> Camera at eye level, head and shoulders visible</label>
+      <label><input type="checkbox" class="preflight-check"> Light in front of your face</label>
+      <label><input type="checkbox" class="preflight-check"> Microphone tested and playback verified</label>
+      <label><input type="checkbox" class="preflight-check"> Landscape 16:9 and slides readable</label>
+      <label><input type="checkbox" class="preflight-check"> Face Cam does not cover slide text</label>
+      <p id="preflightStatus" aria-live="polite">0 of 5 checks complete</p>
     </div>
     <p class="hint">Tip: record a short test clip and play it back before your full lecture.</p>
   </section>
@@ -1138,6 +1196,7 @@ function drawScene(){
  drawGuides();
  drawLowerThird();
  drawWatermark();
+ drawScheduledMotionGraphics();
  drawProgressBar(ctx);
  drawRAF=requestAnimationFrame(drawScene);
 }
@@ -1400,7 +1459,7 @@ async function startRecording(isTest=false){
  recordingStarting=true;updateControls();
  try{if(micStream)await connectMic();if(screenStream&&screenStream.getAudioTracks().length)await connectScreenAudio();if(audioContext)await audioContext.resume();}catch(e){recordingStarting=false;updateControls();showError('Audio could not be prepared: '+e.message);return;}
  await runRecordCountdown();recordingStarting=false;
- setCanvasQuality();if(!drawRAF)startDraw();
+ resetMotionGraphicsPlayback();setCanvasQuality();if(!drawRAF)startDraw();
  const videoCapture=canvas.captureStream(30),audioTracks=await makeAudioTrack();
  const output=new MediaStream([...videoCapture.getVideoTracks(),...audioTracks]);
  const h=selectedOutputQuality(),isAppleMobile=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1),lowData=dataSaver.checked||!!navigator.connection?.saveData,videoBits=(isAppleMobile||lowData)?1200000:(h===1080?6500000:h===720?4000000:2200000);
@@ -1687,7 +1746,7 @@ captureMode.onchange=()=>{if(captureMode.value==='camera')setLayout('face');else
 quality.onchange=()=>{if(!recording){setCanvasQuality();syncVisuals();}};
 dataSaver.onchange=()=>{if(!recording){setCanvasQuality();updatePipHandle();syncVisuals();}};
 wifiOnlyDownloads.onchange=updateDownloadNetworkStatus;
-outputRatio.onchange=()=>{if(!recording){setCanvasQuality();updatePipHandle();syncVisuals();}};
+outputRatio.onchange=()=>{outputRatio.value='landscape';if(!recording){setCanvasQuality();updatePipHandle();syncVisuals();}};
 cameraSelect.onchange=()=>{if(cameraStream&&!recording){stopCamera();startCamera();}};
 micSelect.onchange=async()=>{if(micStream&&!recording){stopMic();await startMic();}};
 $('includeSystemAudio').onchange=()=>{if(screenStream){showError('To change system audio selection, stop screen sharing and share again.');}};
@@ -2044,9 +2103,129 @@ let noteTimer;
  contextToggle.addEventListener('click',()=>setContextPanelOpen(document.body.classList.contains('context-collapsed')));
  try{setContextPanelOpen(localStorage.getItem('officerlab-context-panel')!=='closed',false);}catch{setContextPanelOpen(true,false);}$('notes').oninput=()=>{clearTimeout(noteTimer);noteTimer=setTimeout(()=>{try{localStorage.setItem('officerlab-lecture-notes',$('notes').value);}catch{}},350);};
 window.addEventListener('beforeunload',e=>{if(recording){e.preventDefault();e.returnValue='';}});
-window.addEventListener('pagehide',()=>{stopDraw();stopTeleprompterScroll();if(cameraStream)cameraStream.getTracks().forEach(t=>t.stop());if(micStream)micStream.getTracks().forEach(t=>t.stop());if(screenStream)screenStream.getTracks().forEach(t=>t.stop());if(audioContext)audioContext.close().catch(()=>{});saved.forEach(r=>URL.revokeObjectURL(r.url));slideUrls.forEach(URL.revokeObjectURL);});
+window.addEventListener('pagehide',()=>{stopDraw();stopTeleprompterScroll();if(cameraStream)cameraStream.getTracks().forEach(t=>t.stop());if(micStream)micStream.getTracks().forEach(t=>t.stop());if(screenStream)screenStream.getTracks().forEach(t=>t.stop());if(audioContext)audioContext.close().catch(()=>{});saved.forEach(r=>URL.revokeObjectURL(r.url));slideUrls.forEach(URL.revokeObjectURL);motionKeys.forEach(k=>{const a=motionAssets[k];if(a){a.video?.pause();URL.revokeObjectURL(a.url);}});if(micTestObjectUrl)URL.revokeObjectURL(micTestObjectUrl);});
+
+// OfficerLab timed motion-graphic assets. The same canvas is used for preview and recording.
+const motionAssets={warning:null,countdown:null};
+const motionKeys=['warning','countdown'];
+let micTestRecorder=null,micTestChunks=[],micTestTimer=null,micTestInterval=null,micTestObjectUrl='';
+function motionControls(key){
+ const prefix=key==='warning'?'motionWarning':'motionCountdown';
+ return {file:$(prefix+'File'),status:$(prefix+'Status'),start:$(prefix+'Start'),duration:$(prefix+'Duration'),position:$(prefix+'Position'),size:$(prefix+'Size')};
+}
+function saveMotionPrefs(){
+ try{
+  const prefs={};
+  motionKeys.forEach(key=>{const c=motionControls(key);prefs[key]={start:c.start.value,duration:c.duration.value,position:c.position.value,size:c.size.value};});
+  localStorage.setItem('officerlab-motion-graphics-prefs',JSON.stringify(prefs));
+ }catch{}
+}
+function restoreMotionPrefs(){
+ try{
+  const prefs=JSON.parse(localStorage.getItem('officerlab-motion-graphics-prefs')||'{}');
+  motionKeys.forEach(key=>{const c=motionControls(key),p=prefs[key];if(!p)return;
+   if(Number.isFinite(Number(p.start))&&Number(p.start)>=0)c.start.value=String(p.start);
+   if(Number.isFinite(Number(p.duration))&&Number(p.duration)>=1)c.duration.value=String(p.duration);
+   if(['top-right','top-left','bottom-right','bottom-left','center'].includes(p.position))c.position.value=p.position;
+   if(Number.isFinite(Number(p.size))&&Number(p.size)>=8&&Number(p.size)<=45)c.size.value=String(p.size);
+  });
+ }catch{}
+}
+async function loadMotionGraphic(key,file){
+ const c=motionControls(key);if(!file)return;
+ const old=motionAssets[key];if(old){try{old.video?.pause();}catch{}URL.revokeObjectURL(old.url);}
+ const url=URL.createObjectURL(file),asset={url,video:null,image:null,name:file.name};
+ try{
+  if(file.type.startsWith('video/')){
+   const video=document.createElement('video');video.src=url;video.muted=true;video.loop=true;video.playsInline=true;video.preload='auto';video.setAttribute('playsinline','');video.load();
+   await new Promise((resolve,reject)=>{if(video.readyState>=2){resolve();return;}const timer=setTimeout(()=>resolve(),5000);video.addEventListener('loadeddata',()=>{clearTimeout(timer);resolve();},{once:true});video.addEventListener('error',()=>{clearTimeout(timer);reject(new Error('The video format could not be decoded by this browser. Try MP4 (H.264) or WebM.'));},{once:true});});
+   if(video.error)throw new Error('The video format could not be decoded. Try MP4 (H.264) or WebM.');
+   asset.video=video;
+  }else if(file.type.startsWith('image/')){
+   const image=new Image();image.src=url;await image.decode();asset.image=image;
+  }else throw new Error('Choose a PNG, JPG, WebP, GIF, MP4 or WebM asset.');
+  motionAssets[key]=asset;
+  c.status.textContent='✓ Loaded '+file.name+' · scheduled on the recording timeline';
+ }catch(e){URL.revokeObjectURL(url);c.status.textContent='Could not load: '+e.message;showError('Motion graphic: '+e.message);}
+}
+function resetMotionGraphicsPlayback(){
+ motionKeys.forEach(key=>{const a=motionAssets[key];if(a?.video){try{a.video.pause();a.video.currentTime=0;}catch{}}});
+}
+function drawOneMotionGraphic(key){
+ const a=motionAssets[key],c=motionControls(key);if(!a)return;
+ const start=Math.max(0,Number(c.start.value)||0),duration=Math.max(1,Number(c.duration.value)||1),elapsed=recordingElapsedMs()/1000;
+ const active=recording&&!paused&&!stoppingRecording&&elapsed>=start&&elapsed<start+duration;
+ let source=a.image;
+ if(a.video){
+  const video=a.video;
+  if(!active){if(!video.paused)video.pause();if(elapsed<start&&video.currentTime>.05){try{video.currentTime=0;}catch{}}return;}
+  if(video.readyState<2){video.play().catch(()=>{});return;}
+  const target=video.duration>0?(elapsed-start)%video.duration:elapsed-start;
+  if(video.paused){try{if(Math.abs(video.currentTime-target)>.12)video.currentTime=target;}catch{}video.play().catch(()=>{});}
+  else if(!video.seeking&&Math.abs(video.currentTime-target)>.65){try{video.currentTime=target;}catch{}}
+  source=video;
+ }else if(!active)return;
+ if(!source||!(source.videoWidth||source.naturalWidth||source.width))return;
+ const sw=source.videoWidth||source.naturalWidth||source.width,sh=source.videoHeight||source.naturalHeight||source.height;
+ if(!sw||!sh)return;
+ const W=canvas.width,H=canvas.height,maxW=W*Math.max(.08,Math.min(.45,Number(c.size.value)/100||.24)),maxH=H*.32,scale=Math.min(maxW/sw,maxH/sh),dw=sw*scale,dh=sh*scale;
+ const pad=Math.max(24,W*.035),pos=c.position.value;let x=pad,y=pad;
+ if(pos==='top-right')x=W-dw-pad;
+ else if(pos==='bottom-right'){x=W-dw-pad;y=H-dh-pad;}
+ else if(pos==='bottom-left')y=H-dh-pad;
+ else if(pos==='center'){x=(W-dw)/2;y=(H-dh)/2;}
+ ctx.save();ctx.globalAlpha=.98;ctx.shadowColor=key==='warning'?'rgba(255,0,85,.5)':'rgba(0,229,255,.5)';ctx.shadowBlur=Math.max(8,W*.008);
+ try{ctx.drawImage(source,x,y,dw,dh);}catch(e){}
+ ctx.restore();
+}
+function drawScheduledMotionGraphics(){if(!recording)return;drawOneMotionGraphic('warning');drawOneMotionGraphic('countdown');}
+async function runMicTest(){
+ if(recording||recordingStarting){showError('Stop the lecture recording before running the microphone test.');return;}
+ const btn=$('micTestBtn'),status=$('micTestStatus'),playback=$('micTestPlayback');
+ if(!micStream)await startMic();if(!micStream)return;
+ if(!window.MediaRecorder){status.textContent='Audio recording is unsupported in this browser. Use the live microphone meter instead.';return;}
+ try{
+  micTestChunks=[];let mime='';for(const candidate of ['audio/webm;codecs=opus','audio/webm','audio/mp4']){try{if(MediaRecorder.isTypeSupported(candidate)){mime=candidate;break;}}catch{}}
+  micTestRecorder=mime?new MediaRecorder(micStream,{mimeType:mime}):new MediaRecorder(micStream);
+  const mr=micTestRecorder;mr.ondataavailable=e=>{if(e.data?.size)micTestChunks.push(e.data);};
+  mr.onstop=()=>{
+   clearInterval(micTestInterval);micTestInterval=null;clearTimeout(micTestTimer);micTestTimer=null;
+   const blob=new Blob(micTestChunks,{type:mr.mimeType||mime||'audio/webm'});
+   if(micTestObjectUrl)URL.revokeObjectURL(micTestObjectUrl);
+   micTestObjectUrl=URL.createObjectURL(blob);const audio=document.createElement('audio');audio.controls=true;audio.preload='metadata';audio.src=micTestObjectUrl;playback.replaceChildren(audio);
+   status.textContent='✓ 10-second mic test complete. Play the sample below and confirm your voice is clear.';
+   btn.disabled=false;btn.textContent='↻ Run 10-sec Mic Test';micTestRecorder=null;
+  };
+  mr.onerror=()=>{status.textContent='Microphone test recording failed. Check the browser microphone permission.';btn.disabled=false;};
+  mr.start(250);btn.disabled=true;btn.textContent='● Testing…';
+  const endAt=Date.now()+10000;
+  status.textContent='Speak normally for 10 seconds… 10';
+  micTestInterval=setInterval(()=>{const left=Math.max(0,Math.ceil((endAt-Date.now())/1000));status.textContent='Speak normally for 10 seconds… '+left;},200);
+  micTestTimer=setTimeout(()=>{if(mr.state!=='inactive')mr.stop();},10000);
+ }catch(e){btn.disabled=false;btn.textContent='🎙 10-sec Mic Test';status.textContent='Mic test could not start: '+(e.message||String(e));}
+}
+function applyOfficerLabGTASetup(){
+ let apply=true;try{apply=localStorage.getItem('officerlab-gta6-setup-v1')!=='done';}catch{}
+ if(apply){
+  captureMode.value='screen-camera';quality.value='1080';$('outputRatio').value='landscape';
+  $('autoCaptionsEnabled').checked=true;$('captionLanguage').value='gu-IN';
+  $('faceShape').value='rounded';$('faceSize').value='18';$('faceHeight').value='18';$('faceOpacity').value='100';
+  $('watermarkEnabled').checked=false;$('watermarkText').value='OFFICERLAB';$('watermarkPosition').value='top-right';
+  $('lowerThirdName').value='Pratik Ranoliya';$('lowerThirdTitle').value='Mentor';$('lowerThirdPosition').value='lower-left';$('lowerThirdAnimation').value='rise';$('lowerThirdEnabled').checked=true;
+  $('brandAccent').value='#00e5ff';$('introCardEnabled').checked=true;$('outroCardEnabled').checked=true;
+  slideDisplayMode.value='smart';slideTransitionsEnabled.checked=true;slideTransitionType.value='push-left';slideMotionEnabled.checked=true;progressBarEnabled.checked=true;progressDurationMinutes.value='15';
+  try{localStorage.setItem('officerlab-gta6-setup-v1','done');}catch{}
+ }
+ $('outputRatio').value='landscape';$('outputRatio').disabled=true;
+ setLayout('pip');updateProgressBarHint();
+}
+
 async function init(){
  try{dataSaver.checked=!!navigator.connection?.saveData;}catch{}updateDownloadNetworkStatus();networkConnection()?.addEventListener?.('change',updateDownloadNetworkStatus);
+ restoreMotionPrefs();applyOfficerLabGTASetup();
+ motionKeys.forEach(key=>{const c=motionControls(key);c.file.addEventListener('change',e=>loadMotionGraphic(key,e.target.files?.[0]));[c.start,c.duration,c.position,c.size].forEach(el=>el.addEventListener('change',saveMotionPrefs));});
+ $('micTestBtn').addEventListener('click',runMicTest);
+ document.querySelectorAll('.preflight-check').forEach(el=>el.addEventListener('change',()=>{const checks=[...document.querySelectorAll('.preflight-check')],done=checks.filter(x=>x.checked).length;$('preflightStatus').textContent=done+' of 5 checks complete';}));
  setCanvasQuality();syncSlideControls();updateControls();startDraw();drawMicMeter();await refreshDevices();await loadLocalRecordings();
  if('serviceWorker'in navigator)navigator.serviceWorker.register('/gpsc-recorder-sw.js',{scope:'/'}).catch(e=>console.warn('Service worker:',e));
 }
