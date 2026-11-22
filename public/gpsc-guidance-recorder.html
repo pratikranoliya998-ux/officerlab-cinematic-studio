@@ -1267,7 +1267,8 @@ const getAllChunks=()=>dbAction('chunks','readonly',s=>s.getAll());
 const deleteChunk=(id,index)=>dbAction('chunks','readwrite',s=>s.delete([id,index]));
 function getMime(){
  if(!window.MediaRecorder)return null;
- const candidates=['video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];
+ // Prefer WebM on Android/Chrome: MP4 MediaRecorder support varies.
+ const candidates=['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm','video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4'];
  for(const type of candidates)try{if(MediaRecorder.isTypeSupported(type))return type}catch{}
  return '';
 }
@@ -2160,7 +2161,7 @@ async function startRecording(isTest=false){
   clearInterval(recordTimer);recordTimer=null;
   try{
    await stopCaptionCapture();await captionSaveQueue;await writeQueue;
-   const type=recorder?.mimeType||mime||'video/webm',persisted=await getAllChunks().catch(()=>[]),allParts=[...persisted.filter(p=>p.sessionId===sessionId).map(p=>({index:p.index,blob:p.blob})),...localChunks].sort((a,b)=>a.index-b.index),blob=new Blob(allParts.map(p=>p.blob),{type}),duration=finalDuration;
+   const type=recorder?.mimeType||mime||'video/webm',persisted=await getAllChunks().catch(()=>[]),partsByIndex=new Map(persisted.filter(p=>p.sessionId===sessionId).map(p=>[p.index,{index:p.index,blob:p.blob}]));localChunks.forEach(p=>partsByIndex.set(p.index,p));const orderedParts=[...partsByIndex.values()].sort((a,b)=>a.index-b.index),blob=new Blob(orderedParts.map(p=>p.blob),{type}),duration=finalDuration;
    const ext=type.includes('mp4')?'mp4':'webm',name='officerlab-lecture-'+stamp()+'.'+ext;
    if(blob.size){
     const row={...session,name,status:'complete',mime:type,duration,blob,completedAt:Date.now()};
