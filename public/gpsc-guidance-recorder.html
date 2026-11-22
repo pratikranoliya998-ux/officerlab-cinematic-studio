@@ -676,6 +676,39 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 }
 
 
+
+/* Modular setup compartments */
+.setup-compartment{margin:12px 0;border:1px solid #dce6f2;border-radius:15px;background:linear-gradient(180deg,#fff 0%,#fbfdff 100%);box-shadow:0 5px 18px rgba(38,69,110,.055);overflow:hidden}
+.setup-compartment>summary{list-style:none;display:flex;align-items:center;gap:12px;padding:15px 16px;cursor:pointer;user-select:none;background:linear-gradient(100deg,#f2f7ff 0%,#fff 72%);border-bottom:1px solid transparent}
+.setup-compartment>summary::-webkit-details-marker{display:none}
+.setup-compartment[open]>summary{border-bottom-color:#e4ebf5}
+.setup-compartment>summary:focus-visible{outline:2px solid #2563eb;outline-offset:-3px}
+.compartment-number{display:grid;place-items:center;flex:0 0 34px;height:34px;border-radius:10px;background:#e5efff;color:#245bb8;font-size:12px;font-weight:900}
+.setup-compartment>summary strong{display:block;color:#263d5c;font-size:13px;letter-spacing:.045em;text-transform:uppercase}
+.setup-compartment>summary small{display:block;margin-top:3px;color:#74849a;font-size:11px;font-weight:500;letter-spacing:0;text-transform:none}
+.compartment-chevron{margin-left:auto;color:#6280a7;font-size:18px;transition:transform .18s ease}
+.setup-compartment[open] .compartment-chevron{transform:rotate(180deg)}
+.compartment-body{padding:13px 14px 15px}
+.compartment-body>.layout-panel,.compartment-body>.slide-panel,.compartment-body>.motion-graphic-panel,.compartment-body>.device-diagnostic{margin-top:0}
+.motion-graphic-library{margin:10px 0 12px;padding:11px;background:#f4f8fe;border:1px solid #dfe8f4;border-radius:12px}
+.motion-graphic-library-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;color:#2c4464;font-size:11px}
+.motion-graphic-library-heading span{padding:4px 8px;border-radius:99px;background:#e5efff;color:#2c62b6;font-weight:800;font-variant-numeric:tabular-nums}
+.motion-graphic-list{display:grid;gap:7px;margin-top:9px}
+.motion-graphic-empty{padding:13px;border:1px dashed #cad8e9;border-radius:9px;color:#75859a;font-size:11px;line-height:1.5;text-align:center}
+.motion-graphic-item{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:7px;padding:8px;background:#fff;border:1px solid #dfe7f1;border-radius:10px}
+.motion-graphic-item.is-selected{border-color:#75a5f5;box-shadow:0 0 0 2px rgba(47,129,247,.1)}
+.motion-graphic-item-main{display:flex;align-items:center;gap:9px;min-width:0;padding:4px 5px;border:0;background:transparent;color:#324b6c;text-align:left;min-height:38px}
+.motion-graphic-item-main:hover{background:#f5f8fe}
+.motion-graphic-item-icon{display:grid;place-items:center;flex:0 0 30px;height:30px;border-radius:8px;background:#eaf2ff;color:#3264b1;font-size:12px;font-weight:900}
+.motion-graphic-item-copy{display:block;min-width:0}
+.motion-graphic-item-name{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;font-weight:800}
+.motion-graphic-item-meta{display:block;margin-top:3px;color:#79889c;font-size:10px;font-weight:500}
+.motion-graphic-item-remove{min-height:33px;padding:5px 9px;border-color:#e4eaf2;background:#fff;color:#8b5660;font-size:10px}
+.motion-graphic-item-remove:hover{background:#fff4f5;border-color:#f0ccd2}
+.motion-graphic-library-note{margin:8px 0 0;color:#718198;font-size:10px;line-height:1.45}
+@media(max-width:760px){.setup-compartment{margin:10px 0;border-radius:13px}.setup-compartment>summary{padding:13px 12px;gap:9px}.compartment-body{padding:10px}}
+@media(prefers-reduced-motion:reduce){.compartment-chevron{transition:none}}
+
 /* Saved defaults, low-latency ink and explanatory motion attachments */
 .default-prefs{display:flex;align-items:center;gap:7px;margin-left:auto;min-width:0}
 .default-prefs span{font-size:9px;color:#68809c;font-weight:700;white-space:nowrap}
@@ -817,7 +850,9 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
     <p class="hint">The scrolling script is a presenter-only overlay; it is not burned into the recorded lecture video.</p>
   </section>
 
-  <div class="capture-panel">
+  <details class="setup-compartment" open id="captureCompartment">
+<summary><span class="compartment-number">01</span><span><strong>Capture &amp; audio</strong><small>Source, quality, microphone and captions</small></span><span class="compartment-chevron">⌄</span></summary><div class="compartment-body">
+<div class="capture-panel">
     <div class="field"><label for="captureMode">Capture mode</label><select id="captureMode">
       <option value="camera">Camera only</option>
       <option value="camera-slides">Camera + Slide Overlay</option>
@@ -856,6 +891,9 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
     </select>
     <span class="caption-status" id="captionStatus" role="status">Optional. Uses the browser's speech-recognition service when supported. Recognition may require internet and separate microphone permission; check your browser privacy settings.</span>
   </div>
+  </div></details>
+<details class="setup-compartment" id="visualCompartment">
+<summary><span class="compartment-number">02</span><span><strong>Camera, layout &amp; branding</strong><small>Face Cam, instructor overlays and brand identity</small></span><span class="compartment-chevron">⌄</span></summary><div class="compartment-body">
   <div class="layout-panel">
     <div class="field-label">Switch layout during recording</div>
     <div class="layout-row" id="layoutButtons">
@@ -934,6 +972,9 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
     <p class="hint">The name/title graphic animates once at recording start: 600ms entrance, 3.5s hold, then 500ms fade-out. Reduced-motion devices use a simple fade. Leave it unchecked for a clean video.</p>
   </div>
 
+  </div></details>
+<details class="setup-compartment" id="slidesCompartment">
+<summary><span class="compartment-number">03</span><span><strong>Presentation &amp; slide effects</strong><small>Upload slides, transitions and lesson pacing</small></span><span class="compartment-chevron">⌄</span></summary><div class="compartment-body">
   <div class="slide-panel">
     <h2 style="margin-bottom:8px">Presentation slides</h2>
     <div class="slide-top"><input id="slidesInput" type="file" accept="application/pdf,image/*" multiple><span class="small">PDF or image files · PPT/PPTX: export to PDF first</span></div>
@@ -968,10 +1009,14 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
     </div>
     <p class="hint" id="slideDisplayHint">Smart Fit keeps the complete slide readable and fills spare space with a soft background. Fit Entire Slide adds dark margins when needed. Fill Screen fills the frame but may crop slide edges. Choose one restrained canvas transition per lesson. Optional Ken Burns adds slow alternating pan and zoom to image slides only; PDF pages and tables remain still.</p>
   </div>
+  </div></details>
+<details class="setup-compartment" id="motionCompartment">
+<summary><span class="compartment-number">04</span><span><strong>Motion graphics &amp; overlays</strong><small>Add several visuals and schedule each one</small></span><span class="compartment-chevron">⌄</span></summary><div class="compartment-body">
   <section class="motion-graphic-panel card" id="motionGraphicPanel">
     <h2>Motion Graphic Attachments</h2>
     <p class="hint">Attach a GIF, MP4, WebM or transparent/static image as an explanatory visual. It appears as a picture-in-picture graphic on the lesson canvas and is included in the recorded video.</p>
-    <div class="motion-graphic-upload"><input id="motionGraphicInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm,.gif,.mp4,.webm" multiple><span class="small">Multiple attachments supported · GIF / MP4 / WebM / PNG / JPG / WebP</span></div>
+    <div class="motion-graphic-upload"><input id="motionGraphicInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm,.gif,.mp4,.webm" multiple><span class="small">Add one or more files. You can add more later without replacing existing graphics.</span></div>
+    <div class="motion-graphic-library" aria-live="polite"><div class="motion-graphic-library-heading"><strong>Attached graphics</strong><span id="motionGraphicCount">0 attached</span></div><div id="motionGraphicList" class="motion-graphic-list"><div class="motion-graphic-empty">No graphics added yet. Select multiple files above.</div></div><p class="motion-graphic-library-note">Select an item to edit its timing. Graphics can overlap; each follows its own start time and duration.</p></div>
     <div class="motion-graphic-controls">
       <label for="motionGraphicSelect">Attachment</label><select id="motionGraphicSelect" disabled><option value="">No attachment loaded</option></select>
       <label class="check"><input id="motionGraphicEnabled" type="checkbox" checked disabled> Show in preview and recording</label>
@@ -990,15 +1035,16 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
       <p class="motion-graphic-timing-hint" id="motionGraphicTimingHint">Select an attachment to set its start time and duration. During recording, timing is measured from Start Recording; Preview at is used before recording.</p>
     </div>
     <p class="hint" id="motionGraphicStatus" role="status" aria-live="polite">No motion graphic attached. Uploaded files remain local to this browser session; attachment preferences are saved as defaults.</p>
-  </section>
+  </section></div></details>
   <div id="error" class="error" role="alert"></div>
   <p class="screen-note">Screen capture depends on browser support. Camera and microphone permission require HTTPS. Screen sharing must be started by the presenter.</p>
+<details class="setup-compartment" id="deviceCompartment"><summary><span class="compartment-number">05</span><span><strong>Device compatibility</strong><small>Check Android and browser media support</small></span><span class="compartment-chevron">⌄</span></summary><div class="compartment-body">
   <section class="device-diagnostic card" id="deviceDiagnosticPanel">
     <h2>Android / Browser Compatibility</h2>
     <p class="hint">Run this check on the phone/browser used for recording. It checks capabilities without opening the camera or microphone or requesting permissions.</p>
     <div class="device-diagnostic-actions"><button type="button" id="deviceCheckBtn" class="primary">📱 Run Device Check</button><button type="button" id="deviceCheckCopyBtn" disabled>Copy Report</button></div>
     <pre id="deviceCheckResults" class="device-diagnostic-results" role="status" aria-live="polite">Not checked yet. Tap “Run Device Check” on your Android phone.</pre>
-  </section>
+  </section></div></details>
 </section>
 
 <aside id="contextPanel" class="context-panel" aria-label="Lecture context panel">
