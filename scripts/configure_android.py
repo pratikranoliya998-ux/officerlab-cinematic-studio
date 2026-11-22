@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
-"""Apply the Android permissions and app label after Capacitor scaffolds the native project."""
+"""Configure Android permissions, app label, and OfficerLab launcher artwork."""
 from pathlib import Path
 import xml.etree.ElementTree as ET
+
+from PIL import Image
 
 manifest_path = Path("android/app/src/main/AndroidManifest.xml")
 if not manifest_path.exists():
@@ -42,6 +44,8 @@ for feature_name in ("android.hardware.camera.any", "android.hardware.microphone
 application = root.find("application")
 if application is not None:
     application.set(ANDROID + "label", "@string/app_name")
+    application.set(ANDROID + "icon", "@mipmap/ic_launcher")
+    application.set(ANDROID + "roundIcon", "@mipmap/ic_launcher_round")
     application.set(ANDROID + "usesCleartextTraffic", "false")
 
 ET.indent(tree, space="    ")
@@ -63,4 +67,82 @@ app_name.text = "OfficerLab Lecture Studio"
 ET.indent(strings_tree, space="    ")
 strings_tree.write(strings_path, encoding="utf-8", xml_declaration=True)
 
-print("Configured camera, microphone, audio, internet permissions and OfficerLab app label.")
+# Generate density-specific legacy icons and modern Android adaptive icons.
+logo_path = Path("assets/officerlab-app-icon.png")
+if not logo_path.is_file():
+    raise SystemExit(f"OfficerLab launcher logo not found: {logo_path}")
+
+logo = Image.open(logo_path).convert("RGBA")
+side = min(logo.width, logo.height)
+left = (logo.width - side) // 2
+top = (logo.height - side) // 2
+logo = logo.crop((left, top, left + side, top + side))
+
+res_dir = Path("android/app/src/main/res")
+legacy_sizes = {
+    "mdpi": 48,
+    "hdpi": 72,
+    "xhdpi": 96,
+    "xxhdpi": 144,
+    "xxxhdpi": 192,
+}
+adaptive_canvas_sizes = {
+    "mdpi": 108,
+    "hdpi": 162,
+    "xhdpi": 216,
+    "xxhdpi": 324,
+    "xxxhdpi": 432,
+}
+
+for density, pixels in legacy_sizes.items():
+    folder = res_dir / f"mipmap-{density}"
+    folder.mkdir(parents=True, exist_ok=True)
+    icon = logo.resize((pixels, pixels), Image.Resampling.LANCZOS)
+    icon.save(folder / "ic_launcher.png", optimize=True)
+    icon.save(folder / "ic_launcher_round.png", optimize=True)
+
+for density, canvas_pixels in adaptive_canvas_sizes.items():
+    folder = res_dir / f"mipmap-{density}"
+    folder.mkdir(parents=True, exist_ok=True)
+    artwork_pixels = round(canvas_pixels * 0.66)
+    artwork = logo.resize(
+        (artwork_pixels, artwork_pixels),
+        Image.Resampling.LANCZOS,
+    )
+    foreground = Image.new(
+        "RGBA",
+        (canvas_pixels, canvas_pixels),
+        (0, 0, 0, 0),
+    )
+    foreground.alpha_composite(
+        artwork,
+        (
+            (canvas_pixels - artwork_pixels) // 2,
+            (canvas_pixels - artwork_pixels) // 2,
+        ),
+    )
+    foreground.save(folder / "ic_launcher_foreground.png", optimize=True)
+
+adaptive_dir = res_dir / "mipmap-anydpi-v26"
+adaptive_dir.mkdir(parents=True, exist_ok=True)
+adaptive_xml = """<?xml version="1.0" encoding="utf-8"?>
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/officerlab_icon_background" />
+    <foreground android:drawable="@mipmap/ic_launcher_foreground" />
+</adaptive-icon>
+"""
+(adaptive_dir / "ic_launcher.xml").write_text(adaptive_xml, encoding="utf-8")
+(adaptive_dir / "ic_launcher_round.xml").write_text(adaptive_xml, encoding="utf-8")
+
+colors_dir = res_dir / "values"
+colors_dir.mkdir(parents=True, exist_ok=True)
+(colors_dir / "officerlab_icon_colors.xml").write_text(
+    """<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="officerlab_icon_background">#061A3A</color>
+</resources>
+""",
+    encoding="utf-8",
+)
+
+print("Configured OfficerLab permissions, label, and gold/navy launcher icons.")

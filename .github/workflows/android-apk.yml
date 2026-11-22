@@ -6,6 +6,7 @@ on:
     paths:
       - "src/**"
       - "public/**"
+      - "assets/**"
       - "package.json"
       - "capacitor.config.json"
       - "scripts/configure_android.py"
@@ -40,6 +41,9 @@ jobs:
         with:
           packages: platform-tools platforms;android-36 build-tools;36.0.0
 
+      - name: Install Python image tooling
+        run: python3 -m pip install --disable-pip-version-check Pillow
+
       - name: Install dependencies
         run: npm install --no-audit --no-fund
 
@@ -49,7 +53,7 @@ jobs:
       - name: Generate native Android project
         run: npx cap add android
 
-      - name: Configure Android app permissions and label
+      - name: Configure Android app permissions, label and OfficerLab logo
         run: python3 scripts/configure_android.py
 
       - name: Sync web bundle into Android project
@@ -60,6 +64,13 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew --no-daemon --stacktrace assembleDebug
+
+      - name: Verify APK output
+        run: |
+          APK="android/app/build/outputs/apk/debug/app-debug.apk"
+          test -s "$APK"
+          sha256sum "$APK"
+          ls -lh "$APK"
 
       - name: Upload installable debug APK
         uses: actions/upload-artifact@v4
