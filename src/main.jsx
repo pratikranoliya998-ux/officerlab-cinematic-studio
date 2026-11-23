@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { Camera, CameraOff, Circle, Download, Mic, Play, RotateCcw, Square, Video, Upload, ChevronLeft, ChevronRight, Pencil, Highlighter, Eraser, ArrowUpRight, RectangleHorizontal, Type, ZoomIn, ZoomOut, Undo2, Maximize, Minimize } from "lucide-react";
+import { Camera, CameraOff, Circle, Download, Mic, Play, RotateCcw, Square, Video, Upload, ChevronLeft, ChevronRight, Pencil, Highlighter, Eraser, ArrowUpRight, RectangleHorizontal, Type, ZoomIn, ZoomOut, Undo2, Maximize, Minimize, Sparkles } from "lucide-react";
 import "./style.css";
+import ScenePromptStudio from "./ScenePromptStudio.jsx";
 
 const WORKER = (import.meta.env.VITE_RENDER_API_URL || "https://officerlab-cinematic-worker.onrender.com").replace(/\/+$/, "");
 function loadPdfJs() {
@@ -14,7 +15,7 @@ function loadPdfJs() {
     document.head.appendChild(script);
   });
 }
-function PresentationStudio() {
+function PresentationStudio({ onOpenSceneDesigner }) {
   const cameraRef=useRef(null), slideCanvasRef=useRef(null), annotationCanvasRef=useRef(null), outputCanvasRef=useRef(null), playbackRef=useRef(null), streamRef=useRef(null), recorderRef=useRef(null), chunksRef=useRef([]), timerRef=useRef(null), rafRef=useRef(null), pdfRef=useRef(null), pageRef=useRef(1), micRef=useRef(null);
   const [file,setFile]=useState(null), [pdfReady,setPdfReady]=useState(false), [page,setPage]=useState(1), [pages,setPages]=useState(0), [streamReady,setStreamReady]=useState(false), [recording,setRecording]=useState(false), [seconds,setSeconds]=useState(0), [videoUrl,setVideoUrl]=useState(""), [mp4Url,setMp4Url]=useState(""), [converting,setConverting]=useState(false), [loading,setLoading]=useState(false), [error,setError]=useState(""), [cameraFacing,setCameraFacing]=useState("user"), [pip,setPip]=useState("bottom-right"), [faceSize,setFaceSize]=useState(25), [faceShape,setFaceShape]=useState("rounded"), [facePos,setFacePos]=useState({x:73,y:68}), [faceOpacity,setFaceOpacity]=useState(100), [symbol,setSymbol]=useState("officerlab"), [logoUrl,setLogoUrl]=useState(""), [logoImage,setLogoImage]=useState(null), [uploadProgress,setUploadProgress]=useState(0), [imageMode,setImageMode]=useState(false), [tool,setTool]=useState("pen"), [inkColor,setInkColor]=useState("#ffdf55"), [inkSize,setInkSize]=useState(5), [zoom,setZoom]=useState(1), [lowerThird,setLowerThird]=useState(""), [chapterTitle,setChapterTitle]=useState(""), [chapters,setChapters]=useState([]), [cursorSpotlight,setCursorSpotlight]=useState(false), [cursorPos,setCursorPos]=useState({x:50,y:50}); const [annotationText,setAnnotationText]=useState(""); const [transition,setTransition]=useState("fade"), [toolsOpen,setToolsOpen]=useState(false), [isFullscreen,setIsFullscreen]=useState(false), [immersiveMode,setImmersiveMode]=useState(false);
   const dragRef=useRef(null), drawingRef=useRef(false), annotationHistoryRef=useRef([]), zoomRef=useRef(1);
@@ -120,7 +121,7 @@ function PresentationStudio() {
   function retake(){if(videoUrl)URL.revokeObjectURL(videoUrl);if(mp4Url)URL.revokeObjectURL(mp4Url);setVideoUrl("");setMp4Url("");setError("");}
   const time=String(Math.floor(seconds/60)).padStart(2,"0")+":"+String(seconds%60).padStart(2,"0");
   return <div className={`presenter-app ${immersiveMode?"immersive-mode":""}`}>
-    <header className="presenter-header"><div className="presenter-brand"><span className="presenter-mark"><Video size={21}/></span><div><b>OfficerLab</b><small>PRESENTATION STUDIO</small></div></div><div className="presenter-header-actions"><span className="presenter-private">Your slides · Your face · Your voice</span><button type="button" className="presenter-btn secondary fullscreen-btn" onClick={toggleFullscreen}>{isFullscreen?<Minimize size={16}/>:<Maximize size={16}/>} {isFullscreen||immersiveMode?"Exit full screen":"Full screen"}</button></div></header>
+    <header className="presenter-header"><div className="presenter-brand"><span className="presenter-mark"><Video size={21}/></span><div><b>OfficerLab</b><small>PRESENTATION STUDIO</small></div></div><div className="presenter-header-actions"><span className="presenter-private">Your slides · Your face · Your voice</span><button type="button" className="presenter-btn secondary" onClick={onOpenSceneDesigner}><Sparkles size={16}/> Scene Designer</button><button type="button" className="presenter-btn secondary fullscreen-btn" onClick={toggleFullscreen}>{isFullscreen?<Minimize size={16}/>:<Maximize size={16}/>} {isFullscreen||immersiveMode?"Exit full screen":"Full screen"}</button></div></header>
     <main className="presenter-main"><div className="presenter-intro"><span className="presenter-kicker">PRESENTATION + CAMERA RECORDING</span><h1>Slides સાથે તમારું lecture record કરો</h1><p>PDF અથવા PowerPoint upload કરો. તમારો ચહેરો slideના ખૂણામાં દેખાશે અને તમારો અવાજ સાથે record થશે.</p></div>
       <div className="landscape-hint"><b>📱 YouTube માટે Landscape mode ભલામણ</b><span>ફોનને આડો ફેરવો જેથી 16:9 સ્લાઈડ આખી સ્ક્રીનમાં દેખાય.</span></div><section className="presenter-stage">
         <div className="presenter-stage-top"><span><i className={recording?"live-dot active":"live-dot"}/>{recording?"RECORDING":pdfReady?"PRESENTATION READY":"UPLOAD PRESENTATION"}</span><span className="presenter-time">{time}</span></div>
@@ -152,4 +153,11 @@ function PresentationStudio() {
     </main>
   </div>;
 }
-const root=createRoot(document.getElementById("root"));root.render(<PresentationStudio/>);
+function OfficerLabWorkspace(){
+  const [workspace,setWorkspace]=useState("presenter");
+  return <>
+    <div style={{display:workspace==="presenter"?"block":"none"}}><PresentationStudio onOpenSceneDesigner={()=>setWorkspace("designer")}/></div>
+    <div style={{display:workspace==="designer"?"block":"none"}}><ScenePromptStudio onBack={()=>setWorkspace("presenter")}/></div>
+  </>;
+}
+const root=createRoot(document.getElementById("root"));root.render(<OfficerLabWorkspace/>);
