@@ -69,7 +69,7 @@ function makeScenes(data) {
   const weightTotal = weights.reduce((sum, weight) => sum + weight, 0);
   let used = 0;
   return stages.map((stage, index) => {
-    const seconds = index === stages.length - 1 ? total - used : Math.max(3, Math.round(total * weights[index] / weightTotal));
+    const seconds = index === stages.length - 1 ? total - used : Math.max(1, Math.round(total * weights[index] / weightTotal));
     used += seconds;
     const overlay = index === 0 ? data.topic : index === stages.length - 1 ? "EXAM RECALL" : stage[0].toUpperCase();
     return {
