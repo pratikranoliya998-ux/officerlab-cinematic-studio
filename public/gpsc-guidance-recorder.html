@@ -763,6 +763,8 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 
 .mic-test-panel{margin-top:11px;padding:11px;background:#fff;border:1px solid #dbe5f1;border-radius:9px;display:flex;flex-direction:column;gap:8px}.mic-test-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px}.mic-test-actions button{font-size:10px;padding:8px 11px}.mic-test-primary{background:#2563eb;color:#fff;border-color:#2563eb}.mic-test-actions #micTestCountdown{font-size:10px;font-weight:750;color:#476584}.mic-test-panel audio{width:100%;max-width:480px}.mic-test-panel .hint{font-size:10px;margin:0}
 
+
+.exam-focus-card{position:absolute;left:7%;right:7%;z-index:15;pointer-events:none;padding:clamp(14px,2.2vw,30px);border:2px solid #e8b44b;border-radius:18px;background:linear-gradient(135deg,rgba(9,17,32,.96),rgba(23,34,54,.94));box-shadow:0 12px 38px #0009,0 0 28px #d2992240;color:#fff;display:none;overflow:hidden}.exam-focus-card.on{display:block}.exam-focus-card.pos-top{top:7%}.exam-focus-card.pos-center{top:50%;transform:translateY(-50%)}.exam-focus-card.pos-bottom{bottom:7%}.exam-focus-card .focus-kicker{font-size:clamp(11px,1.5vw,19px);letter-spacing:.14em;text-transform:uppercase;font-weight:900;color:#f5c45f;margin-bottom:8px}.exam-focus-card .focus-heading{font-size:clamp(20px,3.5vw,46px);line-height:1.15;font-weight:900;overflow-wrap:anywhere}.exam-focus-card .focus-body{font-size:clamp(16px,2.6vw,32px);line-height:1.35;font-weight:650;margin-top:10px;white-space:pre-wrap;overflow-wrap:anywhere}.exam-focus-card.type-alert{border-color:#f85149}.exam-focus-card.type-alert .focus-kicker{color:#ff8580}.exam-focus-card.type-pyq{border-color:#7eb7ff}.exam-focus-card.type-pyq .focus-kicker{color:#9bcaff}.exam-focus-card.type-article{border-color:#b8a1ff}.exam-focus-card.type-article .focus-kicker{color:#c6b5ff}.exam-focus-card.type-remember{border-color:#4ed2a0}.exam-focus-card.type-remember .focus-kicker{color:#79e2b8}.exam-focus-card.type-formula{border-color:#58c8f0}.exam-focus-card.type-formula .focus-kicker{color:#7ddcf7}
 </style>
 </head>
 <body>
@@ -1044,6 +1046,18 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
     <p class="hint" id="slideDisplayHint">Smart Fit keeps the complete slide readable and fills spare space with a soft background. Fit Entire Slide adds dark margins when needed. Fill Screen fills the frame but may crop slide edges. Choose one restrained canvas transition per lesson. Optional Ken Burns adds slow alternating pan and zoom to image slides only; PDF pages and tables remain still.</p>
   </div>
   </div></details>
+<details class="setup-compartment" id="examFocusCompartment">
+<summary><span class="compartment-number">★</span><span><strong>Exam Focus Mode</strong><small>Exam alerts, facts, PYQs and recall prompts — recorded on canvas</small></span><span class="compartment-chevron">⌄</span></summary><div class="compartment-body">
+<section class="card" style="margin-top:10px">
+<h2>Exam Focus Overlay</h2>
+<div class="tool-row"><label for="examFocusType">Focus card</label><select id="examFocusType"><option value="important">⭐ IMPORTANT FACT</option><option value="alert">⚠ EXAM ALERT</option><option value="article">📜 ARTICLE / SECTION</option><option value="pyq">📝 PYQ</option><option value="remember">🧠 REMEMBER THIS</option><option value="formula">📐 FORMULA / RULE</option></select></div>
+<div class="tool-row"><label for="examFocusTitle">Heading (editable)</label><input id="examFocusTitle" type="text" placeholder="e.g. Article 21 — Right to Life"></div>
+<div class="tool-row"><label for="examFocusBody">Explanation / key point</label><textarea id="examFocusBody" rows="3" placeholder="Type the exam takeaway, question or short explanation…"></textarea></div>
+<div class="tool-row"><label for="examFocusPosition">Position</label><select id="examFocusPosition"><option value="top">Top · Banner</option><option value="center" selected>Center · Card</option><option value="bottom">Bottom · Card</option></select><label class="check"><input id="examFocusAutoHide" type="checkbox"> Auto-hide after</label><select id="examFocusDuration"><option value="5">5 sec</option><option value="10" selected>10 sec</option><option value="15">15 sec</option><option value="20">20 sec</option><option value="30">30 sec</option></select></div>
+<div class="device-actions"><button id="examFocusShow" class="primary">▶ Show on recording</button><button id="examFocusClear" class="danger">✕ Clear overlay</button></div>
+<div class="layout-row" style="margin-top:8px"><button data-focus-preset="important">Important Fact</button><button data-focus-preset="alert">Exam Alert</button><button data-focus-preset="article">Article / Section</button><button data-focus-preset="pyq">PYQ</button><button data-focus-preset="remember">Remember</button></div>
+<p class="hint">This overlay is composited directly into the lecture canvas and therefore appears in the recording and MP4 export. It is not a separate editor.</p>
+</section></div></details>
 <details class="setup-compartment" id="motionCompartment">
 <summary><span class="compartment-number">04</span><span><strong>Motion graphics &amp; overlays</strong><small>Add several visuals and schedule each one</small></span><span class="compartment-chevron">⌄</span></summary><div class="compartment-body">
   <section class="motion-graphic-panel card" id="motionGraphicPanel">
@@ -1770,6 +1784,20 @@ function tickContinuousSlideMovement(){
   saveSlideAnimationSettings();
  }).finally(()=>{slideContinuousPending=false;});
 }
+
+// Exam Focus Mode — composited overlay, included in the canvas recording
+const examFocusType=$('examFocusType'),examFocusTitle=$('examFocusTitle'),examFocusBody=$('examFocusBody'),examFocusPosition=$('examFocusPosition'),examFocusAutoHide=$('examFocusAutoHide'),examFocusDuration=$('examFocusDuration');
+let examFocusVisible=false,examFocusStartedAt=0,examFocusSaved={};
+const examFocusTemplates={important:{label:'⭐ IMPORTANT FACT',title:'Important Fact',body:''},alert:{label:'⚠ EXAM ALERT',title:'Exam Alert',body:''},article:{label:'📜 ARTICLE / SECTION',title:'Article / Section',body:''},pyq:{label:'📝 PREVIOUS YEAR QUESTION',title:'PYQ',body:''},remember:{label:'🧠 REMEMBER THIS',title:'Remember This',body:''},formula:{label:'📐 FORMULA / RULE',title:'Formula / Rule',body:''}};
+function examFocusSave(){try{localStorage.setItem('officerlab-exam-focus-settings',JSON.stringify({type:examFocusType.value,title:examFocusTitle.value,body:examFocusBody.value,position:examFocusPosition.value,autoHide:examFocusAutoHide.checked,duration:examFocusDuration.value}));}catch{}}
+function examFocusRestore(){try{const v=JSON.parse(localStorage.getItem('officerlab-exam-focus-settings')||'{}');if(v.type&&examFocusTemplates[v.type])examFocusType.value=v.type;if(v.title!==undefined)examFocusTitle.value=v.title;if(v.body!==undefined)examFocusBody.value=v.body;if(['top','center','bottom'].includes(v.position))examFocusPosition.value=v.position;if(v.autoHide!==undefined)examFocusAutoHide.checked=!!v.autoHide;if(['5','10','15','20','30'].includes(v.duration))examFocusDuration.value=v.duration;}catch{}}
+function examFocusShowNow(){examFocusVisible=true;examFocusStartedAt=performance.now();examFocusSave();if(!drawRAF)startDraw();}
+function examFocusClearNow(){examFocusVisible=false;examFocusStartedAt=0;if(!drawRAF)startDraw();}
+function drawExamFocusOverlay(c){if(!examFocusVisible)return;if(examFocusAutoHide.checked&&examFocusStartedAt&&performance.now()-examFocusStartedAt>Number(examFocusDuration.value)*1000){examFocusVisible=false;return;}const t=examFocusTemplates[examFocusType.value]||examFocusTemplates.important;const w=c.canvas.width,h=c.canvas.height;const x=w*.07,cardW=w*.86;let cardH=h*.22;if(examFocusBody.value.trim())cardH=h*.30;if(examFocusPosition.value==='top')cardH=Math.min(h*.36,cardH);if(examFocusPosition.value==='center')cardH=Math.min(h*.48,cardH);if(examFocusPosition.value==='bottom')cardH=Math.min(h*.36,cardH);let y=examFocusPosition.value==='top'?h*.07:examFocusPosition.value==='center'?(h-cardH)/2:h-cardH-h*.07;const pad=Math.max(24,w*.035),radius=Math.max(18,w*.018);c.save();c.shadowColor='#0009';c.shadowBlur=30;c.shadowOffsetY=8;c.fillStyle='rgba(9,17,32,.95)';c.strokeStyle=({alert:'#f85149',pyq:'#7eb7ff',article:'#b8a1ff',remember:'#4ed2a0',formula:'#58c8f0'})[examFocusType.value]||'#e8b44b';c.lineWidth=Math.max(3,w*.003);roundedFocusRect(c,x,y,cardW,cardH,radius);c.fill();c.stroke();c.shadowBlur=0;c.shadowOffsetY=0;const kicker=t.label.toUpperCase();c.textAlign='left';c.textBaseline='top';c.fillStyle=({alert:'#ff8580',pyq:'#9bcaff',article:'#c6b5ff',remember:'#79e2b8',formula:'#7ddcf7'})[examFocusType.value]||'#f5c45f';c.font='900 '+Math.max(16,w*.018)+'px system-ui';c.fillText(kicker,x+pad,y+pad,cardW-pad*2);c.fillStyle='#fff';c.font='900 '+Math.max(24,w*.035)+'px system-ui';const title=examFocusTitle.value.trim()||t.title;const titleLines=focusWrapText(c,title,cardW-pad*2);let ty=y+pad+Math.max(30,w*.035);titleLines.slice(0,3).forEach(line=>{c.fillText(line,x+pad,ty,cardW-pad*2);ty+=Math.max(30,w*.04);});if(examFocusBody.value.trim()){c.fillStyle='#e8edf4';c.font='650 '+Math.max(18,w*.026)+'px system-ui';const bodyLines=focusWrapText(c,examFocusBody.value,cardW-pad*2);bodyLines.slice(0,5).forEach(line=>{c.fillText(line,x+pad,ty+8,cardW-pad*2);ty+=Math.max(26,w*.032);});}c.restore();}
+function roundedFocusRect(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.lineTo(x+w-r,y);c.quadraticCurveTo(x+w,y,x+w,y+r);c.lineTo(x+w,y+h-r);c.quadraticCurveTo(x+w,y+h,x+w-r,y+h);c.lineTo(x+r,y+h);c.quadraticCurveTo(x,y+h,x,y+h-r);c.lineTo(x,y+r);c.quadraticCurveTo(x,y,x+r,y);c.closePath();}
+function focusWrapText(c,text,maxW){const lines=[];String(text).split(/\n/).forEach(par=>{if(!par.trim()){lines.push('');return;}let line='';for(const word of par.split(/\s+/)){const test=line?line+' '+word:word;if(c.measureText(test).width>maxW&&line){lines.push(line);line=word;}else line=test;}if(line)lines.push(line);});return lines;}
+[examFocusType,examFocusTitle,examFocusBody,examFocusPosition,examFocusAutoHide,examFocusDuration].forEach(el=>el.addEventListener('change',examFocusSave));examFocusTitle.addEventListener('input',examFocusSave);examFocusBody.addEventListener('input',examFocusSave);examFocusRestore();$('examFocusShow').addEventListener('click',examFocusShowNow);$('examFocusClear').addEventListener('click',examFocusClearNow);document.querySelectorAll('[data-focus-preset]').forEach(b=>b.addEventListener('click',()=>{examFocusType.value=b.dataset.focusPreset;const t=examFocusTemplates[b.dataset.focusPreset];if(!examFocusTitle.value.trim()||examFocusTitle.value===examFocusTemplates[examFocusType.value]?.title)examFocusTitle.value=t.title;examFocusSave();examFocusShowNow();}));
+
 function drawScene(){
  if(recording&&stoppingRecording&&outroStartedAt&&outroCardEnabled.checked){
   drawBrandTitleCard('outro',performance.now()-outroStartedAt);drawProgressBar(ctx);drawRAF=requestAnimationFrame(drawScene);return;
@@ -1799,7 +1827,7 @@ function drawScene(){
    drawPip(canvas.width*pip.x,canvas.height*pip.y,w,hh);
   }
  }
- drawMotionGraphic(ctx);
+ drawMotionGraphic(ctx);\n drawExamFocusOverlay(ctx);
  if(recording&&inkCanvas.style.display!=='none'&&mode!=='camera')ctx.drawImage(inkCanvas,0,0,canvas.width,canvas.height);
  drawGuides();
  drawLowerThird();
