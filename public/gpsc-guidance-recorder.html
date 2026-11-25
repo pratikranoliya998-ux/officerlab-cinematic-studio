@@ -761,6 +761,64 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 
 
 .mic-test-panel{margin-top:11px;padding:11px;background:#fff;border:1px solid #dbe5f1;border-radius:9px;display:flex;flex-direction:column;gap:8px}.mic-test-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px}.mic-test-actions button{font-size:10px;padding:8px 11px}.mic-test-primary{background:#2563eb;color:#fff;border-color:#2563eb}.mic-test-actions #micTestCountdown{font-size:10px;font-weight:750;color:#476584}.mic-test-panel audio{width:100%;max-width:480px}.mic-test-panel .hint{font-size:10px;margin:0}
+
+/* OfficerLab Scene Designer — isolated workspace; recorder styles and controls remain unchanged */
+#olSceneDesigner{position:fixed;inset:0;z-index:2500;display:none;overflow:auto;background:#07111f;color:#e8eef8;font:14px "Plus Jakarta Sans",system-ui,sans-serif}
+#olSceneDesigner.open{display:block}
+#olSceneDesigner *{box-sizing:border-box}
+.olsd-shell{max-width:1480px;margin:0 auto;padding:16px clamp(12px,2.5vw,30px) 36px}
+.olsd-top{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px clamp(12px,2.5vw,30px);margin:-16px calc(-1 * clamp(12px,2.5vw,30px)) 20px;background:rgba(7,17,31,.94);border-bottom:1px solid #26364d;backdrop-filter:blur(18px)}
+.olsd-brand{display:flex;align-items:center;gap:11px;min-width:0}
+.olsd-mark{width:40px;height:40px;display:grid;place-items:center;border:1px solid #d6b66b88;border-radius:12px;background:linear-gradient(145deg,#1d3451,#111c2e);color:#eacb80;font-size:21px}
+.olsd-brand strong{display:block;font-size:14px;letter-spacing:.04em;color:#f4e5be}
+.olsd-brand small{display:block;margin-top:3px;color:#96a8c1;font-size:10px}
+.olsd-close{border:1px solid #465a76!important;background:#17263a!important;color:#e9f1fc!important;border-radius:10px!important;min-height:38px!important;padding:7px 12px!important}
+.olsd-nav{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 18px;padding:6px;border:1px solid #26364d;border-radius:13px;background:#0d1a2b}
+.olsd-nav button{border:1px solid transparent!important;border-radius:9px!important;background:transparent!important;color:#9fb0c7!important;padding:9px 14px!important;min-height:38px!important;font-size:12px!important}
+.olsd-nav button.active{background:#1a2d46!important;border-color:#c5a45d66!important;color:#f4d995!important}
+.olsd-title{margin:0 0 6px;font-size:clamp(22px,3vw,31px);font-weight:850;letter-spacing:-.035em;color:#f4e9d0}
+.olsd-subtitle{margin:0 0 20px;color:#a4b3c7;font-size:12px;line-height:1.65;max-width:850px}
+.olsd-grid{display:grid;grid-template-columns:minmax(290px,.86fr) minmax(0,1.35fr);gap:14px;align-items:start}
+.olsd-panel{min-width:0;padding:16px;border:1px solid #293b54;border-radius:16px;background:linear-gradient(145deg,#111f33,#0e1929);box-shadow:0 12px 30px #0002}
+.olsd-panel h3{margin:0 0 12px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#d5bd83}
+.olsd-field{margin:0 0 12px}
+.olsd-field label{display:block;margin:0 0 6px;color:#b6c4d7;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.olsd-field input,.olsd-field select,.olsd-field textarea{width:100%;min-height:41px;padding:10px 11px;border:1px solid #344861;border-radius:9px;background:#091424;color:#edf4ff;font-size:12px}
+.olsd-field textarea{min-height:90px;resize:vertical;line-height:1.55}
+.olsd-field input:focus,.olsd-field select:focus,.olsd-field textarea:focus{outline:2px solid #c5a45d88;outline-offset:1px}
+.olsd-two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.olsd-generate{width:100%;margin-top:6px;border:1px solid #d6b66b!important;background:linear-gradient(135deg,#e3c47a,#b38d43)!important;color:#152033!important;font-weight:900!important;letter-spacing:.02em}
+.olsd-btn-row{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.olsd-btn-row button,.olsd-copy{border:1px solid #3c526f!important;background:#192b42!important;color:#e6effc!important;border-radius:9px!important;padding:8px 11px!important;min-height:36px!important;font-size:11px!important}
+.olsd-btn-row button.gold{background:#d6b66b!important;border-color:#d6b66b!important;color:#142238!important;font-weight:850}
+.olsd-style-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.olsd-style-tile{padding:10px;border:1px solid #2d405a;border-radius:10px;background:#0a1728}
+.olsd-style-tile b{display:block;color:#e7d5a6;font-size:10px;margin-bottom:3px}
+.olsd-style-tile span{display:block;color:#94a8c1;font-size:9px;line-height:1.45}
+.olsd-callout{margin-top:12px;padding:11px 12px;border-left:3px solid #c9a75d;border-radius:7px;background:#d6b66b12;color:#b7c6d8;font-size:10px;line-height:1.6}
+.olsd-empty{padding:25px 16px;border:1px dashed #3a506d;border-radius:13px;text-align:center;color:#98abc4;font-size:12px;line-height:1.7}
+.olsd-statrow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:0 0 12px}
+.olsd-stat{padding:10px;border:1px solid #2a3d57;border-radius:10px;background:#0a1728}
+.olsd-stat small{display:block;color:#8fa3bd;font-size:9px;text-transform:uppercase;letter-spacing:.08em}
+.olsd-stat b{display:block;margin-top:4px;color:#edd69e;font-size:15px}
+.olsd-scene{margin:0 0 10px;padding:14px;border:1px solid #2d4059;border-radius:13px;background:#0b192b}
+.olsd-scene-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:9px}
+.olsd-scene-head b{color:#e9d5a1;font-size:13px}
+.olsd-scene-head small{display:block;margin-top:4px;color:#94a8c1;font-size:10px}
+.olsd-time{white-space:nowrap;padding:5px 8px;border:1px solid #655735;border-radius:20px;color:#f1d995;font-size:10px;font-weight:800}
+.olsd-scene dl{display:grid;grid-template-columns:90px 1fr;gap:6px 10px;margin:0;font-size:10px;line-height:1.55}
+.olsd-scene dt{color:#91a5bf;font-weight:800;text-transform:uppercase;letter-spacing:.06em}
+.olsd-scene dd{margin:0;color:#dae4f1;white-space:pre-wrap}
+.olsd-prompt{width:100%;min-height:170px;padding:12px;border:1px solid #344861;border-radius:10px;background:#071321;color:#dbe8f8;font:11px/1.6 ui-monospace,SFMono-Regular,Consolas,monospace;resize:vertical}
+.olsd-prompt-item{margin:0 0 14px;padding:12px;border:1px solid #2a3d57;border-radius:12px;background:#0a1728}
+.olsd-prompt-item h4{margin:0 0 8px;color:#e7d3a0;font-size:11px}
+.olsd-prompt-item textarea{width:100%;min-height:125px;padding:10px;border:1px solid #334963;border-radius:8px;background:#071321;color:#dbe8f8;font:10px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace}
+.olsd-foot{margin-top:20px;color:#7188a5;font-size:9px;line-height:1.6;text-align:center}
+.olsd-hidden{display:none!important}
+@media(max-width:850px){.olsd-grid{grid-template-columns:1fr}.olsd-top{margin-bottom:14px}.olsd-style-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.olsd-shell{padding-top:10px}.olsd-top{margin:-10px -12px 14px;padding:10px 12px}.olsd-brand strong{font-size:12px}.olsd-brand small{font-size:9px}.olsd-nav{gap:3px}.olsd-nav button{flex:1;padding:8px 7px!important;font-size:10px!important}.olsd-two{grid-template-columns:1fr 1fr}.olsd-statrow{grid-template-columns:repeat(2,minmax(0,1fr))}.olsd-scene dl{grid-template-columns:75px 1fr}.olsd-title{font-size:22px}}
+
+.scene-launch-btn{box-shadow:0 3px 14px #b58f3c2b}
 </style>
 </head>
 <body>
@@ -769,6 +827,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   <span class="tag">16:9 · 1080p / 30fps target</span>
   <span class="tag" id="connectivityStatus" role="status" aria-live="polite">● Checking connection</span>
   <button id="contextToggle" class="context-toggle" type="button" aria-controls="contextPanel" aria-expanded="true" title="Hide context panel">▤ Hide Context</button>
+  <button id="openSceneDesigner" type="button" class="scene-launch-btn" style="border-color:#c5a45d;background:linear-gradient(135deg,#e3c47a,#b38d43);color:#152033;font-size:11px;font-weight:850">✦ Scene Designer</button>
   <div class="default-prefs" aria-label="Recorder defaults"><span id="defaultsStatus" role="status" aria-live="polite">Settings auto-save on this device</span><button id="saveDefaultsBtn" type="button" title="Save all current recorder settings as your default setup">Save as Default</button></div>
   <button id="installApp" type="button" hidden style="margin-left:auto;padding:6px 10px;font-size:11px">⬇ Install App</button>
 </header>
@@ -1089,6 +1148,83 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   <button id="stopBtn" class="danger" disabled>■ Stop</button>
   <button id="fullscreenBtn">⛶ Full Screen</button>
 </div>
+
+
+<section id="olSceneDesigner" aria-label="OfficerLab Scene Designer" aria-hidden="true">
+  <div class="olsd-shell">
+    <div class="olsd-top">
+      <div class="olsd-brand"><div class="olsd-mark">✦</div><div><strong>OFFICERLAB SCENE DESIGNER</strong><small>THE BUREAUCRAT BLUEPRINT · CINEMATIC PROMPT WORKSPACE</small></div></div>
+      <button class="olsd-close" id="olSceneClose" type="button">← Back to Recorder</button>
+    </div>
+    <nav class="olsd-nav" aria-label="Scene Designer sections">
+      <button type="button" class="active" data-olsd-tab="brief">① Brief & Style</button>
+      <button type="button" data-olsd-tab="storyboard">② Storyboard</button>
+      <button type="button" data-olsd-tab="export">③ Prompt Export</button>
+    </nav>
+    <section id="olsdViewBrief">
+      <h2 class="olsd-title">Plan the visuals before you record.</h2>
+      <p class="olsd-subtitle">Build a scene-by-scene visual plan for your GPSC / GSSSB lessons, explainers, diagrams and cinematic lecture segments. Your recorder remains separate and unchanged.</p>
+      <div class="olsd-grid">
+        <div class="olsd-panel">
+          <h3>Lecture / Video Brief</h3>
+          <div class="olsd-field"><label for="olsdTopic">Topic / lesson title *</label><input id="olsdTopic" type="text" placeholder="e.g. Food Safety and Standards Act, 2006"></div>
+          <div class="olsd-field"><label for="olsdObjective">Learning objective / key message</label><textarea id="olsdObjective" placeholder="What should the viewer understand after watching?"></textarea></div>
+          <div class="olsd-two">
+            <div class="olsd-field"><label for="olsdAudience">Audience</label><select id="olsdAudience"><option>GPSC / GSSSB aspirants</option><option>College students</option><option>General audience</option><option>Government staff</option><option>Professional learners</option></select></div>
+            <div class="olsd-field"><label for="olsdLanguage">Narration language</label><select id="olsdLanguage"><option value="Gujarati + English technical terms">Gujarati + English technical terms</option><option value="Gujarati">Gujarati</option><option value="English">English</option><option value="Hindi">Hindi</option><option value="Bilingual Gujarati-English">Bilingual Gujarati-English</option></select></div>
+          </div>
+          <div class="olsd-field"><label for="olsdStyle">Visual style · 12 style families</label><select id="olsdStyle">
+            <option value="explainer">Explainers & data visualization</option><option value="cinematic3d">Cinematic 3D</option><option value="handdrawn">Hand-drawn, sketch & comic</option><option value="collage">Collage, cutout & sand</option><option value="pixel">Pixel art</option><option value="flat">Flat cartoon & vector</option><option value="lowpoly">Low-poly & voxel</option><option value="neon">Generative & neon</option><option value="type">Kinetic typography</option><option value="product">Product UI promo</option><option value="retro">Retro, terminal & old film</option><option value="photo">Photoreal & live action</option>
+          </select></div>
+          <div class="olsd-field"><label for="olsdEngine">Preferred production engine</label><select id="olsdEngine"><option>Remotion</option><option>Manim</option><option>Three.js</option><option>Blender</option><option>HTML Canvas / SVG</option><option>AI video generator (prompt-first)</option></select></div>
+          <div class="olsd-two">
+            <div class="olsd-field"><label for="olsdDuration">Target duration (minutes)</label><input id="olsdDuration" type="number" min="1" max="60" step="0.5" value="5"></div>
+            <div class="olsd-field"><label for="olsdCount">Number of scenes</label><select id="olsdCount"><option value="3">3 scenes</option><option value="5" selected>5 scenes</option><option value="7">7 scenes</option></select></div>
+          </div>
+          <div class="olsd-field"><label for="olsdRatio">Aspect ratio</label><select id="olsdRatio"><option value="16:9">16:9 · YouTube landscape</option><option value="9:16">9:16 · Shorts / Reels</option><option value="1:1">1:1 · Square</option><option value="4:5">4:5 · Portrait feed</option></select></div>
+          <div class="olsd-field"><label for="olsdNarration">Draft narration / script (optional)</label><textarea id="olsdNarration" placeholder="Paste your approved narration. It will be divided into scene guidance; no facts will be added."></textarea></div>
+          <div class="olsd-field"><label for="olsdSources">Verified facts / source notes (important for laws, dates, figures)</label><textarea id="olsdSources" placeholder="Paste the exact facts, section numbers, dates, figures, and source URLs you have verified. Unknown details will be flagged [VERIFY]."></textarea></div>
+          <button type="button" id="olsdGenerate" class="olsd-generate">✦ Generate storyboard & scene prompts</button>
+          <div class="olsd-callout">Accuracy safeguard: the planner does not validate legal claims or fetch sources. It will not invent section numbers, statistics, quotations, citations or official logos. Add verified source notes or retain the [VERIFY] marker.</div>
+        </div>
+        <div class="olsd-panel">
+          <h3>Choose a visual language</h3>
+          <div class="olsd-style-grid" id="olsdStyleTiles">
+            <div class="olsd-style-tile"><b>01 · Explainers</b><span>Clear diagrams, labels, timelines and data-led teaching graphics</span></div>
+            <div class="olsd-style-tile"><b>02 · Cinematic 3D</b><span>Volumetric lighting, dimensional sets, smooth camera moves</span></div>
+            <div class="olsd-style-tile"><b>03 · Hand-drawn</b><span>Marker lines, sketch reveals, comic panels and visual metaphors</span></div>
+            <div class="olsd-style-tile"><b>04 · Collage</b><span>Layered paper, cutout motion, tactile textures and depth</span></div>
+            <div class="olsd-style-tile"><b>05 · Pixel art</b><span>Pixel-grid scenes, retro sprites and deliberate transitions</span></div>
+            <div class="olsd-style-tile"><b>06 · Flat cartoon</b><span>Friendly vector characters, shapes and simplified concepts</span></div>
+            <div class="olsd-style-tile"><b>07 · Low-poly</b><span>Geometric objects, voxel spaces and faceted environments</span></div>
+            <div class="olsd-style-tile"><b>08 · Generative / neon</b><span>Procedural patterns, luminous lines and abstract systems</span></div>
+            <div class="olsd-style-tile"><b>09 · Kinetic type</b><span>Typography as the main actor; precise word-by-word motion</span></div>
+            <div class="olsd-style-tile"><b>10 · Product UI</b><span>Interface mockups, feature reveals and clean screen motion</span></div>
+            <div class="olsd-style-tile"><b>11 · Retro / terminal</b><span>Old film, CRT displays, terminal motifs and restrained grain</span></div>
+            <div class="olsd-style-tile"><b>12 · Photoreal</b><span>Realistic locations, natural light and documentary framing</span></div>
+          </div>
+          <div class="olsd-callout">OfficerLab default: use Gujarati-compatible typography such as Noto Sans Gujarati for Gujarati text, with a clean sans-serif for English technical terms. Keep important on-screen text large and readable on mobile.</div>
+        </div>
+      </div>
+    </section>
+    <section id="olsdViewStoryboard" class="olsd-hidden" hidden>
+      <h2 class="olsd-title">Scene-by-scene storyboard</h2>
+      <p class="olsd-subtitle">Each scene has a timing window, teaching purpose, art direction, camera / motion notes and narration guidance. Scene durations are allocated to add up to your selected runtime.</p>
+      <div class="olsd-statrow" id="olsdStats"></div>
+      <div id="olsdSceneCards"><div class="olsd-empty">Complete the brief and generate a storyboard first.</div></div>
+      <div class="olsd-btn-row"><button type="button" class="gold" id="olsdToExport">Continue to Prompt Export →</button><button type="button" id="olsdEditBrief">← Edit brief</button></div>
+    </section>
+    <section id="olsdViewExport" class="olsd-hidden" hidden>
+      <h2 class="olsd-title">Master prompt & scene prompts</h2>
+      <p class="olsd-subtitle">Copy one master production brief or export a Markdown / JSON blueprint for your selected video engine and downstream workflow.</p>
+      <div class="olsd-btn-row"><button type="button" class="gold" id="olsdCopyMaster">Copy master prompt</button><button type="button" id="olsdDownloadMd">Download Markdown</button><button type="button" id="olsdDownloadJson">Download JSON</button></div>
+      <div class="olsd-panel"><h3>Master production prompt</h3><textarea class="olsd-prompt" id="olsdMasterPrompt" readonly placeholder="Generate a storyboard to create the master prompt."></textarea></div>
+      <div style="height:12px"></div>
+      <div id="olsdScenePrompts"><div class="olsd-empty">Scene prompts will appear here after generation.</div></div>
+    </section>
+    <div class="olsd-foot">OFFICERLAB · SCENE DESIGNER · Prompt / storyboard generation runs locally in this page. It does not itself call an AI model or render a finished video.</div>
+  </div>
+</section>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
@@ -2985,5 +3121,182 @@ async function init(){
 init();
 })(); 
 </script>
+
+<script>
+(()=>{'use strict';
+const root=document.getElementById('olSceneDesigner');
+if(!root)return;
+const $=id=>document.getElementById(id);
+const styleMap={
+ explainer:{name:'Explainers & data visualization',recipe:'Build a clean teaching-first explainer with precise diagrams, timelines, icons, labels, process arrows and restrained chart motion. Make every visual serve one learning point; avoid decorative clutter.'},
+ cinematic3d:{name:'Cinematic 3D',recipe:'Create a polished dimensional environment with physically plausible materials, controlled depth of field, volumetric key light, subtle atmospheric particles and deliberate cinematic camera motion. Keep educational text crisp and legible.'},
+ handdrawn:{name:'Hand-drawn, sketch & comic',recipe:'Use confident hand-drawn strokes, visible line animation, marker highlights, sketchbook texture and occasional comic-panel framing. Animate each drawing as it is explained; preserve clean contrast and readable labels.'},
+ collage:{name:'Collage, cutout & sand',recipe:'Compose tactile layered-paper, cutout and textured elements with parallax depth, torn edges and stop-motion-inspired movement. Maintain a deliberate visual hierarchy; do not obscure the key concept.'},
+ pixel:{name:'Pixel art',recipe:'Use a consistent pixel grid, limited palette, crisp sprite silhouettes and purposeful retro game transitions. Avoid blurred scaling; preserve pixel-perfect edges and readable labels.'},
+ flat:{name:'Flat cartoon & vector',recipe:'Use simple geometric vector shapes, friendly character silhouettes, clear iconography and smooth easing. Keep shapes consistent in scale, line weight and palette throughout the sequence.'},
+ lowpoly:{name:'Low-poly & voxel',recipe:'Build faceted low-poly or voxel objects with coherent perspective, restrained color blocks and readable silhouettes. Use slow orbit, assembly or cutaway moves to reveal structure.'},
+ neon:{name:'Generative & neon',recipe:'Use procedural geometry, luminous filaments, flowing particles and controlled glow against a dark field. Let patterns visualize relationships and systems; avoid excessive flicker or unreadable bloom.'},
+ type:{name:'Kinetic typography',recipe:'Treat words and numerals as the primary visual actors. Animate phrases in carefully timed groups using scale, tracking, masks and directional movement. Keep wording exact; do not fabricate additional text.'},
+ product:{name:'Product UI promo',recipe:'Use premium interface mockups, crisp device frames, clean dashboard transitions, cursor focus and subtle depth. Any interface content must be grounded in supplied facts; label mockups as illustrative.'},
+ retro:{name:'Retro, terminal & old film',recipe:'Use restrained CRT scanlines, terminal-inspired layouts, analog film grain, archival framing and limited retro color. Keep visual effects subtle so small text and factual details remain readable.'},
+ photo:{name:'Photoreal & live action',recipe:'Use documentary-style realistic locations, believable human gestures, natural lens behavior and motivated lighting. Avoid synthetic logos, false official insignia or fabricated documentary evidence.'}
+};
+const roleDeck={
+ 3:[
+  {name:'Opening hook',purpose:'Create curiosity and establish the subject without distorting the facts.',visual:'One strong visual metaphor for the topic; reveal the exact title as a clean on-screen label.',camera:'Begin with a wide establishing frame, then a controlled push-in to the subject.',motion:'One clear reveal; hold the key image long enough to read.',transition:'Match cut or clean title wipe.'},
+  {name:'Core explanation',purpose:'Explain the central concept in a logical, teachable sequence.',visual:'A structured diagram, process flow or comparison based only on the supplied source notes.',camera:'Move from overview to a close-up of each labelled component.',motion:'Reveal one component at a time; connect elements with arrows or numbered steps.',transition:'Directional wipe following the diagram flow.'},
+  {name:'Revision & takeaway',purpose:'Reinforce the most important learning points and close the lesson.',visual:'Compact recap board with 3–5 concise points drawn from the supplied material.',camera:'Stable front-facing composition with a slight final pull-back.',motion:'Highlight each takeaway in sequence, then hold the completed board.',transition:'Fade to the OfficerLab end card.'}
+ ],
+ 5:[
+  {name:'Opening hook',purpose:'Win attention and introduce the exact lesson topic.',visual:'A focused visual metaphor and a prominent title card.',camera:'Wide establishing shot followed by a gentle push-in.',motion:'One clean reveal; no unrelated decoration.',transition:'Clean title wipe.'},
+  {name:'Context & learning goal',purpose:'Explain why the topic matters to the learner.',visual:'A context map, timeline or simple real-world setting grounded in supplied notes.',camera:'Medium composition with a slow lateral move.',motion:'Reveal context labels one at a time.',transition:'Match cut into the core diagram.'},
+  {name:'Core framework',purpose:'Break the central idea into its components or steps.',visual:'A clear flowchart, labelled structure or comparison table; use exact supplied terminology.',camera:'Top-down or straight-on diagram view; push into each component.',motion:'Sequential build with connecting lines and numbered steps.',transition:'Arrow-led directional transition.'},
+  {name:'Application / example',purpose:'Show how the principle is applied without inventing a case or statistic.',visual:'A worked example or scenario explicitly supplied by the author; otherwise mark example content [ADD VERIFIED EXAMPLE].',camera:'Medium-to-close framing around the worked steps.',motion:'Step-by-step annotation, with important values visibly sourced.',transition:'Slide or panel reveal.'},
+  {name:'Revision & close',purpose:'Summarize learning and create a memorable ending.',visual:'A clean revision board with key takeaways and one final recap question.',camera:'Stable symmetrical frame, then a subtle pull-back.',motion:'Highlight the key facts one by one; hold the final frame.',transition:'Fade to OfficerLab end card.'}
+ ],
+ 7:[
+  {name:'Opening hook',purpose:'Create curiosity and state the exact lesson topic.',visual:'One clear visual metaphor plus a precise title.',camera:'Wide establishing shot, then measured push-in.',motion:'Short, deliberate reveal with a readable title hold.',transition:'Title wipe.'},
+  {name:'Context',purpose:'Set the background and learning objective.',visual:'A context map, timeline or real-world environment using supplied information only.',camera:'Medium shot with a slow lateral move.',motion:'Reveal the context labels in reading order.',transition:'Match cut.'},
+  {name:'Foundation',purpose:'Define the core terms and establish the conceptual base.',visual:'A labelled concept map with exact terminology and simple icons.',camera:'Straight-on frame with controlled zoom to each label.',motion:'Build the map progressively; emphasize terms when narrated.',transition:'Line-draw transition.'},
+  {name:'Mechanism / process',purpose:'Explain how the system works or how steps connect.',visual:'A numbered flow diagram or process animation sourced from verified notes.',camera:'Top-down process view with a guided follow-along move.',motion:'Animate arrows and stages in the correct order.',transition:'Directional flow transition.'},
+  {name:'Application',purpose:'Connect the concept to a practical, verified example.',visual:'A worked example or scenario provided by the author; otherwise show a neutral illustrative scenario tagged as such.',camera:'Medium framing, then close-up on the working area.',motion:'Reveal the reasoning step by step; do not invent quantitative inputs.',transition:'Panel slide.'},
+  {name:'Implications / exam focus',purpose:'Surface the implications or exam-relevant distinctions supported by the source notes.',visual:'Comparison board, key-fact cards or a short decision tree; mark unsupported points [VERIFY].',camera:'Straight-on teaching composition with small controlled punch-ins.',motion:'Use restrained highlight pulses on important distinctions.',transition:'Clean card stack.'},
+  {name:'Revision & close',purpose:'Consolidate the learning into a concise recap.',visual:'Final recap board and one revision question, with a clean OfficerLab sign-off.',camera:'Symmetrical frame with a slow pull-back.',motion:'Reveal takeaways sequentially and hold the final frame.',transition:'Fade out.'}
+ ]
+};
+let current=null;
+function esc(value){return String(value==null?'':value).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
+function fmt(sec){const mm=Math.floor(sec/60),ss=sec%60;return String(mm).padStart(2,'0')+':'+String(ss).padStart(2,'0');}
+function tab(name){
+ ['brief','storyboard','export'].forEach(key=>{
+  const view=$('olsdView'+key.charAt(0).toUpperCase()+key.slice(1));
+  if(view){view.hidden=key!==name;view.classList.toggle('olsd-hidden',key!==name);}
+ });
+ root.querySelectorAll('[data-olsd-tab]').forEach(btn=>btn.classList.toggle('active',btn.getAttribute('data-olsd-tab')===name));
+}
+function open(){
+ root.classList.add('open');root.setAttribute('aria-hidden','false');document.body.style.overflow='hidden';
+ const notes=document.getElementById('notes');
+ if(notes&&!$('olsdNarration').value.trim()&&!$('olsdTopic').value.trim()&&notes.value.trim())$('olsdNarration').value=notes.value.trim();
+ tab(current?'storyboard':'brief');
+}
+function close(){root.classList.remove('open');root.setAttribute('aria-hidden','true');document.body.style.overflow='';}
+function makePrompt(data,scene){
+ const style=styleMap[data.style];
+ return [
+  'OFFICERLAB SCENE PROMPT — '+scene.index+' / '+data.count,
+  'TOPIC: '+data.topic,
+  'SCENE: '+scene.title+' ('+fmt(scene.start)+'–'+fmt(scene.end)+', '+scene.duration+' seconds)',
+  'LEARNING PURPOSE: '+scene.purpose,
+  'AUDIENCE: '+data.audience,
+  'LANGUAGE: '+data.language,
+  'ASPECT RATIO: '+data.ratio,
+  'PRODUCTION ENGINE: '+data.engine,
+  'VISUAL STYLE: '+style.name,
+  'STYLE DIRECTION: '+style.recipe,
+  'VISUAL COMPOSITION: '+scene.visual,
+  'CAMERA: '+scene.camera,
+  'MOTION: '+scene.motion,
+  'NARRATION DIRECTION: '+scene.narration,
+  'TRANSITION: '+scene.transition,
+  'ON-SCREEN TEXT: Use only exact text supplied in the approved narration or source notes. Use Noto Sans Gujarati (or a compatible Gujarati font) for Gujarati and a clean sans-serif for English technical terms.',
+  'FACTUAL CONTROL: Never invent legal provisions, section numbers, dates, statistics, quotations, case names, citations, official insignia or government logos. Use [VERIFY] for unsupported details. Clearly label illustrative mockups and examples.',
+  'QUALITY: High visual clarity, strong hierarchy, mobile-readable labels, consistent palette, clean edges, smooth easing, no watermark, no random text, no misspellings.'
+ ].join('\n');
+}
+function build(){
+ const topic=$('olsdTopic').value.trim();
+ if(!topic){alert('Enter a topic or lesson title first.');$('olsdTopic').focus();return;}
+ const minutes=Math.max(1,Math.min(60,Number($('olsdDuration').value)||5));
+ const total=Math.round(minutes*60),count=Number($('olsdCount').value)||5;
+ const style=$('olsdStyle').value,engine=$('olsdEngine').value,ratio=$('olsdRatio').value;
+ const objective=$('olsdObjective').value.trim()||'Explain the topic accurately and build understanding step by step.';
+ const audience=$('olsdAudience').value,language=$('olsdLanguage').value;
+ const narration=$('olsdNarration').value.trim(),sources=$('olsdSources').value.trim();
+ const blocks=narration.split(/\n+/).map(x=>x.trim()).filter(Boolean);
+ const roles=roleDeck[count],base=Math.floor(total/count),scenes=[];
+ let cursor=0;
+ for(let i=0;i<count;i++){
+  const duration=i===count-1?total-cursor:base,end=cursor+duration;
+  const role=roles[i];
+  let narrationText=blocks[i]?'Use this approved narration segment: '+blocks[i]:'Draft narration for this section in '+language+'. Explain only the stated learning purpose; insert [VERIFY] wherever a source-backed fact is required.';
+  if(blocks.length===1&&i>0)narrationText='Continue the approved narration in logical sequence. Refer to the supplied full script and do not add facts or unsupported claims.';
+  scenes.push({index:i+1,title:role.name,purpose:role.purpose,visual:role.visual,camera:role.camera,motion:role.motion,transition:role.transition,narration:narrationText,start:cursor,end,duration,prompt:''});
+  cursor=end;
+ }
+ const data={topic,objective,audience,language,style,engine,ratio,minutes,total,count,sources,narration};
+ scenes.forEach(scene=>scene.prompt=makePrompt(data,scene));
+ const master=[
+  'OFFICERLAB MASTER PRODUCTION PROMPT',
+  'Create a '+fmt(total)+' educational video in '+ratio+' with exactly '+count+' scenes. Total scene durations must equal '+total+' seconds.',
+  'TOPIC: '+topic,
+  'LEARNING OBJECTIVE: '+objective,
+  'AUDIENCE: '+audience,
+  'NARRATION LANGUAGE: '+language,
+  'VISUAL STYLE: '+styleMap[style].name,
+  'STYLE RECIPE: '+styleMap[style].recipe,
+  'PRODUCTION ENGINE: '+engine,
+  'VERIFIED SOURCE NOTES: '+(sources||'[No source notes supplied. Do not invent facts; mark factual details [VERIFY].')),
+  'APPROVED NARRATION: '+(narration||'[No narration supplied. Create narration placeholders / guidance only; do not assert new facts.]'),
+  '',
+  'GLOBAL CREATIVE DIRECTION',
+  'Use OfficerLab navy-and-gold educational branding only where requested. Keep visual language consistent across all scenes. Use Noto Sans Gujarati or a compatible font for Gujarati and a clear sans-serif for English technical terms. Keep captions and labels mobile-readable. Avoid clutter, excessive transitions and decorative motion that competes with teaching.',
+  'FACTUAL SAFEGUARDS',
+  'Do not invent legal section numbers, dates, statistics, case names, quotations, research citations, official logos or government seals. Every factual claim must be grounded in the supplied approved narration or verified source notes. Use [VERIFY] or [ADD VERIFIED EXAMPLE] when necessary. Mark illustrative mockups clearly.',
+  '',
+  'SCENE TIMELINE'
+ ].concat(scenes.map(s=>s.index+'. '+fmt(s.start)+'–'+fmt(s.end)+' | '+s.title+' | '+s.duration+' seconds\nPurpose: '+s.purpose+'\nVisual: '+s.visual+'\nCamera: '+s.camera+'\nMotion: '+s.motion+'\nNarration: '+s.narration+'\nTransition: '+s.transition)).join('\n\n');
+ current={data,scenes,master};
+ $('olsdStats').innerHTML='<div class="olsd-stat"><small>Runtime</small><b>'+fmt(total)+'</b></div><div class="olsd-stat"><small>Scenes</small><b>'+count+'</b></div><div class="olsd-stat"><small>Visual style</small><b>'+esc(styleMap[style].name)+'</b></div><div class="olsd-stat"><small>Engine</small><b>'+esc(engine)+'</b></div>';
+ $('olsdSceneCards').innerHTML=scenes.map(s=>'<article class="olsd-scene"><div class="olsd-scene-head"><div><b>Scene '+s.index+' · '+esc(s.title)+'</b><small>'+esc(s.purpose)+'</small></div><span class="olsd-time">'+fmt(s.start)+' – '+fmt(s.end)+'</span></div><dl><dt>Visual</dt><dd>'+esc(s.visual)+'</dd><dt>Camera</dt><dd>'+esc(s.camera)+'</dd><dt>Motion</dt><dd>'+esc(s.motion)+'</dd><dt>Narration</dt><dd>'+esc(s.narration)+'</dd><dt>Transition</dt><dd>'+esc(s.transition)+'</dd></dl><div class="olsd-btn-row"><button type="button" class="olsd-copy" data-olsd-copy-scene="'+(s.index-1)+'">Copy scene prompt</button></div></article>').join('');
+ $('olsdMasterPrompt').value=master;
+ $('olsdScenePrompts').innerHTML=scenes.map(s=>'<article class="olsd-prompt-item"><h4>SCENE '+s.index+' · '+esc(s.title)+' · '+fmt(s.start)+'–'+fmt(s.end)+'</h4><textarea readonly>'+esc(s.prompt)+'</textarea><div class="olsd-btn-row"><button type="button" class="olsd-copy" data-olsd-copy-scene="'+(s.index-1)+'">Copy this scene prompt</button></div></article>').join('');
+ tab('storyboard');
+ try{localStorage.setItem('officerlab-scene-designer-last',JSON.stringify({topic,objective,audience,language,style,engine,ratio,minutes,count,narration,sources}));}catch(e){}
+}
+async function copyText(value,label){
+ try{
+  if(navigator.clipboard&&navigator.clipboard.writeText)await navigator.clipboard.writeText(value);
+  else{const box=document.createElement('textarea');box.value=value;box.style.position='fixed';box.style.opacity='0';document.body.appendChild(box);box.select();const ok=document.execCommand('copy');box.remove();if(!ok)throw new Error('Copy unavailable');}
+  return true;
+ }catch(e){alert('Clipboard access was blocked. Select the text and copy it manually.');return false;}
+}
+function download(name,type,content){
+ const blob=new Blob([content],{type}),url=URL.createObjectURL(blob),a=document.createElement('a');
+ a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1200);
+}
+function exportMarkdown(){
+ if(!current){alert('Generate a storyboard first.');return;}
+ const s=current.scenes.map(x=>'## Scene '+x.index+' — '+x.title+' ('+fmt(x.start)+'–'+fmt(x.end)+')\n\n'+x.prompt).join('\n\n---\n\n');
+ return '# '+current.data.topic+'\n\n'+current.master+'\n\n---\n\n'+s;
+}
+function restoreDraft(){
+ try{
+  const d=JSON.parse(localStorage.getItem('officerlab-scene-designer-last')||'null');
+  if(!d)return;
+  ['topic','objective','audience','language','style','engine','ratio','duration','count','narration','sources'].forEach(key=>{
+   const id='olsd'+key.charAt(0).toUpperCase()+key.slice(1),el=$(id),source=key==='duration'?'minutes':key;
+   if(el&&d[source]!==undefined)el.value=String(d[source]);
+  });
+ }catch(e){}
+}
+document.getElementById('openSceneDesigner')?.addEventListener('click',open);
+$('olSceneClose').addEventListener('click',close);
+root.querySelectorAll('[data-olsd-tab]').forEach(btn=>btn.addEventListener('click',()=>tab(btn.getAttribute('data-olsd-tab'))));
+$('olsdGenerate').addEventListener('click',build);
+$('olsdToExport').addEventListener('click',()=>tab('export'));
+$('olsdEditBrief').addEventListener('click',()=>tab('brief'));
+$('olsdCopyMaster').addEventListener('click',async()=>{if(!current){alert('Generate a storyboard first.');return;}await copyText(current.master,'Master prompt');});
+$('olsdDownloadMd').addEventListener('click',()=>{const md=exportMarkdown();if(md)download('officerlab-scene-blueprint.md','text/markdown;charset=utf-8',md);});
+$('olsdDownloadJson').addEventListener('click',()=>{if(!current){alert('Generate a storyboard first.');return;}download('officerlab-scene-blueprint.json','application/json;charset=utf-8',JSON.stringify(current,null,2));});
+root.addEventListener('click',async e=>{
+ const btn=e.target.closest('[data-olsd-copy-scene]');if(!btn||!current)return;
+ const scene=current.scenes[Number(btn.getAttribute('data-olsd-copy-scene'))];if(scene)await copyText(scene.prompt,'Scene prompt');
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&root.classList.contains('open'))close();});
+restoreDraft();
+})();
+</script>
+
 </body>
 </html>
