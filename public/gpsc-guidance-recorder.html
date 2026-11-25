@@ -174,6 +174,7 @@ textarea{min-height:150px;resize:vertical;line-height:1.6}
 .progress-bar-settings{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px;padding:8px 9px;border:1px solid var(--line);border-radius:9px;background:#0d141e}
 .progress-bar-settings input[type=number]{width:76px}
 .progress-bar-settings .progress-note{flex:1 1 100%;font-size:10px;color:var(--muted);line-height:1.4}
+.slide-continuous-options .progress-note{flex:1 1 100%;font-size:10px;color:var(--muted);line-height:1.4}
 @media(max-width:520px){.slide-animation-options .transition-picker{flex:1 1 100%}.slide-animation-options select{flex:1;width:100%}}
 .error{display:none;background:#f8514920;border:1px solid #f8514980;color:#ffb3ae;border-radius:10px;padding:10px;margin-top:10px;font-size:12px}.conversion-note{display:none;background:#2563eb18;border:1px solid #60a5fa66;color:#bfdbfe;border-radius:10px;padding:10px;margin-top:10px;font-size:12px;line-height:1.5}.conversion-note.on{display:block}
 .hint{font-size:11px;color:var(--muted);line-height:1.5;margin:7px 0 0}
@@ -926,6 +927,17 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
       <label for="faceOpacity">Face Cam opacity <span id="faceOpacityVal" class="tool-val">100%</span></label>
       <input type="range" id="faceOpacity" min="0" max="100" value="100">
     </div>
+    <div class="tool-row" style="margin-top:8px;align-items:center">
+      <label class="check"><input id="faceCropEnabled" type="checkbox"> Face cut / tight crop</label>
+      <label for="faceCropZoom">Crop zoom <span id="faceCropZoomValue" class="tool-val">145%</span></label>
+      <input id="faceCropZoom" type="range" min="100" max="250" step="5" value="145" disabled>
+      <label for="faceCropX">Horizontal focus <span id="faceCropXValue" class="tool-val">50%</span></label>
+      <input id="faceCropX" type="range" min="0" max="100" step="1" value="50" disabled>
+      <label for="faceCropY">Vertical focus <span id="faceCropYValue" class="tool-val">42%</span></label>
+      <input id="faceCropY" type="range" min="0" max="100" step="1" value="42" disabled>
+      <button id="faceCropReset" type="button">Reset crop</button>
+    </div>
+    <p class="hint">Face cut crops the camera frame to a tighter close-up. Adjust horizontal and vertical focus to keep your face centred; this is a manual crop, not AI background removal.</p>
     <div class="layout-row" style="margin-top:8px;align-items:end">
       <label class="check"><input id="watermarkEnabled" type="checkbox"> Add recording watermark</label>
       <div class="field" style="flex:1;min-width:150px;max-width:240px"><label for="watermarkText">Watermark text</label><input id="watermarkText" type="text" maxlength="32" value="OFFICERLAB" placeholder="OFFICERLAB"></div>
@@ -1004,11 +1016,23 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
           <option value="crossfade" selected>Crossfade · 500ms</option>
           <option value="slide-left">Slide Left · 450ms</option>
           <option value="push-left">Push Left · 550ms</option>
+          <option value="slide-up">Slide Up · 650ms</option>
+          <option value="slide-down">Slide Down · 650ms</option>
           <option value="wipe">Wipe · 400ms</option>
           <option value="zoom">Zoom · 600ms</option>
         </select>
       </label>
       <label class="check"><input id="slideMotionEnabled" type="checkbox"> Ken Burns · gentle pan + zoom (image slides only)</label>
+    </div>
+    <div class="slide-animation-options slide-continuous-options">
+      <label class="check"><input id="slideContinuousEnabled" type="checkbox"> Continuous vertical slide movement</label>
+      <label class="transition-picker" for="slideContinuousInterval">Advance every
+        <select id="slideContinuousInterval" aria-label="Seconds per slide">
+          <option value="3">3 sec</option><option value="5" selected>5 sec</option><option value="8">8 sec</option><option value="10">10 sec</option><option value="15">15 sec</option><option value="20">20 sec</option><option value="30">30 sec</option>
+        </select>
+      </label>
+      <label class="check"><input id="slideContinuousLoop" type="checkbox" checked> Loop presentation</label>
+      <span id="slideContinuousStatus" class="progress-note">Automatically moves to the next slide vertically; choose Slide Up or Slide Down above.</span>
     </div>
     <div class="progress-bar-settings">
       <label class="check"><input id="progressBarEnabled" type="checkbox"> Include canvas progress bar</label>
@@ -1107,14 +1131,20 @@ const muteBtn=$('muteBtn'),meterFill=$('meterFill'),micStatus=$('micStatus'),bad
 const micTestStart=$('micTestStart'),micTestStop=$('micTestStop'),micTestCountdown=$('micTestCountdown'),micTestStatus=$('micTestStatus'),micTestPlayback=$('micTestPlayback');
 let micTestRecorder=null,micTestChunks=[],micTestTimer=null;
 
-const slidesInput=$('slidesInput'),slideDisplayMode=$('slideDisplayMode'),slideTransitionsEnabled=$('slideTransitionsEnabled'),slideTransitionType=$('slideTransitionType'),slideMotionEnabled=$('slideMotionEnabled'),progressBarEnabled=$('progressBarEnabled'),progressDurationMinutes=$('progressDurationMinutes'),progressBarHint=$('progressBarHint'),prevSlide=$('prevSlide'),nextSlide=$('nextSlide'),slideCount=$('slideCount'),clearSlides=$('clearSlides'),slideJump=$('slideJump'),slideTotal=$('slideTotal'),goSlide=$('goSlide');
+const slidesInput=$('slidesInput'),slideDisplayMode=$('slideDisplayMode'),slideTransitionsEnabled=$('slideTransitionsEnabled'),slideTransitionType=$('slideTransitionType'),slideMotionEnabled=$('slideMotionEnabled'),slideContinuousEnabled=$('slideContinuousEnabled'),slideContinuousInterval=$('slideContinuousInterval'),slideContinuousLoop=$('slideContinuousLoop'),slideContinuousStatus=$('slideContinuousStatus'),progressBarEnabled=$('progressBarEnabled'),progressDurationMinutes=$('progressDurationMinutes'),progressBarHint=$('progressBarHint'),prevSlide=$('prevSlide'),nextSlide=$('nextSlide'),slideCount=$('slideCount'),clearSlides=$('clearSlides'),slideJump=$('slideJump'),slideTotal=$('slideTotal'),goSlide=$('goSlide');
 const motionGraphicInput=$('motionGraphicInput'),motionGraphicSelect=$('motionGraphicSelect'),motionGraphicEnabled=$('motionGraphicEnabled'),motionGraphicPosition=$('motionGraphicPosition'),motionGraphicSize=$('motionGraphicSize'),motionGraphicSizeVal=$('motionGraphicSizeVal'),motionGraphicOpacity=$('motionGraphicOpacity'),motionGraphicOpacityVal=$('motionGraphicOpacityVal'),motionGraphicStatus=$('motionGraphicStatus'),clearMotionGraphics=$('clearMotionGraphics');
 const motionGraphicStartAt=$('motionGraphicStartAt'),motionGraphicDuration=$('motionGraphicDuration'),motionGraphicPreviewAt=$('motionGraphicPreviewAt'),motionGraphicTimingHint=$('motionGraphicTimingHint');const motionGraphicList=$('motionGraphicList'),motionGraphicCount=$('motionGraphicCount');
 try{
  const crossfade=localStorage.getItem('officerlab-slide-crossfade'),motion=localStorage.getItem('officerlab-slide-motion'),transition=localStorage.getItem('officerlab-slide-transition-type');
  if(crossfade!==null)slideTransitionsEnabled.checked=crossfade==='1';
  if(motion!==null)slideMotionEnabled.checked=motion==='1';
- if(['crossfade','slide-left','push-left','wipe','zoom'].includes(transition))slideTransitionType.value=transition;
+ if(['crossfade','slide-left','push-left','slide-up','slide-down','wipe','zoom'].includes(transition))slideTransitionType.value=transition;
+ const continuous=localStorage.getItem('officerlab-slide-continuous');
+ if(continuous!==null)slideContinuousEnabled.checked=continuous==='1';
+ const continuousInterval=localStorage.getItem('officerlab-slide-continuous-interval');
+ if(['3','5','8','10','15','20','30'].includes(continuousInterval))slideContinuousInterval.value=continuousInterval;
+ const continuousLoop=localStorage.getItem('officerlab-slide-continuous-loop');
+ if(continuousLoop!==null)slideContinuousLoop.checked=continuousLoop==='1';
  progressBarEnabled.checked=localStorage.getItem('officerlab-progress-enabled')==='1';
  const progressMinutes=localStorage.getItem('officerlab-progress-minutes');
  if(progressMinutes!==null&&Number(progressMinutes)>=1&&Number(progressMinutes)<=360)progressDurationMinutes.value=progressMinutes;
@@ -1125,7 +1155,7 @@ const fsPrevSlide=$('fsPrevSlide'),fsNextSlide=$('fsNextSlide'),fsSlideJump=$('f
 const slideAdjustToggle=$('slideAdjustToggle'),slideAdjustPanel=$('slideAdjustPanel'),slideAdjustReset=$('slideAdjustReset'),slideZoom=$('slideZoom'),slideVertical=$('slideVertical'),slideZoomValue=$('slideZoomValue'),slideVerticalValue=$('slideVerticalValue');
 try{const savedZoom=Number(localStorage.getItem('officerlab-slide-zoom')),savedVertical=Number(localStorage.getItem('officerlab-slide-vertical'));if(Number.isFinite(savedZoom)&&savedZoom>=55&&savedZoom<=100)slideZoom.value=String(savedZoom);if(Number.isFinite(savedVertical)&&savedVertical>=-25&&savedVertical<=25)slideVertical.value=String(savedVertical);}catch{}
 const annotationFab=$('annotationFab'),toolTray=$('toolTray'),pipHandle=$('pipHandle'),pipDragBar=$('pipDragBar');
-const faceSize=$('faceSize'),faceHeight=$('faceHeight'),faceShape=$('faceShape'),faceOpacity=$('faceOpacity'),fsCameraOpacity=$('fsCameraOpacity'),fsCameraOpacityToggle=$('fsCameraOpacityToggle'),fsCameraOpacityPanel=$('fsCameraOpacityPanel'),fsCameraOpacityValue=$('fsCameraOpacityValue'),safeGuides=$('safeGuides'),mirrorOutput=$('mirrorOutput'),outputRatio=$('outputRatio');
+const faceSize=$('faceSize'),faceHeight=$('faceHeight'),faceShape=$('faceShape'),faceOpacity=$('faceOpacity'),faceCropEnabled=$('faceCropEnabled'),faceCropZoom=$('faceCropZoom'),faceCropZoomValue=$('faceCropZoomValue'),faceCropX=$('faceCropX'),faceCropXValue=$('faceCropXValue'),faceCropY=$('faceCropY'),faceCropYValue=$('faceCropYValue'),faceCropReset=$('faceCropReset'),fsCameraOpacity=$('fsCameraOpacity'),fsCameraOpacityToggle=$('fsCameraOpacityToggle'),fsCameraOpacityPanel=$('fsCameraOpacityPanel'),fsCameraOpacityValue=$('fsCameraOpacityValue'),safeGuides=$('safeGuides'),mirrorOutput=$('mirrorOutput'),outputRatio=$('outputRatio');
 const lowerThirdName=$('lowerThirdName'),lowerThirdTitle=$('lowerThirdTitle'),lowerThirdPosition=$('lowerThirdPosition'),lowerThirdEnabled=$('lowerThirdEnabled');
 const lowerThirdAnimation=$('lowerThirdAnimation'),lowerThirdSize=$('lowerThirdSize'),lowerThirdSizeVal=$('lowerThirdSizeVal'),lowerThirdOpacity=$('lowerThirdOpacity'),lowerThirdOpacityVal=$('lowerThirdOpacityVal');
 const brandAccent=$('brandAccent'),brandPanel=$('brandPanel'),brandFont=$('brandFont'),brandLogoFile=$('brandLogoFile'),brandLogoRemove=$('brandLogoRemove'),brandLogoStatus=$('brandLogoStatus');
@@ -1141,7 +1171,7 @@ let audioContext=null,audioDestination=null,micGain=null,screenGain=null,micAnal
 
 let layout='pip',pip={x:.77,y:.73},activeTool='pen',drawing=false,slides=[],slideIndex=0,pdfDoc=null,slideSource=null,slideUrls=[],presentationSavedOutputRatio=null;
 let motionGraphics=[],activeMotionGraphicIndex=-1,lastInkMidpoint=null;
-let slideLoadVersion=0,slideTransitionFromFrame=null,slideTransitionToFrame=null,slideTransitionStartedAt=0,slideMotionStartedAt=performance.now();
+let slideLoadVersion=0,slideTransitionFromFrame=null,slideTransitionToFrame=null,slideTransitionStartedAt=0,slideMotionStartedAt=performance.now(),slideContinuousStartedAt=performance.now(),slideContinuousPending=false;
 let sessionId=null,chunkIndex=0,writeQueue=Promise.resolve(),localChunks=[],recording=false,paused=false,recordingStarting=false,stoppingRecording=false,startedAt=0,recordElapsedMs=0,recordSegmentStartedAt=0,testTimeout=null,outroStartedAt=0,outroTimer=null,legacyCaptureActive=false,legacyConverterReady=false;
 let saved=[],recoveryItems=[],activeMediaElement=null,mediaSessionReady=false;
 let teleprompterRAF=0,teleprompterLastFrame=0,lastInkPoint=null,lastInkPointerId=null,lowerThirdStartedAt=0,lowerThirdRecordingStartedAt=0;
@@ -1244,7 +1274,7 @@ function syncStagePresenterDock(){
  });
 }
 function updateControls(){
- const mode=captureMode.value;updateProgressBarHint();slideTransitionsEnabled.disabled=recording||recordingStarting;slideTransitionType.disabled=recording||recordingStarting||!slideTransitionsEnabled.checked;slideMotionEnabled.disabled=recording||recordingStarting;inkCanvas.style.opacity=recording?'0':'1';captureMode.disabled=recording||recordingStarting;quality.disabled=recording||recordingStarting;outputRatio.disabled=recording||recordingStarting;recordBtn.disabled=recording||recordingStarting||!baseAvailable()||((mode==='screen-camera'||mode==='camera-slides')&&!cameraStream);
+ const mode=captureMode.value;updateProgressBarHint();slideTransitionsEnabled.disabled=recording||recordingStarting;slideTransitionType.disabled=recording||recordingStarting||!slideTransitionsEnabled.checked;slideMotionEnabled.disabled=recording||recordingStarting;slideContinuousEnabled.disabled=recording||recordingStarting;slideContinuousInterval.disabled=recording||recordingStarting||!slideContinuousEnabled.checked;slideContinuousLoop.disabled=recording||recordingStarting||!slideContinuousEnabled.checked;inkCanvas.style.opacity=recording?'0':'1';captureMode.disabled=recording||recordingStarting;quality.disabled=recording||recordingStarting;outputRatio.disabled=recording||recordingStarting;recordBtn.disabled=recording||recordingStarting||!baseAvailable()||((mode==='screen-camera'||mode==='camera-slides')&&!cameraStream);
  let startReason='';
  if(mode==='camera'&&!cameraStream)startReason='Start Camera first.';
  else if(mode==='camera-slides'&&!cameraStream)startReason='Start Camera and upload slides first.';
@@ -1267,6 +1297,14 @@ function updateControls(){
  syncStagePresenterDock();
 }
 function pipDimensions(){let w=Number(faceSize.value)/100,h=Number(faceHeight.value)/100;if(faceShape.value==='circle')h=w*canvas.width/canvas.height;return {w,h};}
+function updateFaceCropControls(){
+ faceCropZoom.disabled=!faceCropEnabled.checked;
+ faceCropX.disabled=!faceCropEnabled.checked;
+ faceCropY.disabled=!faceCropEnabled.checked;
+ faceCropZoomValue.textContent=faceCropZoom.value+'%';
+ faceCropXValue.textContent=faceCropX.value+'%';
+ faceCropYValue.textContent=faceCropY.value+'%';
+}
 function updatePipHandle(){
  const d=pipDimensions();pip.x=Math.max(0,Math.min(1-d.w,pip.x));pip.y=Math.max(0,Math.min(1-d.h,pip.y));
  pipHandle.style.left=(pip.x*100)+'%';pipHandle.style.top=(pip.y*100)+'%';pipHandle.style.width=(d.w*100)+'%';pipHandle.style.height=(d.h*100)+'%';
@@ -1313,6 +1351,19 @@ function cover(ctx,video,x,y,w,h,mirror=false){
  if(!video||!video.videoWidth||!video.videoHeight)return;
  const scale=Math.max(w/video.videoWidth,h/video.videoHeight),sw=w/scale,sh=h/scale,sx=(video.videoWidth-sw)/2,sy=(video.videoHeight-sh)/2;
  ctx.save();if(mirror){ctx.translate(x+w,y);ctx.scale(-1,1);ctx.drawImage(video,sx,sy,sw,sh,0,0,w,h)}else ctx.drawImage(video,sx,sy,sw,sh,x,y,w,h);ctx.restore();
+}
+function coverCameraFrame(ctx,video,x,y,w,h,mirror=false){
+ if(!video||!video.videoWidth||!video.videoHeight)return;
+ const enabled=!!faceCropEnabled.checked,zoom=enabled?Math.max(1,Math.min(2.5,Number(faceCropZoom.value)/100||1)):1;
+ const scale=Math.max(w/video.videoWidth,h/video.videoHeight)*zoom,sw=w/scale,sh=h/scale;
+ const maxX=Math.max(0,video.videoWidth-sw),maxY=Math.max(0,video.videoHeight-sh);
+ const focusX=enabled?Math.max(0,Math.min(1,(Number(faceCropX.value)||50)/100)):.5;
+ const focusY=enabled?Math.max(0,Math.min(1,(Number(faceCropY.value)||42)/100)):.5;
+ const sx=maxX*focusX,sy=maxY*focusY;
+ ctx.save();
+ if(mirror){ctx.translate(x+w,y);ctx.scale(-1,1);ctx.drawImage(video,sx,sy,sw,sh,0,0,w,h);}
+ else ctx.drawImage(video,sx,sy,sw,sh,x,y,w,h);
+ ctx.restore();
 }
 function contain(ctx,source,x,y,w,h){
  if(!source)return;
@@ -1406,13 +1457,15 @@ const SLIDE_TRANSITION_PRESETS={
  crossfade:{duration:500,easing:easeInOutCubic},
  'slide-left':{duration:450,easing:easeOutCubic},
  'push-left':{duration:550,easing:easeInOutCubic},
+ 'slide-up':{duration:650,easing:easeInOutCubic},
+ 'slide-down':{duration:650,easing:easeInOutCubic},
  wipe:{duration:400,easing:easeOutCubic},
  zoom:{duration:600,easing:easeInOutCubic}
 };
-function drawTransitionFrame(ctx,frame,x=0,alpha=1,scale=1){
+function drawTransitionFrame(ctx,frame,x=0,alpha=1,scale=1,y=0){
  const W=canvas.width,H=canvas.height,w=W*scale,h=H*scale;
  ctx.save();ctx.globalAlpha=alpha;
- ctx.drawImage(frame,(W-w)/2+x,(H-h)/2,w,h);
+ ctx.drawImage(frame,(W-w)/2+x,(H-h)/2+y,w,h);
  ctx.restore();
 }
 function drawSlideTransition(ctx){
@@ -1432,6 +1485,14 @@ function drawSlideTransition(ctx){
   case 'push-left':
    drawTransitionFrame(ctx,slideTransitionFromFrame,-W*t);
    drawTransitionFrame(ctx,slideTransitionToFrame,W*(1-t));
+   break;
+  case 'slide-up':
+   drawTransitionFrame(ctx,slideTransitionFromFrame,0,1,1,-H*t);
+   drawTransitionFrame(ctx,slideTransitionToFrame,0,1,1,H*(1-t));
+   break;
+  case 'slide-down':
+   drawTransitionFrame(ctx,slideTransitionFromFrame,0,1,1,H*t);
+   drawTransitionFrame(ctx,slideTransitionToFrame,0,1,1,-H*(1-t));
    break;
   case 'wipe':
    ctx.drawImage(slideTransitionFromFrame,0,0,W,H);
@@ -1544,7 +1605,7 @@ function drawPip(x,y,w,h){
  ctx.save();ctx.globalAlpha=Number(faceOpacity.value)/100;
  if(shape==='circle'||shape==='oval'||shape==='rounded')tracePipFrame(ctx,shape,bx,by,bw,bh);
  if(shape==='circle'||shape==='oval'||shape==='rounded')ctx.clip();
- cover(ctx,cameraVideo,bx,by,bw,bh,mirrorOutput.checked);ctx.restore();
+ coverCameraFrame(ctx,cameraVideo,bx,by,bw,bh,mirrorOutput.checked);ctx.restore();
  const edge=Math.max(1.5,canvas.width/900),alpha=Number(faceOpacity.value)/100;
  ctx.save();ctx.globalAlpha=alpha;ctx.lineJoin='round';
  tracePipFrame(ctx,shape,bx,by,bw,bh);ctx.strokeStyle='rgba(0,0,0,.72)';ctx.lineWidth=edge*3;ctx.shadowColor='rgba(0,0,0,.72)';ctx.shadowBlur=edge*5;ctx.stroke();
@@ -1684,6 +1745,31 @@ function drawBrandTitleCard(kind,elapsedMs){
  ctx.fillStyle='#ffffff88';ctx.font='650 '+Math.max(11,Math.round(W*.012))+'px system-ui,sans-serif';ctx.fillText(intro?'LEARN  •  PREPARE  •  LEAD':'OFFICERLAB  •  LECTURE STUDIO',W/2,H*.88,W*.7);
  ctx.restore();
 }
+function tickContinuousSlideMovement(){
+ if(!slideContinuousEnabled.checked)return;
+ const now=performance.now();
+ if(!slides.length||!slideSource||screenStream||captureMode.value==='camera'||layout==='split'||(recording&&paused)){
+  slideContinuousStartedAt=now;return;
+ }
+ if(slideContinuousPending||now-slideContinuousStartedAt<Math.max(2,Math.min(30,Number(slideContinuousInterval.value)||5))*1000)return;
+ if(slides.length<2){slideContinuousStatus.textContent='Add at least two slides to use continuous movement.';slideContinuousStartedAt=now;return;}
+ let next=slideIndex+1;
+ if(next>=slides.length){
+  if(slideContinuousLoop.checked)next=0;
+  else{
+   slideContinuousEnabled.checked=false;
+   slideContinuousStatus.textContent='Reached the final slide. Continuous movement stopped.';
+   saveSlideAnimationSettings();
+   return;
+  }
+ }
+ slideContinuousPending=true;
+ showSlide(next).catch(error=>{
+  slideContinuousEnabled.checked=false;
+  slideContinuousStatus.textContent='Automatic movement stopped: '+(error?.message||'slide could not be loaded.');
+  saveSlideAnimationSettings();
+ }).finally(()=>{slideContinuousPending=false;});
+}
 function drawScene(){
  if(recording&&stoppingRecording&&outroStartedAt&&outroCardEnabled.checked){
   drawBrandTitleCard('outro',performance.now()-outroStartedAt);drawProgressBar(ctx);drawRAF=requestAnimationFrame(drawScene);return;
@@ -1691,16 +1777,17 @@ function drawScene(){
  if(recording&&introCardEnabled.checked&&recordingElapsedMs()<Number(introCardDuration.value)*1000){
   drawBrandTitleCard('intro',recordingElapsedMs());drawProgressBar(ctx);drawRAF=requestAnimationFrame(drawScene);return;
  }
+ tickContinuousSlideMovement();
  ctx.fillStyle='#05080d';ctx.fillRect(0,0,canvas.width,canvas.height);
  const mode=captureMode.value;
  const showCamera=mode!=='screen'&&!!cameraStream;
  const source=(mode==='camera')?cameraVideo:(screenStream?screenVideo:slideSource);
  if(mode==='camera'||(layout==='face'&&showCamera)){
-  if(cameraStream)cover(ctx,cameraVideo,0,0,canvas.width,canvas.height,mirrorOutput.checked);
+  if(cameraStream)coverCameraFrame(ctx,cameraVideo,0,0,canvas.width,canvas.height,mirrorOutput.checked);
  }else if(layout==='split'&&showCamera){
   ctx.fillStyle='#080b10';ctx.fillRect(0,0,canvas.width,canvas.height);
   if(source&&source!==cameraVideo){if(source===screenVideo&&screenStream)containScreenWithFill(ctx,source,0,0,canvas.width*.5,canvas.height);else drawSlideWithMode(ctx,source,0,0,canvas.width*.5,canvas.height);}
-  cover(ctx,cameraVideo,canvas.width*.5,0,canvas.width*.5,canvas.height,mirrorOutput.checked);
+  coverCameraFrame(ctx,cameraVideo,canvas.width*.5,0,canvas.width*.5,canvas.height,mirrorOutput.checked);
  }else{
   if(source===screenVideo&&screenStream)containScreenWithFill(ctx,screenVideo,0,0,canvas.width,canvas.height);
   else if(source&&source!==cameraVideo){
@@ -1882,7 +1969,7 @@ async function showSlide(index){
   await page.render({canvasContext:c.getContext('2d'),viewport}).promise;nextSource=c;
  }else nextSource=slides[index].image;
  if(request!==slideLoadVersion)return;
- slideIndex=index;slideSource=nextSource;slideMotionStartedAt=performance.now();clearSlideTransition();
+ slideIndex=index;slideSource=nextSource;slideMotionStartedAt=performance.now();slideContinuousStartedAt=performance.now();clearSlideTransition();
  if(slideTransitionsEnabled.checked&&previousSource&&previousIndex!==index&&!screenStream&&captureMode.value!=='camera'&&layout!=='split'){
   try{slideTransitionFromFrame=makeSlideTransitionFrame(previousSource);slideTransitionToFrame=makeSlideTransitionFrame(nextSource);slideTransitionStartedAt=performance.now();}
   catch(e){clearSlideTransition();console.warn('Slide crossfade unavailable; using a clean cut.',e);}
@@ -2557,17 +2644,37 @@ clearMotionGraphics.addEventListener('click',clearMotionGraphicAttachments);
 slideDisplayMode.onchange=()=>{clearSlideTransition();try{localStorage.setItem('officerlab-slide-display-mode',slideDisplayMode.value);}catch{}syncVisuals();};
 function saveSlideAnimationSettings(){
  clearSlideTransition();slideMotionStartedAt=performance.now();
+ if(slideContinuousEnabled.checked&&!slideTransitionsEnabled.checked)slideTransitionsEnabled.checked=true;
  slideTransitionType.disabled=!slideTransitionsEnabled.checked;
+ slideContinuousInterval.disabled=!slideContinuousEnabled.checked||recording||recordingStarting;
+ slideContinuousLoop.disabled=!slideContinuousEnabled.checked||recording||recordingStarting;
+ slideContinuousStartedAt=performance.now();
  try{
   localStorage.setItem('officerlab-slide-crossfade',slideTransitionsEnabled.checked?'1':'0');
   localStorage.setItem('officerlab-slide-motion',slideMotionEnabled.checked?'1':'0');
   localStorage.setItem('officerlab-slide-transition-type',slideTransitionType.value);
+  localStorage.setItem('officerlab-slide-continuous',slideContinuousEnabled.checked?'1':'0');
+  localStorage.setItem('officerlab-slide-continuous-interval',slideContinuousInterval.value);
+  localStorage.setItem('officerlab-slide-continuous-loop',slideContinuousLoop.checked?'1':'0');
  }catch{}
+ slideContinuousStatus.textContent=slideContinuousEnabled.checked
+  ?'Continuous movement is on · '+slideContinuousInterval.value+' seconds per slide · '+(slideContinuousLoop.checked?'loop enabled':'stops at the final slide')+'.'
+  :'Continuous movement is off. You can still change slides manually.';
+ updateControls();
  syncVisuals();
 }
 slideTransitionsEnabled.addEventListener('change',saveSlideAnimationSettings);
 slideTransitionType.addEventListener('change',saveSlideAnimationSettings);
 slideMotionEnabled.addEventListener('change',saveSlideAnimationSettings);
+slideContinuousEnabled.addEventListener('change',()=>{
+ if(slideContinuousEnabled.checked){
+  slideTransitionsEnabled.checked=true;
+  slideTransitionType.value='slide-up';
+ }
+ saveSlideAnimationSettings();
+});
+slideContinuousInterval.addEventListener('change',saveSlideAnimationSettings);
+slideContinuousLoop.addEventListener('change',saveSlideAnimationSettings);
 function saveProgressBarSettings(){
  try{
   localStorage.setItem('officerlab-progress-enabled',progressBarEnabled.checked?'1':'0');
@@ -2605,6 +2712,10 @@ document.querySelectorAll('[data-position]').forEach(b=>b.onclick=()=>movePip(b.
 faceSize.oninput=()=>{ $('faceSizeVal').textContent=faceSize.value+'%';updatePipHandle();};
 faceHeight.oninput=()=>{ $('faceHeightVal').textContent=faceHeight.value+'%';updatePipHandle();};
 faceShape.onchange=()=>{updatePipHandle();};
+faceCropEnabled.addEventListener('change',()=>{updateFaceCropControls();syncVisuals();});
+[faceCropZoom,faceCropX,faceCropY].forEach(el=>el.addEventListener('input',()=>{updateFaceCropControls();syncVisuals();}));
+faceCropReset.addEventListener('click',()=>{faceCropEnabled.checked=false;faceCropZoom.value='145';faceCropX.value='50';faceCropY.value='42';updateFaceCropControls();syncVisuals();});
+updateFaceCropControls();
 function syncCameraOpacity(value){
  const v=Math.max(0,Math.min(100,Number(value)||0));
  faceOpacity.value=String(v);fsCameraOpacity.value=String(v);
