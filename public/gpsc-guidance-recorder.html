@@ -1775,16 +1775,6 @@ function tickContinuousSlideMovement(){
  }).finally(()=>{slideContinuousPending=false;});
 }
 
-// Exam Focus Mode — composited overlay, included in the canvas recording
-const examFocusType=$('examFocusType'),examFocusTitle=$('examFocusTitle'),examFocusBody=$('examFocusBody'),examFocusPosition=$('examFocusPosition'),examFocusAutoHide=$('examFocusAutoHide'),examFocusDuration=$('examFocusDuration');
-let examFocusVisible=false,examFocusStartedAt=0,examFocusSaved={};
-const examFocusTemplates={important:{label:'⭐ IMPORTANT FACT',title:'Important Fact',body:''},alert:{label:'⚠ EXAM ALERT',title:'Exam Alert',body:''},article:{label:'📜 ARTICLE / SECTION',title:'Article / Section',body:''},pyq:{label:'📝 PREVIOUS YEAR QUESTION',title:'PYQ',body:''},remember:{label:'🧠 REMEMBER THIS',title:'Remember This',body:''},formula:{label:'📐 FORMULA / RULE',title:'Formula / Rule',body:''}};
-function examFocusSave(){try{localStorage.setItem('officerlab-exam-focus-settings',JSON.stringify({type:examFocusType.value,title:examFocusTitle.value,body:examFocusBody.value,position:examFocusPosition.value,autoHide:examFocusAutoHide.checked,duration:examFocusDuration.value}));}catch{}}
-function examFocusRestore(){try{const v=JSON.parse(localStorage.getItem('officerlab-exam-focus-settings')||'{}');if(v.type&&examFocusTemplates[v.type])examFocusType.value=v.type;if(v.title!==undefined)examFocusTitle.value=v.title;if(v.body!==undefined)examFocusBody.value=v.body;if(['top','center','bottom'].includes(v.position))examFocusPosition.value=v.position;if(v.autoHide!==undefined)examFocusAutoHide.checked=!!v.autoHide;if(['5','10','15','20','30'].includes(v.duration))examFocusDuration.value=v.duration;}catch{}}
-function examFocusShowNow(){examFocusVisible=true;examFocusStartedAt=performance.now();examFocusSave();if(!drawRAF)startDraw();}
-function examFocusClearNow(){examFocusVisible=false;examFocusStartedAt=0;if(!drawRAF)startDraw();}
-
-
 function drawScene(){
  if(recording&&stoppingRecording&&outroStartedAt&&outroCardEnabled.checked){
   drawBrandTitleCard('outro',performance.now()-outroStartedAt);drawProgressBar(ctx);drawRAF=requestAnimationFrame(drawScene);return;
