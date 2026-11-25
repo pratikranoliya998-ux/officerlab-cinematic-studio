@@ -1046,29 +1046,8 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
     <p class="hint" id="slideDisplayHint">Smart Fit keeps the complete slide readable and fills spare space with a soft background. Fit Entire Slide adds dark margins when needed. Fill Screen fills the frame but may crop slide edges. Choose one restrained canvas transition per lesson. Optional Ken Burns adds slow alternating pan and zoom to image slides only; PDF pages and tables remain still.</p>
   </div>
   </div></details>
-<details class="setup-compartment" id="scriptSyncCompartment">
-<summary><span class="compartment-number">✎</span><span><strong>Script-to-Slide Sync</strong><small>Slide-matched narration notes · optionally recorded as a cue overlay</small></span><span class="compartment-chevron">⌄</span></summary><div class="compartment-body">
-<section class="card"><h2>Slide narration cue editor</h2>
-<p class="hint">Format: put <code>--- Slide 1 ---</code> on a line, followed by your narration notes. Repeat for each slide. Cues follow the active slide.</p>
-<textarea id="scriptSyncText" rows="10" style="width:100%" placeholder="--- Slide 1 ---&#10;Explain the core concept and definition...&#10;&#10;--- Slide 2 ---&#10;Give an example..."></textarea>
-<div class="tool-row"><label class="check"><input id="scriptSyncOverlayEnabled" type="checkbox"> Show active-slide cue on recorded video</label></div>
-<div class="tool-row"><label class="check"><input id="scriptSyncPreviewEnabled" type="checkbox" checked> Show cue in recorder preview</label></div>
-<div class="tool-row"><button id="scriptSyncShowBtn" type="button">Show active cue</button><button id="scriptSyncHideBtn" type="button">Hide cue</button><button id="scriptSyncClearBtn" type="button">Clear script</button></div>
-<div id="scriptSyncStatus" class="progress-note">Upload slides, then write cue blocks matching slide numbers.</div>
-<div id="scriptSyncCurrent" style="margin-top:8px;padding:10px;background:#101a2a;border:1px solid #b88b37;border-radius:10px;color:#f1e3bf;white-space:pre-wrap">No cue for the active slide.</div>
-</section></div></details>
-\n<details class="setup-compartment" id="examFocusCompartment">
-<summary><span class="compartment-number">★</span><span><strong>Exam Focus Mode</strong><small>Exam alerts, facts, PYQs and recall prompts — recorded on canvas</small></span><span class="compartment-chevron">⌄</span></summary><div class="compartment-body">
-<section class="card" style="margin-top:10px">
-<h2>Exam Focus Overlay</h2>
-<div class="tool-row"><label for="examFocusType">Focus card</label><select id="examFocusType"><option value="important">⭐ IMPORTANT FACT</option><option value="alert">⚠ EXAM ALERT</option><option value="article">📜 ARTICLE / SECTION</option><option value="pyq">📝 PYQ</option><option value="remember">🧠 REMEMBER THIS</option><option value="formula">📐 FORMULA / RULE</option></select></div>
-<div class="tool-row"><label for="examFocusTitle">Heading (editable)</label><input id="examFocusTitle" type="text" placeholder="e.g. Article 21 — Right to Life"></div>
-<div class="tool-row"><label for="examFocusBody">Explanation / key point</label><textarea id="examFocusBody" rows="3" placeholder="Type the exam takeaway, question or short explanation…"></textarea></div>
-<div class="tool-row"><label for="examFocusPosition">Position</label><select id="examFocusPosition"><option value="top">Top · Banner</option><option value="center" selected>Center · Card</option><option value="bottom">Bottom · Card</option></select><label class="check"><input id="examFocusAutoHide" type="checkbox"> Auto-hide after</label><select id="examFocusDuration"><option value="5">5 sec</option><option value="10" selected>10 sec</option><option value="15">15 sec</option><option value="20">20 sec</option><option value="30">30 sec</option></select></div>
-<div class="device-actions"><button id="examFocusShow" class="primary">▶ Show on recording</button><button id="examFocusClear" class="danger">✕ Clear overlay</button></div>
-<div class="layout-row" style="margin-top:8px"><button data-focus-preset="important">Important Fact</button><button data-focus-preset="alert">Exam Alert</button><button data-focus-preset="article">Article / Section</button><button data-focus-preset="pyq">PYQ</button><button data-focus-preset="remember">Remember</button></div>
-<p class="hint">This overlay is composited directly into the lecture canvas and therefore appears in the recording and MP4 export. It is not a separate editor.</p>
-</section></div></details>
+
+\n
 <details class="setup-compartment" id="motionCompartment">
 <summary><span class="compartment-number">04</span><span><strong>Motion graphics &amp; overlays</strong><small>Add several visuals and schedule each one</small></span><span class="compartment-chevron">⌄</span></summary><div class="compartment-body">
   <section class="motion-graphic-panel card" id="motionGraphicPanel">
@@ -1835,7 +1814,7 @@ function drawScene(){
    drawPip(canvas.width*pip.x,canvas.height*pip.y,w,hh);
   }
  }
- drawMotionGraphic(ctx);\n drawExamFocusOverlay(ctx);\n drawScriptSyncCue(ctx);
+ drawMotionGraphic(ctx);\n \n 
  if(recording&&inkCanvas.style.display!=='none'&&mode!=='camera')ctx.drawImage(inkCanvas,0,0,canvas.width,canvas.height);
  drawGuides();
  drawLowerThird();
