@@ -1357,8 +1357,8 @@ function coverCameraFrame(ctx,video,x,y,w,h,mirror=false){
  const enabled=!!faceCropEnabled.checked,zoom=enabled?Math.max(1,Math.min(2.5,Number(faceCropZoom.value)/100||1)):1;
  const scale=Math.max(w/video.videoWidth,h/video.videoHeight)*zoom,sw=w/scale,sh=h/scale;
  const maxX=Math.max(0,video.videoWidth-sw),maxY=Math.max(0,video.videoHeight-sh);
- const focusX=enabled?Math.max(0,Math.min(1,(Number(faceCropX.value)||50)/100)):.5;
- const focusY=enabled?Math.max(0,Math.min(1,(Number(faceCropY.value)||42)/100)):.5;
+ const focusX=enabled?Math.max(0,Math.min(1,Number(faceCropX.value)/100)):.5;
+ const focusY=enabled?Math.max(0,Math.min(1,Number(faceCropY.value)/100)):.5;
  const sx=maxX*focusX,sy=maxY*focusY;
  ctx.save();
  if(mirror){ctx.translate(x+w,y);ctx.scale(-1,1);ctx.drawImage(video,sx,sy,sw,sh,0,0,w,h);}
@@ -2714,7 +2714,7 @@ faceHeight.oninput=()=>{ $('faceHeightVal').textContent=faceHeight.value+'%';upd
 faceShape.onchange=()=>{updatePipHandle();};
 faceCropEnabled.addEventListener('change',()=>{updateFaceCropControls();syncVisuals();});
 [faceCropZoom,faceCropX,faceCropY].forEach(el=>el.addEventListener('input',()=>{updateFaceCropControls();syncVisuals();}));
-faceCropReset.addEventListener('click',()=>{faceCropEnabled.checked=false;faceCropZoom.value='145';faceCropX.value='50';faceCropY.value='42';updateFaceCropControls();syncVisuals();});
+faceCropReset.addEventListener('click',()=>{faceCropEnabled.checked=false;faceCropZoom.value='145';faceCropX.value='50';faceCropY.value='42';updateFaceCropControls();syncVisuals();if(typeof scheduleRecorderDefaultsSave==='function')scheduleRecorderDefaultsSave();});
 updateFaceCropControls();
 function syncCameraOpacity(value){
  const v=Math.max(0,Math.min(100,Number(value)||0));
