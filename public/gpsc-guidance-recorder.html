@@ -1191,18 +1191,18 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
         <div class="olsd-panel">
           <h3>Choose a visual language</h3>
           <div class="olsd-style-grid" id="olsdStyleTiles">
-            <button type="button" class="olsd-style-tile" data-olsd-style="explainer"><b>01 · Explainers</b><span>Clear diagrams, labels, timelines and data-led teaching graphics</span></div>
-            <button type="button" class="olsd-style-tile" data-olsd-style="cinematic3d"><b>02 · Cinematic 3D</b><span>Volumetric lighting, dimensional sets, smooth camera moves</span></div>
-            <button type="button" class="olsd-style-tile" data-olsd-style="handdrawn"><b>03 · Hand-drawn</b><span>Marker lines, sketch reveals, comic panels and visual metaphors</span></div>
-            <button type="button" class="olsd-style-tile" data-olsd-style="collage"><b>04 · Collage</b><span>Layered paper, cutout motion, tactile textures and depth</span></div>
-            <button type="button" class="olsd-style-tile" data-olsd-style="pixel"><b>05 · Pixel art</b><span>Pixel-grid scenes, retro sprites and deliberate transitions</span></div>
-            <button type="button" class="olsd-style-tile" data-olsd-style="flat"><b>06 · Flat cartoon</b><span>Friendly vector characters, shapes and simplified concepts</span></div>
-            <button type="button" class="olsd-style-tile" data-olsd-style="lowpoly"><b>07 · Low-poly</b><span>Geometric objects, voxel spaces and faceted environments</span></div>
-            <button type="button" class="olsd-style-tile" data-olsd-style="neon"><b>08 · Generative / neon</b><span>Procedural patterns, luminous lines and abstract systems</span></div>
-            <button type="button" class="olsd-style-tile" data-olsd-style="type"><b>09 · Kinetic type</b><span>Typography as the main actor; precise word-by-word motion</span></div>
-            <button type="button" class="olsd-style-tile" data-olsd-style="product"><b>10 · Product UI</b><span>Interface mockups, feature reveals and clean screen motion</span></div>
-            <button type="button" class="olsd-style-tile" data-olsd-style="retro"><b>11 · Retro / terminal</b><span>Old film, CRT displays, terminal motifs and restrained grain</span></div>
-            <button type="button" class="olsd-style-tile" data-olsd-style="photo"><b>12 · Photoreal</b><span>Realistic locations, natural light and documentary framing</span></div>
+            <button type="button" class="olsd-style-tile" data-olsd-style="explainer"><b>01 · Explainers</b><span>Clear diagrams, labels, timelines and data-led teaching graphics</span></button>
+            <button type="button" class="olsd-style-tile" data-olsd-style="cinematic3d"><b>02 · Cinematic 3D</b><span>Volumetric lighting, dimensional sets, smooth camera moves</span></button>
+            <button type="button" class="olsd-style-tile" data-olsd-style="handdrawn"><b>03 · Hand-drawn</b><span>Marker lines, sketch reveals, comic panels and visual metaphors</span></button>
+            <button type="button" class="olsd-style-tile" data-olsd-style="collage"><b>04 · Collage</b><span>Layered paper, cutout motion, tactile textures and depth</span></button>
+            <button type="button" class="olsd-style-tile" data-olsd-style="pixel"><b>05 · Pixel art</b><span>Pixel-grid scenes, retro sprites and deliberate transitions</span></button>
+            <button type="button" class="olsd-style-tile" data-olsd-style="flat"><b>06 · Flat cartoon</b><span>Friendly vector characters, shapes and simplified concepts</span></button>
+            <button type="button" class="olsd-style-tile" data-olsd-style="lowpoly"><b>07 · Low-poly</b><span>Geometric objects, voxel spaces and faceted environments</span></button>
+            <button type="button" class="olsd-style-tile" data-olsd-style="neon"><b>08 · Generative / neon</b><span>Procedural patterns, luminous lines and abstract systems</span></button>
+            <button type="button" class="olsd-style-tile" data-olsd-style="type"><b>09 · Kinetic type</b><span>Typography as the main actor; precise word-by-word motion</span></button>
+            <button type="button" class="olsd-style-tile" data-olsd-style="product"><b>10 · Product UI</b><span>Interface mockups, feature reveals and clean screen motion</span></button>
+            <button type="button" class="olsd-style-tile" data-olsd-style="retro"><b>11 · Retro / terminal</b><span>Old film, CRT displays, terminal motifs and restrained grain</span></button>
+            <button type="button" class="olsd-style-tile" data-olsd-style="photo"><b>12 · Photoreal</b><span>Realistic locations, natural light and documentary framing</span></button>
           </div>
           <div class="olsd-callout">OfficerLab default: use Gujarati-compatible typography such as Noto Sans Gujarati for Gujarati text, with a clean sans-serif for English technical terms. Keep important on-screen text large and readable on mobile.</div>
         </div>
@@ -3210,7 +3210,8 @@ function build(){
  if(!topic){alert('Enter a topic or lesson title first.');$('olsdTopic').focus();return;}
  const minutes=Math.max(1,Math.min(60,Number($('olsdDuration').value)||5));
  const total=Math.round(minutes*60),count=Number($('olsdCount').value)||5;
- const style=$('olsdStyle').value,engine=$('olsdEngine').value,ratio=$('olsdRatio').value;
+ const style=styleMap[$('olsdStyle').value] ? $('olsdStyle').value : 'explainer',engine=$('olsdEngine').value,ratio=$('olsdRatio').value;
+ $('olsdStyle').value=style;renderStyleSelection(style);
  const objective=$('olsdObjective').value.trim()||'Explain the topic accurately and build understanding step by step.';
  const audience=$('olsdAudience').value,language=$('olsdLanguage').value;
  const narration=$('olsdNarration').value.trim(),sources=$('olsdSources').value.trim();
@@ -3284,7 +3285,28 @@ function restoreDraft(){
 document.getElementById('openSceneDesigner')?.addEventListener('click',open);
 $('olSceneClose').addEventListener('click',close);
 root.querySelectorAll('[data-olsd-tab]').forEach(btn=>btn.addEventListener('click',()=>tab(btn.getAttribute('data-olsd-tab'))));
-root.querySelectorAll('[data-olsd-style]').forEach(tile=>tile.addEventListener('click',()=>{const style=tile.getAttribute('data-olsd-style');$('olsdStyle').value=style;root.querySelectorAll('[data-olsd-style]').forEach(t=>t.classList.toggle('selected',t===tile));}));
+function renderStyleSelection(style){
+ root.querySelectorAll('[data-olsd-style]').forEach(tile=>{
+  const selected=tile.getAttribute('data-olsd-style')===style;
+  tile.classList.toggle('selected',selected);
+  tile.setAttribute('aria-pressed',String(selected));
+ });
+}
+function setVisualStyle(style){
+ const select=$('olsdStyle');
+ if(!select||![...select.options].some(option=>option.value===style))return;
+ select.value=style;
+ renderStyleSelection(style);
+ select.dispatchEvent(new Event('input',{bubbles:true}));
+ select.dispatchEvent(new Event('change',{bubbles:true}));
+}
+root.addEventListener('click',event=>{
+ const tile=event.target.closest('[data-olsd-style]');
+ if(!tile||!root.contains(tile))return;
+ event.preventDefault();
+ setVisualStyle(tile.getAttribute('data-olsd-style'));
+});
+$('olsdStyle').addEventListener('change',()=>renderStyleSelection($('olsdStyle').value));
 $('olsdGenerate').addEventListener('click',build);
 $('olsdToExport').addEventListener('click',()=>tab('export'));
 $('olsdEditBrief').addEventListener('click',()=>tab('brief'));
@@ -3297,6 +3319,7 @@ root.addEventListener('click',async e=>{
 });
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&root.classList.contains('open'))close();});
 restoreDraft();
+renderStyleSelection($('olsdStyle').value);
 })();
 </script>
 
