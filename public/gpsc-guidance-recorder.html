@@ -300,6 +300,37 @@ button.active{background:#07333c;border-color:#00e5ff}
 .preflight-checklist{display:grid;gap:5px}.preflight-checklist label{display:flex;align-items:flex-start;gap:8px}.preflight-checklist input{margin-top:3px;accent-color:#00e5ff}.preflight-checklist p{margin:4px 0 0;color:#8feeff;font-size:10px}
 @media(max-width:650px){.motion-grid{grid-template-columns:1fr}.motion-graphics-panel{padding:10px}.motion-panel-heading{gap:6px}.motion-timing-grid{grid-template-columns:1fr 1fr}}
 
+
+/* Wisdom Decoded — dedicated concept-mapping workspace */
+.wisdom-mode-toggle{border:1px solid #c6a45c!important;background:linear-gradient(135deg,#1d3553,#17263a)!important;color:#f3d99b!important;font-weight:800;letter-spacing:.01em}
+.wisdom-mode-toggle.active{background:linear-gradient(135deg,#c6a45c,#a77d35)!important;color:#111827!important;box-shadow:0 0 0 2px #c6a45c33}
+.wisdom-workspace{margin:0 0 12px;padding:12px;border:1px solid #8b713c;border-radius:13px;background:linear-gradient(145deg,#111c2b,#18263a);box-shadow:inset 0 1px #ffffff0a}
+.wisdom-workspace[hidden]{display:none!important}
+.wisdom-workspace-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 10px}
+.wisdom-workspace-heading strong{display:block;color:#f0d79e;font-size:12px;letter-spacing:.07em}
+.wisdom-workspace-heading small{display:block;color:#aebdce;font-size:11px;margin-top:4px;line-height:1.45}
+.wisdom-status{flex:none;border:1px solid #6e7c8e;border-radius:30px;padding:5px 10px;color:#aebdce;font-size:10px;font-weight:850;letter-spacing:.08em}
+.wisdom-status.active{border-color:#3fb950;color:#aaf0bb;background:#143022}
+.wisdom-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px}
+.wisdom-board-label,.wisdom-toolbar-secondary>label{display:flex;align-items:center;gap:7px;color:#dce6f2;font-size:11px;font-weight:700}
+.wisdom-board-label select{min-width:130px;background:#0d1623;border:1px solid #425269;color:#f4f7fb;border-radius:8px;padding:8px}
+.wisdom-tool-buttons,.wisdom-action-buttons{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.wisdom-tool-buttons button,.wisdom-action-buttons button{padding:7px 10px;min-height:34px;font-size:11px;border-radius:8px;background:#202e40;border-color:#43536a;color:#eaf0f7}
+.wisdom-tool-buttons button.active{background:#c6a45c;border-color:#f1d89b;color:#172131;box-shadow:0 0 0 2px #c6a45c33}
+.wisdom-toolbar-secondary{padding-top:8px;border-top:1px solid #ffffff18}
+.wisdom-toolbar-secondary input[type=color]{width:32px;height:28px;padding:1px;border:1px solid #718096;border-radius:6px;background:#0d1623}
+.wisdom-toolbar-secondary input[type=range]{width:100px;accent-color:#c6a45c}
+.wisdom-toolbar-secondary #wisdomInkWidthValue{color:#e9d9b4;font-variant-numeric:tabular-nums}
+.wisdom-action-buttons button:disabled{opacity:.35;cursor:not-allowed}
+#wisdomAddTopic{border-color:#b68b42;color:#f2d79a}
+#wisdomExport{border-color:#2f9b66;color:#b2f0ca}
+#wisdomClear{border-color:#9e5555;color:#ffc2c2}
+.wisdom-hint{margin:8px 0 0;color:#9eafc2;font-size:10px;line-height:1.5}
+#stage.wisdom-active{outline:2px solid #c6a45c55;outline-offset:2px}
+#stage.wisdom-active #annotationCanvas{cursor:crosshair;touch-action:none}
+@media(max-width:850px){.wisdom-toolbar{align-items:flex-start}.wisdom-tool-buttons{flex:1 1 100%}.wisdom-action-buttons{flex:1 1 100%}}
+@media(max-width:650px){header #wisdomModeToggle{order:5;width:100%;margin:2px 0 0}.wisdom-workspace{padding:9px}.wisdom-workspace-heading{align-items:flex-start}.wisdom-workspace-heading strong{font-size:10px}.wisdom-board-label{width:100%;justify-content:space-between}.wisdom-board-label select{flex:1}.wisdom-tool-buttons button,.wisdom-action-buttons button{flex:1 1 auto;min-height:38px;padding:7px 8px}.wisdom-toolbar-secondary>label{min-height:34px}}
+
 </style>
 </head>
 <body>
@@ -307,6 +338,7 @@ button.active{background:#07333c;border-color:#00e5ff}
   <div><h1>🎥 OfficerLab Lecture Studio</h1><div class="brand-sub">GPSC Guidance · Local-first recording</div></div>
   <span class="tag">16:9 · 1080p / 30fps target</span>
   <span class="tag" id="connectivityStatus" role="status" aria-live="polite">● Checking connection</span>
+  <button id="wisdomModeToggle" class="wisdom-mode-toggle" type="button" aria-pressed="false">✦ Wisdom Decoded</button>
   <button id="contextToggle" class="context-toggle" type="button" aria-controls="contextPanel" aria-expanded="true" title="Hide context panel">▤ Hide Context</button>
   <button id="installApp" type="button" hidden style="margin-left:auto;padding:6px 10px;font-size:11px">⬇ Install App</button>
 </header>
@@ -317,6 +349,38 @@ button.active{background:#07333c;border-color:#00e5ff}
 <main>
 <section class="card">
   <h2>Recording Stage</h2>
+  <div class="wisdom-workspace" id="wisdomWorkspace" hidden>
+    <div class="wisdom-workspace-heading">
+      <div><strong>✦ WISDOM DECODED · CONCEPT MAPPING STUDIO</strong><small>Write, connect, highlight and teach. All marks are included in the recording.</small></div>
+      <span id="wisdomStatus" class="wisdom-status">INACTIVE</span>
+    </div>
+    <div class="wisdom-toolbar" role="toolbar" aria-label="Wisdom Decoded drawing tools">
+      <label class="wisdom-board-label" for="wisdomBoard">Board
+        <select id="wisdomBoard"><option value="grid">Clean grid</option><option value="paper">Notebook paper</option><option value="dark">Dark board</option></select>
+      </label>
+      <div class="wisdom-tool-buttons">
+        <button type="button" data-wisdom-tool="pen" class="active" aria-pressed="true">✎ Pen</button>
+        <button type="button" data-wisdom-tool="highlighter" aria-pressed="false">▰ Highlight</button>
+        <button type="button" data-wisdom-tool="eraser" aria-pressed="false">⌫ Eraser</button>
+        <button type="button" data-wisdom-tool="text" aria-pressed="false">T Text</button>
+        <button type="button" data-wisdom-tool="arrow" aria-pressed="false">↗ Arrow</button>
+        <button type="button" data-wisdom-tool="circle" aria-pressed="false">◯ Circle</button>
+        <button type="button" data-wisdom-tool="node" aria-pressed="false">▢ Topic Node</button>
+      </div>
+    </div>
+    <div class="wisdom-toolbar wisdom-toolbar-secondary">
+      <label>Ink colour <input id="wisdomInkColor" type="color" value="#2457d6"></label>
+      <label>Thickness <input id="wisdomInkWidth" type="range" min="3" max="28" value="7"><span id="wisdomInkWidthValue">7 px</span></label>
+      <div class="wisdom-action-buttons">
+        <button type="button" id="wisdomUndo" disabled>↶ Undo</button>
+        <button type="button" id="wisdomRedo" disabled>↷ Redo</button>
+        <button type="button" id="wisdomAddTopic">＋ Central Topic</button>
+        <button type="button" id="wisdomExport">⇩ Save Map PNG</button>
+        <button type="button" id="wisdomClear">Clear Board</button>
+      </div>
+    </div>
+    <p class="wisdom-hint">Tip: drag to draw, circle or connect ideas. Choose Topic Node and tap the board to place a labelled concept. Enable your microphone in the recorder controls before recording; camera is optional.</p>
+  </div>
   <div class="stage" id="stage">
     <canvas id="compositeCanvas" width="1920" height="1080" aria-label="Lecture recording preview"></canvas>
     <canvas id="annotationCanvas" width="1920" height="1080" aria-label="Teaching annotations"></canvas>
@@ -337,6 +401,9 @@ button.active{background:#07333c;border-color:#00e5ff}
       <button type="button" data-stage-tool="highlighter" aria-label="Highlighter" title="Highlighter">🖍</button>
       <button type="button" data-stage-tool="eraser" aria-label="Eraser" title="Eraser">⌫</button>
       <button type="button" data-stage-tool="text" aria-label="Add text" title="Add text">T</button>
+      <button type="button" data-stage-tool="arrow" aria-label="Arrow" title="Arrow">↗</button>
+      <button type="button" data-stage-tool="circle" aria-label="Circle" title="Circle">◯</button>
+      <button type="button" data-stage-tool="node" aria-label="Topic node" title="Topic node">▢</button>
       <button type="button" id="fsClearInk" aria-label="Clear annotations" title="Clear annotations">↺</button>
       <button type="button" id="fsCameraOpacityToggle" aria-label="Camera opacity" title="Adjust camera opacity" aria-expanded="false">◐</button>
     </div>
@@ -653,6 +720,7 @@ let cameraStream=null,micStream=null,screenStream=null,recorder=null,recordTimer
 let screenCropSource=null,screenCropResult=null,screenCropResolved=false,screenCropChecks=0;
 let audioContext=null,audioDestination=null,micGain=null,screenGain=null,micAnalyser=null,micSource=null,screenAudioSource=null;
 let layout='pip',pip={x:.77,y:.73},activeTool='pen',drawing=false,slides=[],slideIndex=0,pdfDoc=null,slideSource=null,slideUrls=[],presentationSavedOutputRatio=null;
+let wisdomModeActive=false,wisdomTool='pen',wisdomDrawing=false,wisdomPointerId=null,wisdomStartPoint=null,wisdomShapeBase=null,wisdomHistory=[],wisdomHistoryIndex=-1,wisdomInkBackup=null,wisdomRegularInkBackup=null;
 let slideLoadVersion=0,slideTransitionFromFrame=null,slideTransitionToFrame=null,slideTransitionStartedAt=0,slideMotionStartedAt=performance.now();
 let sessionId=null,chunkIndex=0,writeQueue=Promise.resolve(),localChunks=[],recording=false,paused=false,recordingStarting=false,stoppingRecording=false,startedAt=0,recordElapsedMs=0,recordSegmentStartedAt=0,testTimeout=null,outroStartedAt=0,outroTimer=null;
 let saved=[],recoveryItems=[],activeMediaElement=null,mediaSessionReady=false;
@@ -714,7 +782,7 @@ function updateScreenShareHint(){
 }
 function modeNeedsCamera(){return captureMode.value==='camera'||captureMode.value==='screen-camera'}
 function modeNeedsScreen(){return captureMode.value==='screen'||captureMode.value==='screen-camera'}
-function baseAvailable(){const mode=captureMode.value;if(mode==='camera')return !!cameraStream;if(mode==='camera-slides')return !!cameraStream&&slides.length>0;if(mode==='screen-camera')return (!!screenStream||slides.length>0)&&!!cameraStream;return !!screenStream||slides.length>0;}
+function baseAvailable(){if(wisdomModeActive)return !!micStream;const mode=captureMode.value;if(mode==='camera')return !!cameraStream;if(mode==='camera-slides')return !!cameraStream&&slides.length>0;if(mode==='screen-camera')return (!!screenStream||slides.length>0)&&!!cameraStream;return !!screenStream||slides.length>0;}
 function syncStagePresenterDock(){
  const rec=$('fsRecordToggle'),pause=$('fsPauseToggle'),status=$('fsRecordStatus'),dock=$('stageFsRecordDock');
  if(!rec||!pause)return;
@@ -733,20 +801,21 @@ function syncStagePresenterDock(){
  dock?.classList.toggle('paused',recording&&paused);
  if(status)status.textContent=recording?(paused?'PAUSED':'REC'):'READY';
  document.querySelectorAll('[data-stage-tool]').forEach(button=>{
-  const selected=button.dataset.stageTool===activeTool;
+  const selected=button.dataset.stageTool===(wisdomModeActive?wisdomTool:activeTool);
   button.classList.toggle('active',selected);
   button.setAttribute('aria-pressed',selected?'true':'false');
  });
 }
 function updateControls(){
- const mode=captureMode.value;updateProgressBarHint();slideTransitionsEnabled.disabled=recording||recordingStarting;slideTransitionType.disabled=recording||recordingStarting||!slideTransitionsEnabled.checked;slideMotionEnabled.disabled=recording||recordingStarting;inkCanvas.style.opacity=recording?'0':'1';captureMode.disabled=recording||recordingStarting;quality.disabled=recording||recordingStarting;outputRatio.disabled=recording||recordingStarting;recordBtn.disabled=recording||recordingStarting||!baseAvailable()||((mode==='screen-camera'||mode==='camera-slides')&&!cameraStream);autoCaptionsEnabled.disabled=recording||recordingStarting;captionLanguage.disabled=recording||recordingStarting;[introCardEnabled,introCardDuration,introCardTitle,introCardSubtitle,outroCardEnabled,outroCardDuration,outroCardTitle,outroCardSubtitle].forEach(el=>el.disabled=recording||recordingStarting||stoppingRecording);
+ const mode=captureMode.value;updateProgressBarHint();slideTransitionsEnabled.disabled=recording||recordingStarting;slideTransitionType.disabled=recording||recordingStarting||!slideTransitionsEnabled.checked;slideMotionEnabled.disabled=recording||recordingStarting;inkCanvas.style.opacity=recording?'0':'1';captureMode.disabled=recording||recordingStarting;quality.disabled=recording||recordingStarting;outputRatio.disabled=recording||recordingStarting;recordBtn.disabled=recording||recordingStarting||!baseAvailable()||(!wisdomModeActive&&(mode==='screen-camera'||mode==='camera-slides')&&!cameraStream);autoCaptionsEnabled.disabled=recording||recordingStarting;captionLanguage.disabled=recording||recordingStarting;[introCardEnabled,introCardDuration,introCardTitle,introCardSubtitle,outroCardEnabled,outroCardDuration,outroCardTitle,outroCardSubtitle].forEach(el=>el.disabled=recording||recordingStarting||stoppingRecording);
  cameraBtn.disabled=recording||recordingStarting;micBtn.disabled=recording||recordingStarting;screenBtn.disabled=recording||recordingStarting||(!screenStream&&!screenShareCapability().supported);updateScreenShareHint();screenBtn.title=screenStream?'Stop the active screen share':screenShareCapability().message;$('cameraSwitchBtn').disabled=recording||recordingStarting||!cameraStream;
  $('muteBtn').disabled=!micStream;
  $('cameraBtn').textContent=cameraStream?'⏹ Stop Camera':'📷 Start Camera';
  $('micBtn').textContent=micStream?'✓ Microphone Ready':'🎙 Enable Microphone';
  $('screenBtn').textContent=screenStream?'⏹ Stop Sharing':'🖥 Share Screen';
  cameraSelect.disabled=!cameraStream||recording||recordingStarting;micSelect.disabled=!micStream||recording||recordingStarting;
- const hasBase=baseAvailable();placeholder.style.display=hasBase?'none':'flex';
+ const hasBase=baseAvailable();placeholder.style.display=(wisdomModeActive||hasBase)?'none':'flex';
+ $('wisdomModeToggle').disabled=recording||recordingStarting;
  pipHandle.style.display=((captureMode.value==='screen-camera'||captureMode.value==='camera-slides')&&cameraStream&&layout==='pip')?'block':'none';
  $('layoutButtons').querySelectorAll('[data-layout]').forEach(b=>b.classList.toggle('active',b.dataset.layout===layout));
  updatePipHandle();
@@ -1174,6 +1243,10 @@ function drawScene(){
  }
  ctx.fillStyle='#05080d';ctx.fillRect(0,0,canvas.width,canvas.height);
  const mode=captureMode.value;
+ if(wisdomModeActive){
+  drawWisdomBoardBackground(ctx,canvas);
+  if(cameraStream){const d=pipDimensions(),w=canvas.width*d.w,h=canvas.height*d.h;drawPip(canvas.width*pip.x,canvas.height*pip.y,w,h);}
+ }else{
  const showCamera=mode!=='screen'&&!!cameraStream;
  const source=(mode==='camera')?cameraVideo:(screenStream?screenVideo:slideSource);
  if(mode==='camera'||(layout==='face'&&showCamera)){
@@ -1193,20 +1266,20 @@ function drawScene(){
    drawPip(canvas.width*pip.x,canvas.height*pip.y,w,hh);
   }
  }
- if(recording&&inkCanvas.style.display!=='none'&&mode!=='camera')ctx.drawImage(inkCanvas,0,0,canvas.width,canvas.height);
- drawGuides();
- drawLowerThird();
- drawWatermark();
- drawScheduledMotionGraphics();
- drawProgressBar(ctx);
+
+ }
+ if(recording&&inkCanvas.style.display!=='none'&&(mode!=='camera'||wisdomModeActive))ctx.drawImage(inkCanvas,0,0,canvas.width,canvas.height);
+ if(!wisdomModeActive){drawGuides();drawLowerThird();drawWatermark();drawScheduledMotionGraphics();drawProgressBar(ctx);}
  drawRAF=requestAnimationFrame(drawScene);
 }
 function startDraw(){if(drawRAF)cancelAnimationFrame(drawRAF);drawScene();}
 function stopDraw(){if(drawRAF)cancelAnimationFrame(drawRAF);drawRAF=0;}
 function syncVisuals(){
- const annotationVisible=slides.length>0||!!screenStream;
+ const annotationVisible=wisdomModeActive||slides.length>0||!!screenStream;
  inkCanvas.style.display=annotationVisible?'block':'none';
- annotationFab.style.display=annotationVisible?'flex':'none';
+ annotationFab.style.display=annotationVisible&&!wisdomModeActive?'flex':'none';
+ if(wisdomModeActive||!toolTray.hidden)inkCanvas.classList.add('enabled');else inkCanvas.classList.remove('enabled');
+ $('stage').classList.toggle('wisdom-active',wisdomModeActive);
  updateControls();
  if(!drawRAF)startDraw();
 }
@@ -1393,6 +1466,33 @@ function startDrag(e){
  const end=()=>{pipDragBar.removeEventListener('pointermove',move);pipDragBar.removeEventListener('pointerup',end);pipDragBar.removeEventListener('pointercancel',end);};
  pipDragBar.addEventListener('pointermove',move);pipDragBar.addEventListener('pointerup',end);pipDragBar.addEventListener('pointercancel',end);
 }
+function cloneWisdomLayer(source){
+ const copy=document.createElement('canvas');copy.width=inkCanvas.width;copy.height=inkCanvas.height;
+ if(source)copy.getContext('2d').drawImage(source,0,0,copy.width,copy.height);
+ return copy;
+}
+function drawWisdomBoardBackground(targetCtx,targetCanvas){
+ const w=targetCanvas.width,h=targetCanvas.height,board=$('wisdomBoard').value;
+ const dark=board==='dark',paper=board==='paper';
+ targetCtx.save();targetCtx.fillStyle=dark?'#111827':paper?'#fffef9':'#fbfcfe';targetCtx.fillRect(0,0,w,h);
+ const step=dark?54:48;targetCtx.lineWidth=1;targetCtx.strokeStyle=dark?'rgba(153,184,220,.13)':paper?'rgba(66,126,189,.15)':'rgba(54,91,132,.10)';
+ targetCtx.beginPath();for(let x=step;x<w;x+=step){targetCtx.moveTo(x,0);targetCtx.lineTo(x,h);}for(let y=step;y<h;y+=step){targetCtx.moveTo(0,y);targetCtx.lineTo(w,y);}targetCtx.stroke();
+ if(paper){targetCtx.strokeStyle='rgba(204,78,78,.28)';targetCtx.lineWidth=3;targetCtx.beginPath();targetCtx.moveTo(90,0);targetCtx.lineTo(90,h);targetCtx.stroke();}
+ targetCtx.textAlign='left';targetCtx.textBaseline='top';targetCtx.fillStyle=dark?'rgba(232,221,190,.56)':'rgba(20,36,58,.30)';targetCtx.font='700 27px system-ui,sans-serif';targetCtx.fillText('WISDOM DECODED / CONCEPT MAP',w*.035,h*.035);
+ targetCtx.textAlign='right';targetCtx.textBaseline='bottom';targetCtx.fillStyle=dark?'rgba(232,221,190,.42)':'rgba(20,36,58,.24)';targetCtx.font='650 22px system-ui,sans-serif';targetCtx.fillText('OFFICERLAB - GPSC GUIDANCE',w*.97,h*.97);targetCtx.restore();
+}
+function updateWisdomHistoryButtons(){$('wisdomUndo').disabled=wisdomHistoryIndex<=0;$('wisdomRedo').disabled=wisdomHistoryIndex<0||wisdomHistoryIndex>=wisdomHistory.length-1;}
+function wisdomCommitHistory(){const snapshot=inkCanvas.toDataURL('image/png');if(wisdomHistoryIndex>=0&&wisdomHistory[wisdomHistoryIndex]===snapshot)return;wisdomHistory=wisdomHistory.slice(0,wisdomHistoryIndex+1);wisdomHistory.push(snapshot);if(wisdomHistory.length>10)wisdomHistory.shift();wisdomHistoryIndex=wisdomHistory.length-1;updateWisdomHistoryButtons();}
+function wisdomRestoreHistory(index){if(index<0||index>=wisdomHistory.length)return;wisdomHistoryIndex=index;const image=new Image();image.onload=()=>{ink.clearRect(0,0,inkCanvas.width,inkCanvas.height);ink.drawImage(image,0,0,inkCanvas.width,inkCanvas.height);updateWisdomHistoryButtons();};image.src=wisdomHistory[index];}
+function wisdomDrawNodeAt(label,point){const w=620,h=168,x=Math.max(30,Math.min(inkCanvas.width-w-30,point.x-w/2)),y=Math.max(50,Math.min(inkCanvas.height-h-50,point.y-h/2));const dark=$('wisdomBoard').value==='dark';ink.save();ink.globalCompositeOperation='source-over';ink.globalAlpha=1;ink.fillStyle=dark?'rgba(20,36,58,.94)':'rgba(255,255,255,.96)';ink.strokeStyle=$('wisdomInkColor').value;ink.lineWidth=8;ink.beginPath();if(ink.roundRect)ink.roundRect(x,y,w,h,24);else ink.rect(x,y,w,h);ink.fill();ink.stroke();ink.fillStyle=dark?'#fff4d5':'#14243a';ink.font='800 54px system-ui,sans-serif';ink.textAlign='center';ink.textBaseline='middle';ink.fillText(label,x+w/2,y+h/2,w-55);ink.restore();}
+function wisdomSetTool(tool){wisdomTool=tool;document.querySelectorAll('[data-wisdom-tool]').forEach(b=>{const selected=b.dataset.wisdomTool===tool;b.classList.toggle('active',selected);b.setAttribute('aria-pressed',String(selected));});syncStagePresenterDock();}
+function wisdomInkStyle(){ink.globalCompositeOperation=wisdomTool==='eraser'?'destination-out':'source-over';ink.globalAlpha=wisdomTool==='highlighter'?.34:1;ink.strokeStyle=wisdomTool==='highlighter'?'#ffe85c':$('wisdomInkColor').value;ink.fillStyle=ink.strokeStyle;ink.lineWidth=wisdomTool==='highlighter'?Math.max(24,Number($('wisdomInkWidth').value)*4):Number($('wisdomInkWidth').value);ink.lineCap='round';ink.lineJoin='round';}
+function wisdomDrawShape(point){ink.putImageData(wisdomShapeBase,0,0);ink.save();ink.globalCompositeOperation='source-over';ink.globalAlpha=1;ink.strokeStyle=$('wisdomInkColor').value;ink.lineWidth=Math.max(5,Number($('wisdomInkWidth').value));ink.lineCap='round';ink.lineJoin='round';const sx=wisdomStartPoint.x,sy=wisdomStartPoint.y,dx=point.x-sx,dy=point.y-sy;if(wisdomTool==='circle'){ink.beginPath();ink.ellipse((sx+point.x)/2,(sy+point.y)/2,Math.max(2,Math.abs(dx)/2),Math.max(2,Math.abs(dy)/2),0,0,Math.PI*2);ink.stroke();}else if(wisdomTool==='arrow'){const angle=Math.atan2(dy,dx),head=28;ink.beginPath();ink.moveTo(sx,sy);ink.lineTo(point.x,point.y);ink.stroke();ink.beginPath();ink.moveTo(point.x,point.y);ink.lineTo(point.x-head*Math.cos(angle-Math.PI/6),point.y-head*Math.sin(angle-Math.PI/6));ink.moveTo(point.x,point.y);ink.lineTo(point.x-head*Math.cos(angle+Math.PI/6),point.y-head*Math.sin(angle+Math.PI/6));ink.stroke();}ink.restore();}
+function wisdomInkStart(e){if(drawing||wisdomDrawing)return;e.preventDefault();const p=getInkPoint(e);if(wisdomTool==='node'||wisdomTool==='text'){const label=prompt(wisdomTool==='node'?'Enter topic or concept name:':'Enter text to place on the board:');if(label&&label.trim()){if(wisdomTool==='node')wisdomDrawNodeAt(label.trim(),p);else{ink.save();ink.globalCompositeOperation='source-over';ink.globalAlpha=1;ink.fillStyle=$('wisdomInkColor').value;ink.font='700 58px system-ui,sans-serif';ink.textBaseline='top';ink.fillText(label.trim(),p.x,p.y,inkCanvas.width-p.x-24);ink.restore();}wisdomCommitHistory();}return;}wisdomDrawing=true;wisdomPointerId=e.pointerId;wisdomStartPoint=p;try{inkCanvas.setPointerCapture(e.pointerId);}catch{}if(wisdomTool==='arrow'||wisdomTool==='circle'){wisdomShapeBase=ink.getImageData(0,0,inkCanvas.width,inkCanvas.height);return;}wisdomInkStyle();ink.beginPath();ink.arc(p.x,p.y,Math.max(1,ink.lineWidth/2),0,Math.PI*2);ink.fill();}
+function wisdomInkMove(e){if(!wisdomDrawing||e.pointerId!==wisdomPointerId)return;e.preventDefault();const samples=typeof e.getCoalescedEvents==='function'?e.getCoalescedEvents():[];const events=samples.length?samples:[e];if(wisdomTool==='arrow'||wisdomTool==='circle'){const p=getInkPoint(events[events.length-1]);wisdomDrawShape(p);return;}wisdomInkStyle();ink.beginPath();ink.moveTo(wisdomStartPoint.x,wisdomStartPoint.y);let moved=false,last=wisdomStartPoint;for(const point of events){const p=getInkPoint(point),dx=p.x-last.x,dy=p.y-last.y;if(dx*dx+dy*dy<.5)continue;ink.lineTo(p.x,p.y);last=p;moved=true;}if(moved){ink.stroke();wisdomStartPoint=last;}}
+function wisdomInkEnd(e){if(!wisdomDrawing)return;if(e&&e.pointerId!==undefined&&e.pointerId!==wisdomPointerId)return;if(wisdomTool==='arrow'||wisdomTool==='circle'){const p=e&&Number.isFinite(e.clientX)?getInkPoint(e):wisdomStartPoint;wisdomDrawShape(p);}wisdomDrawing=false;wisdomPointerId=null;wisdomStartPoint=null;wisdomShapeBase=null;ink.globalAlpha=1;ink.globalCompositeOperation='source-over';wisdomCommitHistory();}
+function setWisdomMode(enabled){if(recording||recordingStarting){showError('Finish the current recording before changing teaching mode.');return;}if(enabled===wisdomModeActive)return;if(enabled){toolTray.hidden=true;wisdomRegularInkBackup=cloneWisdomLayer(inkCanvas);ink.clearRect(0,0,inkCanvas.width,inkCanvas.height);if(wisdomInkBackup)ink.drawImage(wisdomInkBackup,0,0,inkCanvas.width,inkCanvas.height);wisdomHistory=[inkCanvas.toDataURL('image/png')];wisdomHistoryIndex=0;wisdomModeActive=true;$('wisdomWorkspace').hidden=false;$('wisdomStatus').textContent='ACTIVE';$('wisdomStatus').classList.add('active');$('wisdomModeToggle').classList.add('active');$('wisdomModeToggle').setAttribute('aria-pressed','true');wisdomSetTool(wisdomTool);}else{wisdomInkBackup=cloneWisdomLayer(inkCanvas);ink.clearRect(0,0,inkCanvas.width,inkCanvas.height);if(wisdomRegularInkBackup)ink.drawImage(wisdomRegularInkBackup,0,0,inkCanvas.width,inkCanvas.height);wisdomModeActive=false;$('wisdomWorkspace').hidden=true;$('wisdomStatus').textContent='INACTIVE';$('wisdomStatus').classList.remove('active');$('wisdomModeToggle').classList.remove('active');$('wisdomModeToggle').setAttribute('aria-pressed','false');wisdomDrawing=false;wisdomPointerId=null;}syncVisuals();startDraw();updateWisdomHistoryButtons();}
+function exportWisdomMap(){const output=document.createElement('canvas');output.width=canvas.width;output.height=canvas.height;const out=output.getContext('2d');drawWisdomBoardBackground(out,output);out.drawImage(inkCanvas,0,0,output.width,output.height);const link=document.createElement('a');link.download='officerlab-wisdom-map-'+stamp()+'.png';link.href=output.toDataURL('image/png');link.click();}
 function getInkPoint(e){const r=inkCanvas.getBoundingClientRect();return{x:(e.clientX-r.left)*inkCanvas.width/r.width,y:(e.clientY-r.top)*inkCanvas.height/r.height};}
 function inkStyle(){
  ink.lineCap=activeTool==='highlighter'?'butt':'round';
@@ -1403,6 +1503,7 @@ function inkStyle(){
  ink.strokeStyle=activeTool==='highlighter'?'#ffeb3b':$('inkColor').value;
 }
 function inkStart(e){
+ if(wisdomModeActive){wisdomInkStart(e);return;}
  if(toolTray.contains(e.target)||drawing)return;
  if(activeTool==='text'){
   e.preventDefault();const text=prompt('Enter text to place on this slide:');
@@ -1415,6 +1516,7 @@ function inkStart(e){
  ink.beginPath();ink.arc(p.x,p.y,Math.max(1,ink.lineWidth/2),0,Math.PI*2);ink.fillStyle=ink.strokeStyle;ink.fill();
 }
 function inkMove(e){
+ if(wisdomModeActive){wisdomInkMove(e);return;}
  if(!drawing||!lastInkPoint||e.pointerId!==lastInkPointerId)return;
  const coalesced=typeof e.getCoalescedEvents==='function'?e.getCoalescedEvents():[];
  const events=coalesced.length?coalesced:[e];inkStyle();
@@ -1430,6 +1532,7 @@ function inkMove(e){
  if(moved)ink.stroke();
 }
 function inkEnd(e){
+ if(wisdomModeActive){wisdomInkEnd(e);return;}
  if(!drawing)return;
  if(e&&e.pointerId!==undefined&&e.pointerId!==lastInkPointerId)return;
  drawing=false;lastInkPoint=null;lastInkPointerId=null;
@@ -1451,11 +1554,14 @@ async function runRecordCountdown(){
 async function startRecording(isTest=false){
  clearError();if(recording||recordingStarting)return;
  const mode=captureMode.value;
- if((mode==='camera'||mode==='camera-slides')&&!cameraStream){showError('Start the camera before recording in this mode.');return;}
- if(mode==='camera-slides'&&!slides.length){showError('Upload PDF slides or images for Camera + Slide Overlay mode.');return;}
- if(mode==='screen'&&!screenStream&&!slides.length){showError('Share your screen or upload a PDF/slides before recording.');return;}
- if(mode==='screen-camera'&&!screenStream&&!slides.length){showError('Share your screen or upload slides before recording.');return;}
- if(mode==='screen-camera'&&!cameraStream){showError('Screen + Face Cam mode also requires the camera. Start Camera first.');return;}
+ if(wisdomModeActive){if(!micStream){showError('Enable your microphone before recording in Wisdom Decoded mode. The camera is optional.');return;}}
+ else{
+  if((mode==='camera'||mode==='camera-slides')&&!cameraStream){showError('Start the camera before recording in this mode.');return;}
+  if(mode==='camera-slides'&&!slides.length){showError('Upload PDF slides or images for Camera + Slide Overlay mode.');return;}
+  if(mode==='screen'&&!screenStream&&!slides.length){showError('Share your screen or upload a PDF/slides before recording.');return;}
+  if(mode==='screen-camera'&&!screenStream&&!slides.length){showError('Share your screen or upload slides before recording.');return;}
+  if(mode==='screen-camera'&&!cameraStream){showError('Screen + Face Cam mode also requires the camera. Start Camera first.');return;}
+ }
  const mime=getMime();if(mime===null){showError('MediaRecorder is not supported in this browser. Try current Chrome.');return;}
  recordingStarting=true;updateControls();
  try{if(micStream)await connectMic();if(screenStream&&screenStream.getAudioTracks().length)await connectScreenAudio();if(audioContext)await audioContext.resume();}catch(e){recordingStarting=false;updateControls();showError('Audio could not be prepared: '+e.message);return;}
@@ -1818,10 +1924,19 @@ fsCameraOpacityToggle.onclick=()=>{
  fsCameraOpacityToggle.classList.toggle('active',open);
  fsCameraOpacityToggle.setAttribute('aria-expanded',String(open));
 };
+$('wisdomModeToggle').onclick=()=>setWisdomMode(!wisdomModeActive);
+document.querySelectorAll('[data-wisdom-tool]').forEach(button=>button.onclick=()=>wisdomSetTool(button.dataset.wisdomTool));
+$('wisdomBoard').onchange=()=>startDraw();
+$('wisdomInkWidth').oninput=()=>{$('wisdomInkWidthValue').textContent=$('wisdomInkWidth').value+' px';};
+$('wisdomUndo').onclick=()=>{if(wisdomHistoryIndex>0)wisdomRestoreHistory(wisdomHistoryIndex-1);};
+$('wisdomRedo').onclick=()=>{if(wisdomHistoryIndex<wisdomHistory.length-1)wisdomRestoreHistory(wisdomHistoryIndex+1);};
+$('wisdomAddTopic').onclick=()=>{const label=prompt('Enter the central topic or lesson title:');if(label&&label.trim()){wisdomDrawNodeAt(label.trim(),{x:inkCanvas.width*.5,y:inkCanvas.height*.22});wisdomCommitHistory();}};
+$('wisdomExport').onclick=exportWisdomMap;
+$('wisdomClear').onclick=()=>{ink.clearRect(0,0,inkCanvas.width,inkCanvas.height);wisdomCommitHistory();};
 annotationFab.onclick=()=>{toolTray.hidden=!toolTray.hidden;inkCanvas.classList.add('enabled');};
 document.querySelectorAll('[data-tool]').forEach(b=>b.onclick=()=>{activeTool=b.dataset.tool;document.querySelectorAll('[data-tool]').forEach(x=>{const selected=x===b;x.classList.toggle('active',selected);x.setAttribute('aria-pressed',selected?'true':'false');});toolTray.hidden=true;inkCanvas.classList.add('enabled');syncStagePresenterDock();});
-document.querySelectorAll('[data-stage-tool]').forEach(b=>b.onclick=()=>{const tool=document.querySelector('[data-tool="'+b.dataset.stageTool+'"]');if(tool)tool.click();});
-$('fsClearInk').onclick=()=>$('clearInk').click();
+document.querySelectorAll('[data-stage-tool]').forEach(b=>b.onclick=()=>{if(wisdomModeActive){const w=document.querySelector('[data-wisdom-tool="'+b.dataset.stageTool+'"]');if(w)w.click();return;}const tool=document.querySelector('[data-tool="'+b.dataset.stageTool+'"]');if(tool)tool.click();});
+$('fsClearInk').onclick=()=>{if(wisdomModeActive)$('wisdomClear').click();else $('clearInk').click();};
 $('fsRecordToggle').onclick=()=>{if(recording)stopBtn.click();else recordBtn.click();syncStagePresenterDock();};
 $('fsPauseToggle').onclick=()=>{if(recording)pauseBtn.click();syncStagePresenterDock();};
 inkCanvas.addEventListener('pointerdown',inkStart,{passive:false});inkCanvas.addEventListener('pointermove',inkMove,{passive:false});inkCanvas.addEventListener('pointerup',inkEnd);inkCanvas.addEventListener('pointercancel',inkEnd);inkCanvas.addEventListener('lostpointercapture',inkEnd);
