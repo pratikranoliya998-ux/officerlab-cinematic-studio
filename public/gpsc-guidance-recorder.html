@@ -794,7 +794,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
     <button id="annotationFab" type="button" aria-label="Open teaching tools" title="Teaching tools">✎</button>
     <div id="toolTray" hidden>
       <div class="tool-row"><button type="button" data-tool="pen" class="active" aria-pressed="true">✎ Pen</button><button type="button" data-tool="highlighter" aria-pressed="false">🖍 Highlighter</button><button type="button" data-tool="eraser" aria-pressed="false">⌫ Eraser</button><button type="button" data-tool="text" aria-pressed="false">T Text</button><button type="button" id="clearInk">Clear</button></div>
-      <div class="tool-row ink-settings-row"><label for="inkColor">Pen</label><input type="color" id="inkColor" value="#ff3b30" aria-label="Pen colour"><label for="inkWidth">Width</label><input type="range" id="inkWidth" min="1" max="32" value="5"><span class="tool-val" id="inkWidthVal">5 px</span><label class="check ink-pressure"><input id="inkPressure" type="checkbox" checked> Stylus pressure</label></div>
+      <div class="tool-row ink-settings-row"><label for="inkColor">Pen</label><input type="color" id="inkColor" value="#ff3b30" aria-label="Pen colour"><label for="inkWidth">Width</label><input type="range" id="inkWidth" min="1" max="32" value="5"><span class="tool-val" id="inkWidthVal">5 px</span><label class="check ink-pressure"><input id="inkPressure" type="checkbox" checked> Stylus pressure</label> <label class="check ink-pressure"><input id="inkPalmGuard" type="checkbox"> Palm guard (ignore finger touch)</label></div>
       <div class="tool-row ink-settings-row"><label for="highlightColor">Highlighter</label><input type="color" id="highlightColor" value="#ffe45c" aria-label="Highlighter colour"><label for="highlightWidth">Width</label><input type="range" id="highlightWidth" min="10" max="72" value="30"><span class="tool-val" id="highlightWidthVal">30 px</span><label for="highlightOpacity">Opacity</label><input type="range" id="highlightOpacity" min="12" max="65" value="34"><span class="tool-val" id="highlightOpacityVal">34%</span></div>
       <p class="small ink-quality-hint">Smooth real-time strokes · Coalesced stylus/touch samples · Separate pen and marker presets</p>
     </div>
@@ -2023,6 +2023,7 @@ function inkStyle(point){
 }
 function inkStart(e){
  if(toolTray.contains(e.target)||drawing)return;
+ if($("inkPalmGuard")?.checked&&e.pointerType==="touch"){const st=$("annotationStatus");if(st)st.textContent="Palm guard enabled · draw with stylus or mouse.";return;}
  if(activeTool==='text'){
   e.preventDefault();const text=prompt('Enter text to place on this slide:');
   if(text){const p=getInkPoint(e);ink.save();ink.globalAlpha=1;ink.fillStyle=$('inkColor').value;ink.font='bold '+Math.round(canvas.width/48)+'px system-ui';ink.shadowColor='#000';ink.shadowBlur=5;ink.fillText(text,p.x,p.y);ink.restore();}return;
