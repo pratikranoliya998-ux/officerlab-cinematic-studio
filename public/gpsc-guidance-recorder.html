@@ -1169,6 +1169,7 @@ const recList=$('recList'),empty=$('empty'),recoveryList=$('recoveryList');
 const dataSaver=$('dataSaver'),wifiOnlyDownloads=$('wifiOnlyDownloads');
 const autoCaptionsEnabled=$('autoCaptionsEnabled'),captionLanguage=$('captionLanguage'),captionStatus=$('captionStatus');
 let cameraStream=null,micStream=null,screenStream=null,recorder=null,recordTimer=null,meterRAF=0,drawRAF=0,preferredFacing='user';
+let lastSceneFrameAt=0,lastMicMeterAt=0,micMeterBars=null,micMeterSamples=null,stopWatchdog=null;
 let screenCropSource=null,screenCropResult=null,screenCropResolved=false,screenCropChecks=0;
 let audioContext=null,audioDestination=null,micGain=null,screenGain=null,micAnalyser=null,micSource=null,screenAudioSource=null;
 
@@ -1202,13 +1203,27 @@ const clock=ms=>{const sec=Math.max(0,Math.floor(ms/1000));return String(Math.fl
 const fileSize=bytes=>bytes<1024?bytes+' B':bytes<1048576?(bytes/1024).toFixed(1)+' KB':(bytes/1048576).toFixed(1)+' MB';
 const stamp=()=>{const d=new Date(),p=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'_'+p(d.getHours())+p(d.getMinutes())+p(d.getSeconds())};
 function selectedOutputQuality(){const requested=Number(quality.value);return dataSaver.checked?Math.min(requested,720):requested;}
-function setCanvasQuality(){const h=legacyCaptureActive?Math.min(selectedOutputQuality(),720):selectedOutputQuality(),w=h===1080?1920:h===720?1280:854,hh=h===1080?1080:h===720?720:480;const portrait=outputRatio.value==='portrait';canvas.width=portrait?hh:w;canvas.height=portrait?w:hh;inkCanvas.width=canvas.width;inkCanvas.height=canvas.height;stage.style.aspectRatio=portrait?'9 / 16':'16 / 9';$('recResolution').textContent=canvas.width+'×'+canvas.height;}
+function setCanvasQuality(){
+ const oldW=inkCanvas.width,oldH=inkCanvas.height;
+ let inkSnapshot=null;
+ if(oldW>0&&oldH>0){
+  inkSnapshot=document.createElement('canvas');inkSnapshot.width=oldW;inkSnapshot.height=oldH;
+  inkSnapshot.getContext('2d').drawImage(inkCanvas,0,0);
+ }
+ const h=legacyCaptureActive?Math.min(selectedOutputQuality(),720):selectedOutputQuality(),w=h===1080?1920:h===720?1280:854,hh=h===1080?1080:h===720?720:480;
+ const portrait=outputRatio.value==='portrait';
+ canvas.width=portrait?hh:w;canvas.height=portrait?w:hh;
+ // The annotation layer is display-interactive, not the encoded video surface.
+ // Cap its long edge at 1280px; draw it scaled onto the full-resolution MP4 canvas.
+ const inkScale=Math.min(1,1280/Math.max(canvas.width,canvas.height));
+ const inkW=Math.max(1,Math.round(canvas.width*inkScale)),inkH=Math.max(1,Math.round(canvas.height*inkScale));
+ inkCanvas.width=inkW;inkCanvas.height=inkH;
+ if(inkSnapshot)ink.drawImage(inkSnapshot,0,0,inkW,inkH);
+ stage.style.aspectRatio=portrait?'9 / 16':'16 / 9';
+ $('recResolution').textContent=canvas.width+'×'+canvas.height;
+}
 function changePresentationOutputRatio(ratio){
- const snapshot=document.createElement('canvas');
- snapshot.width=inkCanvas.width;snapshot.height=inkCanvas.height;
- if(snapshot.width&&snapshot.height)snapshot.getContext('2d').drawImage(inkCanvas,0,0);
  outputRatio.value=ratio;setCanvasQuality();
- if(snapshot.width&&snapshot.height)ink.drawImage(snapshot,0,0,inkCanvas.width,inkCanvas.height);
  updatePipHandle();syncVisuals();
 }
 function restorePresentationOutputRatio(){
@@ -1257,11 +1272,11 @@ function syncStagePresenterDock(){
  const rec=$('fsRecordToggle'),pause=$('fsPauseToggle'),status=$('fsRecordStatus'),dock=$('stageFsRecordDock');
  if(!rec||!pause)return;
  rec.classList.toggle('recording',recording);
- rec.textContent=recording?'■':'●';
- rec.title=recording?'Stop recording':'Start recording';
+ rec.textContent=recording?(stoppingRecording?'…':'■'):'●';
+ rec.title=recording?(stoppingRecording?'Finalizing recording':'Stop recording'):'Start recording';
  rec.setAttribute('aria-label',rec.title);
  rec.setAttribute('aria-pressed',String(recording));
- rec.disabled=!recording&&recordBtn.disabled;
+ rec.disabled=stoppingRecording||(!recording&&recordBtn.disabled);
  pause.disabled=!recording||stoppingRecording;
  pause.textContent=paused?'▶':'Ⅱ';
  pause.title=paused?'Resume recording':'Pause recording';
@@ -1269,7 +1284,7 @@ function syncStagePresenterDock(){
  pause.setAttribute('aria-pressed',String(paused));
  dock?.classList.toggle('recording',recording&&!paused);
  dock?.classList.toggle('paused',recording&&paused);
- if(status)status.textContent=recording?(paused?'PAUSED':'REC'):'READY';
+ if(status)status.textContent=stoppingRecording?'SAVING':recording?(paused?'PAUSED':'REC'):(recordingStarting?'PREPARING':'READY');
  document.querySelectorAll('[data-stage-tool]').forEach(button=>{
   const selected=button.dataset.stageTool===activeTool;
   button.classList.toggle('active',selected);
@@ -1277,7 +1292,7 @@ function syncStagePresenterDock(){
  });
 }
 function updateControls(){
- const mode=captureMode.value;updateProgressBarHint();slideTransitionsEnabled.disabled=recording||recordingStarting;slideTransitionType.disabled=recording||recordingStarting||!slideTransitionsEnabled.checked;slideMotionEnabled.disabled=recording||recordingStarting;slideContinuousEnabled.disabled=recording||recordingStarting;slideContinuousInterval.disabled=recording||recordingStarting||!slideContinuousEnabled.checked;slideContinuousLoop.disabled=recording||recordingStarting||!slideContinuousEnabled.checked;inkCanvas.style.opacity=recording?'0':'1';captureMode.disabled=recording||recordingStarting;quality.disabled=recording||recordingStarting;outputRatio.disabled=recording||recordingStarting;recordBtn.disabled=recording||recordingStarting||!baseAvailable()||((mode==='screen-camera'||mode==='camera-slides')&&!cameraStream);
+ const mode=captureMode.value;updateProgressBarHint();slideTransitionsEnabled.disabled=recording||recordingStarting;slideTransitionType.disabled=recording||recordingStarting||!slideTransitionsEnabled.checked;slideMotionEnabled.disabled=recording||recordingStarting;slideContinuousEnabled.disabled=recording||recordingStarting;slideContinuousInterval.disabled=recording||recordingStarting||!slideContinuousEnabled.checked;slideContinuousLoop.disabled=recording||recordingStarting||!slideContinuousEnabled.checked;inkCanvas.style.opacity=recording?'0':'1';captureMode.disabled=recording||recordingStarting;quality.disabled=recording||recordingStarting;outputRatio.disabled=recording||recordingStarting;recordBtn.disabled=recordingStarting||stoppingRecording||(!recording&&(!baseAvailable()||((mode==='screen-camera'||mode==='camera-slides')&&!cameraStream)));recordBtn.textContent=recording?(stoppingRecording?'Saving recording…':'■ End Recording'):(recordingStarting?'Preparing MP4…':'⏺ Start Recording');
  let startReason='';
  if(mode==='camera'&&!cameraStream)startReason='Start Camera first.';
  else if(mode==='camera-slides'&&!cameraStream)startReason='Start Camera and upload slides first.';
@@ -1285,7 +1300,7 @@ function updateControls(){
  else if(mode==='screen'&&!screenStream&&!slides.length)startReason='Share Screen or upload PDF / image slides first.';
  else if(mode==='screen-camera'&&!cameraStream)startReason='Start Camera first, then share screen or upload slides.';
  else if(mode==='screen-camera'&&!screenStream&&!slides.length)startReason='Share Screen or upload PDF / image slides first.';
- recordBtn.title=recording?'Recording':recordingStarting?'Preparing MP4 recording…':(startReason||'Start MP4 recording');
+ recordBtn.title=recording?(stoppingRecording?'Finalizing MP4 recording…':'Click to end recording'):recordingStarting?'Preparing MP4 recording…':(startReason||'Start MP4 recording');
  autoCaptionsEnabled.disabled=recording||recordingStarting;captionLanguage.disabled=recording||recordingStarting;[introCardEnabled,introCardDuration,introCardTitle,introCardSubtitle,outroCardEnabled,outroCardDuration,outroCardTitle,outroCardSubtitle].forEach(el=>el.disabled=recording||recordingStarting||stoppingRecording);
  cameraBtn.disabled=recording||recordingStarting;micBtn.disabled=recording||recordingStarting;screenBtn.disabled=recording||recordingStarting||(!screenStream&&!screenShareCapability().supported);updateScreenShareHint();screenBtn.title=screenStream?'Stop the active screen share':screenShareCapability().message;$('cameraSwitchBtn').disabled=recording||recordingStarting||!cameraStream;
  $('muteBtn').disabled=!micStream;
@@ -1773,7 +1788,12 @@ function tickContinuousSlideMovement(){
   saveSlideAnimationSettings();
  }).finally(()=>{slideContinuousPending=false;});
 }
-function drawScene(){
+function drawScene(frameTime){
+ const frameNow=Number.isFinite(frameTime)?frameTime:performance.now();
+ // 30 fps is the actual recording target. A 60 fps preview doubled canvas work
+ // without improving the captured MP4, especially on older desktop hardware.
+ if(frameNow-lastSceneFrameAt<32){drawRAF=requestAnimationFrame(drawScene);return;}
+ lastSceneFrameAt=frameNow;
  if(recording&&stoppingRecording&&outroStartedAt&&outroCardEnabled.checked){
   drawBrandTitleCard('outro',performance.now()-outroStartedAt);drawProgressBar(ctx);drawRAF=requestAnimationFrame(drawScene);return;
  }
@@ -1819,12 +1839,28 @@ function syncVisuals(){
  updateControls();
  if(!drawRAF)startDraw();
 }
-function drawMicMeter(){
- if(!micAnalyser){meterFill.parentElement.querySelectorAll('.wave-bar').forEach(bar=>{bar.style.transform='scaleY(.12)';bar.style.opacity='.35';});meterFill.parentElement.setAttribute('aria-valuenow','0');meterRAF=requestAnimationFrame(drawMicMeter);return;}
- const data=new Uint8Array(micAnalyser.fftSize);micAnalyser.getByteTimeDomainData(data);
+function drawMicMeter(frameTime){
+ const frameNow=Number.isFinite(frameTime)?frameTime:performance.now();
+ // The waveform is informational; 12 fps is visually smooth and cheaper to paint.
+ if(frameNow-lastMicMeterAt<80){meterRAF=requestAnimationFrame(drawMicMeter);return;}
+ lastMicMeterAt=frameNow;
+ if(!micMeterBars)micMeterBars=[...meterFill.parentElement.querySelectorAll('.wave-bar')];
+ if(!micAnalyser){
+  micMeterBars.forEach(bar=>{bar.style.transform='scaleY(.12)';bar.style.opacity='.35';});
+  meterFill.parentElement.setAttribute('aria-valuenow','0');meterRAF=requestAnimationFrame(drawMicMeter);return;
+ }
+ if(!micMeterSamples||micMeterSamples.length!==micAnalyser.fftSize)micMeterSamples=new Uint8Array(micAnalyser.fftSize);
+ const data=micMeterSamples;micAnalyser.getByteTimeDomainData(data);
  let sum=0;for(const v of data){const n=(v-128)/128;sum+=n*n;}
- const rms=Math.sqrt(sum/data.length);const level=Math.min(100,Math.round(rms*260));
- const bars=meterFill.parentElement.querySelectorAll('.wave-bar');if(bars.length){const stride=Math.max(1,Math.floor(data.length/bars.length));bars.forEach((bar,index)=>{let energy=0;for(let j=0;j<stride;j++){const n=(data[index*stride+j]||128)-128;energy+=n*n;}const amplitude=Math.sqrt(energy/stride)/128;const height=Math.max(3,Math.min(27,3+amplitude*145+(level/100)*8));bar.style.transform='scaleY('+(height/27)+')';bar.style.opacity=String(.55+Math.min(.45,amplitude*1.5));});}
+ const rms=Math.sqrt(sum/data.length),level=Math.min(100,Math.round(rms*260));
+ if(micMeterBars.length){
+  const stride=Math.max(1,Math.floor(data.length/micMeterBars.length));
+  micMeterBars.forEach((bar,index)=>{
+   let energy=0;for(let j=0;j<stride;j++){const n=(data[index*stride+j]||128)-128;energy+=n*n;}
+   const amplitude=Math.sqrt(energy/stride)/128,height=Math.max(3,Math.min(27,3+amplitude*145+(level/100)*8));
+   bar.style.transform='scaleY('+(height/27)+')';bar.style.opacity=String(.55+Math.min(.45,amplitude*1.5));
+  });
+ }
  meterFill.parentElement.setAttribute('aria-valuenow',String(level));
  meterRAF=requestAnimationFrame(drawMicMeter);
 }
@@ -2015,7 +2051,8 @@ function inkStyle(point){
  ink.lineCap='round';ink.lineJoin='round';
  const marker=activeTool==='highlighter',eraser=activeTool==='eraser';
  const base=marker?Number($('highlightWidth').value):Number($('inkWidth').value);
- ink.lineWidth=Math.max(1,base*inkPressureScale(point||{}));
+ const outputScale=inkCanvas.width/Math.max(1,canvas.width);
+ ink.lineWidth=Math.max(.5,base*outputScale*inkPressureScale(point||{}));
  ink.globalCompositeOperation=eraser?'destination-out':'source-over';
  ink.globalAlpha=marker?Number($('highlightOpacity').value)/100:1;
  ink.strokeStyle=marker?$('highlightColor').value:$('inkColor').value;
@@ -2026,7 +2063,7 @@ function inkStart(e){
  if($("inkPalmGuard")?.checked&&e.pointerType==="touch"){const st=$("annotationStatus");if(st)st.textContent="Palm guard enabled · draw with stylus or mouse.";return;}
  if(activeTool==='text'){
   e.preventDefault();const text=prompt('Enter text to place on this slide:');
-  if(text){const p=getInkPoint(e);ink.save();ink.globalAlpha=1;ink.fillStyle=$('inkColor').value;ink.font='bold '+Math.round(canvas.width/48)+'px system-ui';ink.shadowColor='#000';ink.shadowBlur=5;ink.fillText(text,p.x,p.y);ink.restore();}return;
+  if(text){const p=getInkPoint(e);ink.save();ink.globalAlpha=1;ink.fillStyle=$('inkColor').value;ink.font='bold '+Math.round(inkCanvas.width/48)+'px system-ui';ink.shadowColor='#000';ink.shadowBlur=5;ink.fillText(text,p.x,p.y);ink.restore();}return;
  }
  e.preventDefault();drawing=true;lastInkPointerId=e.pointerId;
  try{inkCanvas.setPointerCapture(e.pointerId);}catch{}
@@ -2296,8 +2333,9 @@ async function startRecording(isTest=false){
   if(!window.indexedDB)localChunks.push({index,blob});
   writeQueue=writeQueue.then(()=>putChunk({sessionId,index,blob})).catch(err=>{localChunks.push({index,blob});showError('Local recovery save warning: '+err.message);});
  };
- recorder.onerror=e=>showError('Recording error: '+(e.error?.message||'unknown'));
+ recorder.onerror=e=>{showError('Recording error: '+(e.error?.message||'unknown'));if(recording&&!stoppingRecording)stopRecording();};
  recorder.onstop=async()=>{
+  if(stopWatchdog){clearTimeout(stopWatchdog);stopWatchdog=null;}
   const finalDuration=recordingElapsedMs();recordElapsedMs=finalDuration;recordSegmentStartedAt=0;captionStopAtMs=finalDuration;
   clearInterval(recordTimer);recordTimer=null;
   let sourceBlob=null;
@@ -2343,7 +2381,7 @@ async function startRecording(isTest=false){
   return;
  }
  startedAt=Date.now();recordElapsedMs=0;recordSegmentStartedAt=startedAt;recording=true;recordingStarting=false;paused=false;stoppingRecording=false;outroStartedAt=0;if(lowerThirdEnabled.checked){lowerThirdStartedAt=performance.now();lowerThirdRecordingStartedAt=0;}
- recordBtn.textContent='● Recording';recordBtn.classList.add('danger');pauseBtn.disabled=false;stopBtn.disabled=false;cameraBtn.disabled=true;micBtn.disabled=true;screenBtn.disabled=true;cameraSelect.disabled=true;micSelect.disabled=true;badge.classList.add('on');timer.textContent='00:00';
+ recordBtn.textContent='■ End Recording';recordBtn.classList.add('danger');pauseBtn.disabled=false;stopBtn.disabled=false;cameraBtn.disabled=true;micBtn.disabled=true;screenBtn.disabled=true;cameraSelect.disabled=true;micSelect.disabled=true;badge.classList.add('on');timer.textContent='00:00';
  recordTimer=setInterval(()=>{timer.textContent=clock(recordingElapsedMs())},250);
  if(autoCaptionsEnabled.checked)startCaptionCapture();
  if(isTest){testTimeout=setTimeout(()=>{if(recording)stopRecording();},30000);}
@@ -2353,12 +2391,33 @@ function stopRecording(){
  if(!recorder||!recording||stoppingRecording)return;
  if(testTimeout){clearTimeout(testTimeout);testTimeout=null;}
  stoppingRecording=true;captionStopAtMs=recordingElapsedMs();
+ recordBtn.disabled=true;recordBtn.textContent='Saving recording…';recordBtn.title='Finalizing MP4 recording…';
  pauseBtn.disabled=true;stopBtn.disabled=true;
  if(outroCardEnabled.checked&&recorder.state==='paused'){
   try{recorder.resume();paused=false;recordSegmentStartedAt=Date.now();pauseBtn.textContent='Ⅱ Pause';}catch(e){showError('Could not resume for closing card: '+e.message);}
  }
  syncStagePresenterDock();
- const finish=()=>{clearTimeout(outroTimer);outroTimer=null;if(recorder&&recorder.state!=='inactive')recorder.stop();};
+ const finish=()=>{
+  clearTimeout(outroTimer);outroTimer=null;
+  const targetRecorder=recorder;
+  if(!targetRecorder)return;
+  try{
+   if(targetRecorder.state!=='inactive')targetRecorder.stop();
+   if(stopWatchdog)clearTimeout(stopWatchdog);
+   stopWatchdog=setTimeout(()=>{
+    if(recorder!==targetRecorder||!stoppingRecording)return;
+    // If the browser never dispatches "stop", release the stuck controls and
+    // point the user to the recovery shelf where already-saved chunks remain.
+    showError('The browser did not complete its recording stop event. Check Recordings & Recovery for the captured chunks, then retry in a fresh browser tab.');
+    recording=false;paused=false;recordingStarting=false;stoppingRecording=false;stopWatchdog=null;
+    recordSegmentStartedAt=0;clearInterval(recordTimer);recordTimer=null;
+    updateControls();syncStagePresenterDock();
+   },12000);
+  }catch(error){
+   stoppingRecording=false;recordBtn.disabled=false;updateControls();syncStagePresenterDock();
+   showError('Could not end recording: '+(error?.message||String(error)));
+  }
+ };
  if(outroCardEnabled.checked){
   outroStartedAt=performance.now();const duration=Math.max(2,Math.min(5,Number(outroCardDuration.value)||3));
   stopCaptionCapture();
@@ -2738,8 +2797,8 @@ annotationFab.onclick=()=>{toolTray.hidden=!toolTray.hidden;inkCanvas.classList.
 document.querySelectorAll('[data-tool]').forEach(b=>b.onclick=()=>{activeTool=b.dataset.tool;document.querySelectorAll('[data-tool]').forEach(x=>{const selected=x===b;x.classList.toggle('active',selected);x.setAttribute('aria-pressed',selected?'true':'false');});toolTray.hidden=true;inkCanvas.classList.add('enabled');syncStagePresenterDock();});
 document.querySelectorAll('[data-stage-tool]').forEach(b=>b.onclick=()=>{const tool=document.querySelector('[data-tool="'+b.dataset.stageTool+'"]');if(tool)tool.click();});
 $('fsClearInk').onclick=()=>$('clearInk').click();
-$('fsRecordToggle').onclick=()=>{if(recording)stopBtn.click();else recordBtn.click();syncStagePresenterDock();};
-$('fsPauseToggle').onclick=()=>{if(recording)pauseBtn.click();syncStagePresenterDock();};
+$('fsRecordToggle').onclick=()=>{if(recording)stopRecording();else startRecording();syncStagePresenterDock();};
+$('fsPauseToggle').onclick=()=>{if(recording)pauseRecording();syncStagePresenterDock();};
 document.addEventListener('click',event=>{const swatch=event.target.closest('[data-ink-color]');if(!swatch)return;const color=swatch.dataset.inkColor;if(color&&$('inkColor')){$('inkColor').value=color;$('inkColor').dispatchEvent(new Event('input',{bubbles:true}));$('inkColor').dispatchEvent(new Event('change',{bubbles:true}));const status=$('annotationStatus');if(status)status.textContent='Ink colour selected.';}});
 inkCanvas.addEventListener('pointerdown',inkStart,{passive:false});inkCanvas.addEventListener('pointermove',inkMove,{passive:false});inkCanvas.addEventListener('pointerup',inkEnd);inkCanvas.addEventListener('pointercancel',inkEnd);inkCanvas.addEventListener('lostpointercapture',inkEnd);
 $('clearInk').onclick=()=>{ink.clearRect(0,0,inkCanvas.width,inkCanvas.height);toolTray.hidden=true;};
