@@ -765,6 +765,67 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 
 
 .exam-focus-card{position:absolute;left:7%;right:7%;z-index:15;pointer-events:none;padding:clamp(14px,2.2vw,30px);border:2px solid #e8b44b;border-radius:18px;background:linear-gradient(135deg,rgba(9,17,32,.96),rgba(23,34,54,.94));box-shadow:0 12px 38px #0009,0 0 28px #d2992240;color:#fff;display:none;overflow:hidden}.exam-focus-card.on{display:block}.exam-focus-card.pos-top{top:7%}.exam-focus-card.pos-center{top:50%;transform:translateY(-50%)}.exam-focus-card.pos-bottom{bottom:7%}.exam-focus-card .focus-kicker{font-size:clamp(11px,1.5vw,19px);letter-spacing:.14em;text-transform:uppercase;font-weight:900;color:#f5c45f;margin-bottom:8px}.exam-focus-card .focus-heading{font-size:clamp(20px,3.5vw,46px);line-height:1.15;font-weight:900;overflow-wrap:anywhere}.exam-focus-card .focus-body{font-size:clamp(16px,2.6vw,32px);line-height:1.35;font-weight:650;margin-top:10px;white-space:pre-wrap;overflow-wrap:anywhere}.exam-focus-card.type-alert{border-color:#f85149}.exam-focus-card.type-alert .focus-kicker{color:#ff8580}.exam-focus-card.type-pyq{border-color:#7eb7ff}.exam-focus-card.type-pyq .focus-kicker{color:#9bcaff}.exam-focus-card.type-article{border-color:#b8a1ff}.exam-focus-card.type-article .focus-kicker{color:#c6b5ff}.exam-focus-card.type-remember{border-color:#4ed2a0}.exam-focus-card.type-remember .focus-kicker{color:#79e2b8}.exam-focus-card.type-formula{border-color:#58c8f0}.exam-focus-card.type-formula .focus-kicker{color:#7ddcf7}
+
+/* OfficerLab Smart Annotation — mobile-first floating teaching toolbar */
+#toolTray.annotation-tray{left:10px;bottom:66px;width:min(470px,calc(100% - 20px));max-height:min(68%,520px);overflow:auto;padding:12px;border:1px solid rgba(245,196,95,.55);border-radius:16px;background:rgba(8,15,27,.96);box-shadow:0 16px 44px rgba(0,0,0,.56);backdrop-filter:blur(18px);overscroll-behavior:contain}
+.annotation-tray-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.annotation-tray-head strong{display:block;color:#f5c45f;font-size:11px;letter-spacing:.13em}
+.annotation-tray-head small{display:block;color:#aebed2;font-size:9px;margin-top:3px}
+.annotation-tray-head button{width:36px;min-width:36px;height:36px;min-height:36px;padding:0;font-size:21px;border-radius:50%}
+.annotation-tool-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.annotation-tool-grid button{display:flex;min-width:0;min-height:44px;align-items:center;justify-content:center;gap:6px;padding:7px 5px;font-size:15px;border-radius:10px;touch-action:manipulation}
+.annotation-tool-grid button span{font-size:10px;font-weight:750}
+.annotation-tool-grid button.active{background:#1b4777;border-color:#76b7ff;box-shadow:0 0 0 2px rgba(47,129,247,.2)}
+.annotation-history-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:9px}
+.annotation-history-row button{min-width:0;min-height:38px;padding:5px 4px;font-size:10px}
+.annotation-history-row button:disabled{opacity:.35}
+.annotation-settings{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px}
+.annotation-setting-block,.annotation-text-setting{min-width:0;padding:9px;border:1px solid #ffffff1c;border-radius:11px;background:#ffffff08}
+.annotation-setting-block>label,.annotation-text-setting>label{display:flex;align-items:center;justify-content:space-between;gap:7px;margin:0 0 6px;color:#c8d6e8;font-size:10px;font-weight:750}
+.annotation-setting-block>label b{color:#f5c45f;font-variant-numeric:tabular-nums}
+.annotation-setting-block input[type=color]{width:100%;height:34px;padding:2px;border:1px solid #ffffff35;border-radius:8px;background:#111923}
+.annotation-setting-block input[type=range]{width:100%;height:29px;margin:0 0 7px;accent-color:#7db7ff;touch-action:pan-x}
+.annotation-color-line{display:flex;align-items:center;gap:7px;margin-bottom:7px}
+.annotation-color-line input[type=color]{width:42px;min-width:42px;height:34px}
+.annotation-swatches{display:flex;flex-wrap:wrap;gap:5px}
+.annotation-swatches button{width:21px;min-width:21px;height:21px;min-height:21px;padding:0;border-radius:50%;background:var(--swatch);border:2px solid #ffffff70;box-shadow:0 1px 5px #0008}
+.annotation-size-presets{display:flex;gap:5px;margin:1px 0 7px}
+.annotation-size-presets button{min-height:28px;flex:1;padding:3px 5px;font-size:9px}
+.annotation-setting-block .check{font-size:10px}
+.annotation-text-setting{grid-column:1/-1}
+.annotation-text-setting input{width:100%;min-width:0;padding:9px;border-radius:8px;border:1px solid var(--line);background:#111923;color:#fff;font-size:12px}
+.annotation-status{margin:8px 1px 0;color:#aebed2;font-size:9px;line-height:1.45}
+#annotationCanvas.enabled{pointer-events:auto;touch-action:none;cursor:crosshair}
+#stage:fullscreen .stage-fs-dock#stageFsToolDock{max-height:78vh;overflow-y:auto;overscroll-behavior:contain}
+#stage:fullscreen #stageFsToolDock button{flex-shrink:0}
+@media(max-width:650px){
+ #toolTray.annotation-tray{left:8px;bottom:62px;width:calc(100% - 16px);max-height:58%;padding:9px}
+ .annotation-tool-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
+ .annotation-tool-grid button{min-height:42px}
+ .annotation-settings{gap:6px}
+ .annotation-history-row{gap:4px}
+ .annotation-history-row button{font-size:9px}
+}
+@media(max-width:390px){.annotation-tool-grid button{flex-direction:column;gap:2px;font-size:14px}.annotation-tool-grid button span{font-size:9px}.annotation-settings{grid-template-columns:1fr}.annotation-text-setting{grid-column:auto}}
+/* Exam Focus — editable cards composited directly into the recording canvas */
+.exam-focus-compartment{margin:10px 0}
+.exam-focus-panel{padding:11px;border:1px solid #d9b65f77;border-radius:12px;background:linear-gradient(145deg,#111b2c,#0b111b)}
+.exam-focus-panel .hint{margin:0 0 10px;font-size:10px;line-height:1.5}
+.exam-focus-presets{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-bottom:10px}
+.exam-focus-presets button{min-width:0;min-height:38px;padding:6px 7px;text-align:left;font-size:10px;border-color:#ffffff20;background:#ffffff08}
+.exam-focus-presets button:active{border-color:#f5c45f;background:#f5c45f18}
+.exam-focus-fields{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.exam-focus-fields .field{min-width:0}
+.exam-focus-fields .field label{font-size:9px}
+.exam-focus-fields input,.exam-focus-fields select,.exam-focus-fields textarea{font-size:11px;padding:8px}
+.exam-focus-fields textarea{min-height:76px;resize:vertical}
+.exam-focus-body-field{grid-column:1/-1}
+.exam-focus-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+.exam-focus-actions button{flex:1;min-height:40px;font-size:11px}
+.exam-focus-actions #examFocusShow{background:#9e762b;border-color:#d8b45b;color:#fff}
+.exam-focus-status{margin-top:8px;padding:8px 9px;border:1px solid #ffffff16;border-radius:8px;background:#ffffff08;color:#d1dbe9;font-size:9px;line-height:1.45}
+@media(max-width:760px){.exam-focus-fields{grid-template-columns:1fr 1fr}.exam-focus-fields .exam-focus-body-field{grid-column:1/-1}}
+
 </style>
 </head>
 <body>
@@ -791,11 +852,38 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
     <video id="screenVideo" autoplay muted playsinline></video>
     <div id="pipHandle"><div class="drag-bar" id="pipDragBar">⠿ Drag Face Cam</div></div>
     <button id="annotationFab" type="button" aria-label="Open teaching tools" title="Teaching tools">✎</button>
-    <div id="toolTray" hidden>
-      <div class="tool-row"><button type="button" data-tool="pen" class="active" aria-pressed="true">✎ Pen</button><button type="button" data-tool="highlighter" aria-pressed="false">🖍 Highlighter</button><button type="button" data-tool="eraser" aria-pressed="false">⌫ Eraser</button><button type="button" data-tool="text" aria-pressed="false">T Text</button><button type="button" id="clearInk">Clear</button></div>
-      <div class="tool-row ink-settings-row"><label for="inkColor">Pen</label><input type="color" id="inkColor" value="#ff3b30" aria-label="Pen colour"><label for="inkWidth">Width</label><input type="range" id="inkWidth" min="1" max="32" value="5"><span class="tool-val" id="inkWidthVal">5 px</span><label class="check ink-pressure"><input id="inkPressure" type="checkbox" checked> Stylus pressure</label></div>
-      <div class="tool-row ink-settings-row"><label for="highlightColor">Highlighter</label><input type="color" id="highlightColor" value="#ffe45c" aria-label="Highlighter colour"><label for="highlightWidth">Width</label><input type="range" id="highlightWidth" min="10" max="72" value="30"><span class="tool-val" id="highlightWidthVal">30 px</span><label for="highlightOpacity">Opacity</label><input type="range" id="highlightOpacity" min="12" max="65" value="34"><span class="tool-val" id="highlightOpacityVal">34%</span></div>
-      <p class="small ink-quality-hint">Smooth real-time strokes · Coalesced stylus/touch samples · Separate pen and marker presets</p>
+    <div id="toolTray" class="annotation-tray" hidden role="toolbar" aria-label="Smart annotation tools">
+      <div class="annotation-tray-head"><div><strong>SMART ANNOTATION</strong><small>Touch · Mouse · Stylus · Included in MP4</small></div><button type="button" id="annotationTrayClose" aria-label="Close annotation tools">×</button></div>
+      <div class="annotation-tool-grid">
+        <button type="button" data-tool="pen" class="active" aria-pressed="true" title="Freehand pen">✎ <span>Pen</span></button>
+        <button type="button" data-tool="highlighter" aria-pressed="false" title="Transparent highlighter">🖍 <span>Highlight</span></button>
+        <button type="button" data-tool="line" aria-pressed="false" title="Straight line">╱ <span>Line</span></button>
+        <button type="button" data-tool="arrow" aria-pressed="false" title="Arrow">➜ <span>Arrow</span></button>
+        <button type="button" data-tool="rectangle" aria-pressed="false" title="Rectangle">▭ <span>Box</span></button>
+        <button type="button" data-tool="ellipse" aria-pressed="false" title="Ellipse / circle">◯ <span>Circle</span></button>
+        <button type="button" data-tool="eraser" aria-pressed="false" title="Freehand eraser">⌫ <span>Eraser</span></button>
+        <button type="button" data-tool="text" aria-pressed="false" title="Place text on the slide">T <span>Text</span></button>
+      </div>
+      <div class="annotation-history-row">
+        <button type="button" id="undoInk" disabled>↶ Undo</button><button type="button" id="redoInk" disabled>↷ Redo</button>
+        <button type="button" id="clearInk">Clear all</button><button type="button" data-tool="none" id="annotationPointerMode">✋ Present</button>
+      </div>
+      <div class="annotation-settings">
+        <div class="annotation-setting-block">
+          <label for="inkColor">Pen / shape colour</label>
+          <div class="annotation-color-line"><input type="color" id="inkColor" value="#ff3b30" aria-label="Pen and shape colour"><div class="annotation-swatches"><button type="button" data-ink-color="#f5c45f" style="--swatch:#f5c45f" aria-label="Gold ink"></button><button type="button" data-ink-color="#ff4d5a" style="--swatch:#ff4d5a" aria-label="Red ink"></button><button type="button" data-ink-color="#4ea1ff" style="--swatch:#4ea1ff" aria-label="Blue ink"></button><button type="button" data-ink-color="#42d392" style="--swatch:#42d392" aria-label="Green ink"></button><button type="button" data-ink-color="#ffffff" style="--swatch:#ffffff" aria-label="White ink"></button></div></div>
+          <label for="inkWidth">Brush / shape size <b id="inkWidthVal">5 px</b></label><input type="range" id="inkWidth" min="1" max="32" value="5">
+          <div class="annotation-size-presets"><button type="button" data-ink-width="3">Fine</button><button type="button" data-ink-width="6">Medium</button><button type="button" data-ink-width="12">Bold</button></div>
+          <label class="check ink-pressure"><input id="inkPressure" type="checkbox" checked> Use stylus pressure</label>
+        </div>
+        <div class="annotation-setting-block">
+          <label for="highlightColor">Highlighter colour</label><input type="color" id="highlightColor" value="#ffe45c" aria-label="Highlighter colour">
+          <label for="highlightWidth">Marker width <b id="highlightWidthVal">30 px</b></label><input type="range" id="highlightWidth" min="10" max="72" value="30">
+          <label for="highlightOpacity">Marker opacity <b id="highlightOpacityVal">34%</b></label><input type="range" id="highlightOpacity" min="12" max="65" value="34">
+        </div>
+        <div class="annotation-text-setting"><label for="annotationTextValue">Text to place</label><input id="annotationTextValue" type="text" maxlength="100" placeholder="Type, choose Text, then tap the slide"></div>
+      </div>
+      <p class="annotation-status" id="annotationStatus" role="status" aria-live="polite">Choose a tool, then draw directly on the slide. Use Present to return to normal slide control.</p>
     </div>
     <div class="stage-placeholder" id="placeholder">Choose a capture mode, start the required source,<br>and your lecture preview will appear here.</div>
     <div class="rec-badge" id="badge"><span class="rec-dot"></span>REC <span id="timer">00:00</span><span id="recResolution">1920×1080</span></div>
@@ -804,9 +892,16 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
     <div id="stageFsToolDock" class="stage-fs-dock" role="toolbar" aria-label="Presentation annotation tools">
       <button type="button" data-stage-tool="pen" aria-label="Pen" title="Pen">✎</button>
       <button type="button" data-stage-tool="highlighter" aria-label="Highlighter" title="Highlighter">🖍</button>
+      <button type="button" data-stage-tool="line" aria-label="Line" title="Line">╱</button>
+      <button type="button" data-stage-tool="arrow" aria-label="Arrow" title="Arrow">➜</button>
+      <button type="button" data-stage-tool="rectangle" aria-label="Rectangle" title="Rectangle">▭</button>
+      <button type="button" data-stage-tool="ellipse" aria-label="Circle" title="Circle">◯</button>
       <button type="button" data-stage-tool="eraser" aria-label="Eraser" title="Eraser">⌫</button>
       <button type="button" data-stage-tool="text" aria-label="Add text" title="Add text">T</button>
-      <button type="button" id="fsClearInk" aria-label="Clear annotations" title="Clear annotations">↺</button>
+      <button type="button" id="fsUndoInk" aria-label="Undo annotation" title="Undo">↶</button>
+      <button type="button" id="fsRedoInk" aria-label="Redo annotation" title="Redo">↷</button>
+      <button type="button" id="fsClearInk" aria-label="Clear annotations" title="Clear annotations">⌧</button>
+      <button type="button" data-stage-tool="none" aria-label="Present mode" title="Disable drawing">✋</button>
       <button type="button" id="fsCameraOpacityToggle" aria-label="Camera opacity" title="Adjust camera opacity" aria-expanded="false">◐</button>
     </div>
     <div id="fsCameraOpacityPanel" class="stage-fs-opacity-panel" hidden>
@@ -1115,6 +1210,34 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 
 <aside id="contextPanel" class="context-panel" aria-label="Lecture context panel">
   <section class="card"><h2>Script / Talking Points</h2><textarea id="notes" placeholder="Paste your GPSC lecture outline here…&#10;&#10;1. Introduction&#10;2. Key concepts&#10;3. Examples and diagrams&#10;4. Revision questions"></textarea><p class="hint">Notes auto-save in this browser.</p></section>
+  <details class="setup-compartment exam-focus-compartment" id="examFocusCompartment" open>
+    <summary><span class="compartment-number">FX</span><span><strong>Exam Focus Mode</strong><small>Important facts · Articles · PYQs · Revision callouts</small></span><span class="compartment-chevron">⌄</span></summary>
+    <div class="compartment-body">
+      <section class="exam-focus-panel">
+        <p class="hint">Create an animated teaching card on the lecture canvas. It appears in the live preview and is burned into the final MP4. Keep it visible until hidden, or choose an auto-hide duration.</p>
+        <div class="exam-focus-presets" aria-label="Exam focus templates">
+          <button type="button" data-focus-preset="fact">★ Important Fact</button>
+          <button type="button" data-focus-preset="alert">⚠ Exam Alert</button>
+          <button type="button" data-focus-preset="article">§ Article / Section</button>
+          <button type="button" data-focus-preset="pyq">? PYQ</button>
+          <button type="button" data-focus-preset="remember">✓ Remember This</button>
+          <button type="button" data-focus-preset="formula">∑ Formula</button>
+        </div>
+        <div class="exam-focus-fields">
+          <div class="field"><label for="examFocusType">Card type</label><select id="examFocusType">
+            <option value="fact">Important Fact</option><option value="alert">Exam Alert</option><option value="article">Article / Section</option><option value="pyq">Previous Year Question</option><option value="remember">Remember This</option><option value="formula">Formula / Key Point</option>
+          </select></div>
+          <div class="field"><label for="examFocusTitle">Headline</label><input id="examFocusTitle" type="text" maxlength="90" placeholder="e.g. Article 14 — Equality before law"></div>
+          <div class="field exam-focus-body-field"><label for="examFocusBody">Explanation / key detail</label><textarea id="examFocusBody" rows="3" maxlength="280" placeholder="Add the concise fact, explanation, answer or formula…"></textarea></div>
+          <div class="field"><label for="examFocusPosition">Position on video</label><select id="examFocusPosition"><option value="top">Top</option><option value="center" selected>Center</option><option value="bottom">Bottom</option></select></div>
+          <div class="field"><label for="examFocusAnimation">Entrance effect</label><select id="examFocusAnimation"><option value="slide">Slide + fade</option><option value="fade">Fade</option><option value="zoom">Zoom</option><option value="static">No animation</option></select></div>
+          <div class="field"><label for="examFocusDuration">Display duration</label><select id="examFocusDuration"><option value="0">Until I hide it</option><option value="4">4 seconds</option><option value="6">6 seconds</option><option value="8">8 seconds</option><option value="12">12 seconds</option><option value="20">20 seconds</option></select></div>
+        </div>
+        <div class="exam-focus-actions"><button type="button" class="primary" id="examFocusShow">✦ Show on lecture</button><button type="button" id="examFocusHide">Hide card</button></div>
+        <div class="exam-focus-status" id="examFocusStatus" role="status" aria-live="polite">Ready. Choose a template, add your key point, and show it during the lesson.</div>
+      </section>
+    </div>
+  </details>
   <section class="card"><h2>Recordings & Recovery</h2><div class="download-prefs"><label class="check"><input id="wifiOnlyDownloads" type="checkbox"> Wi-Fi-only downloads</label><span class="small" id="downloadNetworkStatus">Network type: checking…</span></div><p class="hint">Some browsers do not expose Wi-Fi status; when unknown, the app will ask before downloading.</p><div id="recoveryList"></div><div id="recList"><div class="empty" id="empty">No recordings yet.<br>Start a capture source and press Start Recording.</div></div></section>
   <section class="card"><h2>Pre-recording checklist</h2>
     <div class="small" style="line-height:1.9">
@@ -1192,6 +1315,7 @@ let audioContext=null,audioDestination=null,micGain=null,screenGain=null,micAnal
 
 let layout='pip',pip={x:.77,y:.73},activeTool='pen',drawing=false,slides=[],slideIndex=0,pdfDoc=null,slideSource=null,slideUrls=[],presentationSavedOutputRatio=null;
 let motionGraphics=[],activeMotionGraphicIndex=-1,lastInkMidpoint=null;
+let annotationHistory=[],annotationRedo=[],currentAnnotation=null,examFocusCard=null;
 let slideLoadVersion=0,slideTransitionFromFrame=null,slideTransitionToFrame=null,slideTransitionStartedAt=0,slideMotionStartedAt=performance.now(),slideContinuousStartedAt=performance.now(),slideContinuousPending=false;
 let sessionId=null,chunkIndex=0,writeQueue=Promise.resolve(),localChunks=[],recording=false,paused=false,recordingStarting=false,stoppingRecording=false,startedAt=0,recordElapsedMs=0,recordSegmentStartedAt=0,testTimeout=null,outroStartedAt=0,outroTimer=null,legacyCaptureActive=false,legacyConverterReady=false;
 let saved=[],recoveryItems=[],activeMediaElement=null,mediaSessionReady=false;
@@ -1220,13 +1344,9 @@ const clock=ms=>{const sec=Math.max(0,Math.floor(ms/1000));return String(Math.fl
 const fileSize=bytes=>bytes<1024?bytes+' B':bytes<1048576?(bytes/1024).toFixed(1)+' KB':(bytes/1048576).toFixed(1)+' MB';
 const stamp=()=>{const d=new Date(),p=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'_'+p(d.getHours())+p(d.getMinutes())+p(d.getSeconds())};
 function selectedOutputQuality(){const requested=Number(quality.value);return dataSaver.checked?Math.min(requested,720):requested;}
-function setCanvasQuality(){const h=legacyCaptureActive?Math.min(selectedOutputQuality(),720):selectedOutputQuality(),w=h===1080?1920:h===720?1280:854,hh=h===1080?1080:h===720?720:480;const portrait=outputRatio.value==='portrait';canvas.width=portrait?hh:w;canvas.height=portrait?w:hh;inkCanvas.width=canvas.width;inkCanvas.height=canvas.height;stage.style.aspectRatio=portrait?'9 / 16':'16 / 9';$('recResolution').textContent=canvas.width+'×'+canvas.height;}
+function setCanvasQuality(){const h=legacyCaptureActive?Math.min(selectedOutputQuality(),720):selectedOutputQuality(),w=h===1080?1920:h===720?1280:854,hh=h===1080?1080:h===720?720:480;const portrait=outputRatio.value==='portrait';canvas.width=portrait?hh:w;canvas.height=portrait?w:hh;inkCanvas.width=canvas.width;inkCanvas.height=canvas.height;stage.style.aspectRatio=portrait?'9 / 16':'16 / 9';$('recResolution').textContent=canvas.width+'×'+canvas.height;if(typeof redrawAnnotationHistory==='function')redrawAnnotationHistory();}
 function changePresentationOutputRatio(ratio){
- const snapshot=document.createElement('canvas');
- snapshot.width=inkCanvas.width;snapshot.height=inkCanvas.height;
- if(snapshot.width&&snapshot.height)snapshot.getContext('2d').drawImage(inkCanvas,0,0);
  outputRatio.value=ratio;setCanvasQuality();
- if(snapshot.width&&snapshot.height)ink.drawImage(snapshot,0,0,inkCanvas.width,inkCanvas.height);
  updatePipHandle();syncVisuals();
 }
 function restorePresentationOutputRatio(){
@@ -1815,7 +1935,90 @@ document.getElementById('chapterAddBtn').onclick=()=>{const title=(chapterTitleI
 document.getElementById('chapterClearBtn').onclick=()=>{if(confirm('Clear all lecture bookmarks?')){lectureChapters=[];saveChapters();}};
 document.getElementById('chapterExportBtn').onclick=()=>{if(!lectureChapters.length){chapterStatus.textContent='Add bookmarks first.';return;}const lines=['CHAPTERS / BOOKMARKS','',...lectureChapters.map(ch=>chapterTime(ch.ms)+' '+ch.title+(ch.slide?' (Slide '+ch.slide+')':''))];const blob=new Blob([lines.join('\n')],{type:'text/plain;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='OfficerLab-Lecture-Chapters.txt';a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);chapterStatus.textContent='Chapter list exported.';};
 renderChapters();
-\nfunction drawScene(){
+\nconst examFocusLabels={
+ fact:{kicker:'IMPORTANT FACT',accent:'#f5c45f'},
+ alert:{kicker:'EXAM ALERT',accent:'#ff7777'},
+ article:{kicker:'ARTICLE / SECTION',accent:'#c6b5ff'},
+ pyq:{kicker:'PREVIOUS YEAR QUESTION',accent:'#9bcaff'},
+ remember:{kicker:'REMEMBER THIS',accent:'#79e2b8'},
+ formula:{kicker:'FORMULA / KEY POINT',accent:'#7ddcf7'}
+};
+function showExamFocusCard(){
+ const type=$('examFocusType').value||'fact',meta=examFocusLabels[type]||examFocusLabels.fact;
+ examFocusCard={type,kicker:meta.kicker,title:$('examFocusTitle').value.trim()||meta.kicker,body:$('examFocusBody').value.trim(),position:$('examFocusPosition').value||'center',animation:$('examFocusAnimation').value||'slide',duration:Number($('examFocusDuration').value)||0,startedAt:performance.now()};
+ $('examFocusStatus').textContent='Visible on preview and included in recording · '+(examFocusCard.duration?examFocusCard.duration+' second auto-hide':'stays visible until you hide it')+'.';
+}
+function hideExamFocusCard(){
+ examFocusCard=null;
+ $('examFocusStatus').textContent='Focus card hidden.';
+}
+function focusWrapLines(target,text,maxWidth,maxLines){
+ const lines=[];String(text||'').split(/\r?\n/).forEach(paragraph=>{
+  const words=paragraph.split(/\s+/).filter(Boolean);let line='';
+  words.forEach(word=>{
+   const test=line?line+' '+word:word;
+   if(line&&target.measureText(test).width>maxWidth){lines.push(line);line=word;}else line=test;
+  });
+  if(line)lines.push(line);
+  if(!words.length)lines.push('');
+ });
+ if(lines.length>maxLines){lines.length=maxLines;const last=lines.length-1;let clipped=lines[last];while(clipped.length>1&&target.measureText(clipped+'…').width>maxWidth)clipped=clipped.slice(0,-1);lines[last]=clipped+'…';}
+ return lines;
+}
+function drawExamFocus(target){
+ if(!examFocusCard)return;
+ const now=performance.now(),elapsed=now-examFocusCard.startedAt;
+ if(examFocusCard.duration>0&&elapsed>=examFocusCard.duration*1000){
+  examFocusCard=null;$('examFocusStatus').textContent='Focus card auto-hidden.';
+  return;
+ }
+ const W=canvas.width,H=canvas.height,card=examFocusCard,meta=examFocusLabels[card.type]||examFocusLabels.fact;
+ const scale=Math.min(W/1920,H/1080),pad=Math.max(18,Math.round(Math.min(W,H)*.035));
+ const x=W*.065,width=W*.87,maxTextW=width-pad*2-Math.max(8,W*.009);
+ const kickerSize=Math.max(15,Math.round(H*.019)),titleSize=Math.max(28,Math.round(H*.047)),bodySize=Math.max(19,Math.round(H*.029));
+ target.save();target.textAlign='left';target.textBaseline='top';
+ target.font='900 '+titleSize+'px system-ui,-apple-system,"Noto Sans Gujarati",sans-serif';
+ const titleLines=focusWrapLines(target,card.title,maxTextW,2);
+ target.font='650 '+bodySize+'px system-ui,-apple-system,"Noto Sans Gujarati",sans-serif';
+ const bodyLines=card.body?focusWrapLines(target,card.body,maxTextW,3):[];
+ const titleLineH=titleSize*1.14,bodyLineH=bodySize*1.28;
+ const height=Math.min(H*.46,pad*2+kickerSize*1.2+titleLines.length*titleLineH+(bodyLines.length?14+bodyLines.length*bodyLineH:0));
+ let y=card.position==='top'?H*.065:card.position==='bottom'?H-height-H*.065:(H-height)/2;
+ let alpha=1,offsetY=0,zoom=1;
+ const progress=Math.min(1,elapsed/420),ease=1-Math.pow(1-progress,3);
+ if(card.animation==='fade')alpha=ease;
+ else if(card.animation==='slide'){alpha=ease;offsetY=(1-ease)*H*.045;}
+ else if(card.animation==='zoom'){alpha=ease;zoom=.94+.06*ease;}
+ target.globalAlpha=alpha;target.translate(W/2,y+height/2);target.scale(zoom,zoom);target.translate(-W/2,-(y+height/2)+offsetY);
+ const top=y;
+ const gradient=target.createLinearGradient(x,top,x+width,top+height);gradient.addColorStop(0,'rgba(7,15,29,.97)');gradient.addColorStop(1,'rgba(21,32,51,.96)');
+ roundedPath(target,x,top,width,height,Math.max(14,Math.round(H*.018)));
+ target.shadowColor='rgba(0,0,0,.62)';target.shadowBlur=H*.035;target.shadowOffsetY=H*.009;
+ target.fillStyle=gradient;target.fill();target.shadowBlur=0;target.shadowOffsetY=0;
+ target.lineWidth=Math.max(2,H*.0023);target.strokeStyle=meta.accent;target.stroke();
+ target.fillStyle=meta.accent;roundedPath(target,x,top,Math.max(8,W*.008),height,Math.max(5,H*.009));target.fill();
+ let cursorY=top+pad*.72;
+ target.fillStyle=meta.accent;target.font='900 '+kickerSize+'px system-ui,-apple-system,"Noto Sans Gujarati",sans-serif';target.letterSpacing='2px';target.fillText(card.kicker,x+pad,cursorY,maxTextW);cursorY+=kickerSize*1.65;
+ target.fillStyle='#ffffff';target.font='900 '+titleSize+'px system-ui,-apple-system,"Noto Sans Gujarati",sans-serif';
+ titleLines.forEach(line=>{target.fillText(line,x+pad,cursorY,maxTextW);cursorY+=titleLineH;});
+ if(bodyLines.length){
+  cursorY+=8;target.fillStyle='#d9e5f5';target.font='650 '+bodySize+'px system-ui,-apple-system,"Noto Sans Gujarati",sans-serif';
+  bodyLines.forEach(line=>{target.fillText(line,x+pad,cursorY,maxTextW);cursorY+=bodyLineH;});
+ }
+ target.restore();
+}
+function initExamFocusControls(){
+ const defaults={fact:'IMPORTANT FACT',alert:'EXAM ALERT',article:'ARTICLE / SECTION',pyq:'PREVIOUS YEAR QUESTION',remember:'REMEMBER THIS',formula:'FORMULA / KEY POINT'};
+ document.querySelectorAll('[data-focus-preset]').forEach(button=>button.addEventListener('click',()=>{
+  const type=button.dataset.focusPreset;$('examFocusType').value=type;$('examFocusTitle').value=defaults[type]||'';
+  $('examFocusBody').focus();
+ }));
+ $('examFocusShow').addEventListener('click',showExamFocusCard);
+ $('examFocusHide').addEventListener('click',hideExamFocusCard);
+}
+initExamFocusControls();
+
+function drawScene(){
  if(recording&&stoppingRecording&&outroStartedAt&&outroCardEnabled.checked){
   drawBrandTitleCard('outro',performance.now()-outroStartedAt);drawProgressBar(ctx);drawRAF=requestAnimationFrame(drawScene);return;
  }
@@ -1844,7 +2047,9 @@ renderChapters();
    drawPip(canvas.width*pip.x,canvas.height*pip.y,w,hh);
   }
  }
- drawMotionGraphic(ctx);\n drawSmartCaptions(ctx);\n \n 
+ drawMotionGraphic(ctx);
+ drawSmartCaptions(ctx);
+ drawExamFocus(ctx);
  if(recording&&inkCanvas.style.display!=='none'&&mode!=='camera')ctx.drawImage(inkCanvas,0,0,canvas.width,canvas.height);
  drawGuides();
  drawLowerThird();
@@ -2048,57 +2253,195 @@ function startDrag(e){
  const end=()=>{pipDragBar.removeEventListener('pointermove',move);pipDragBar.removeEventListener('pointerup',end);pipDragBar.removeEventListener('pointercancel',end);if(typeof scheduleRecorderDefaultsSave==='function')scheduleRecorderDefaultsSave();};
  pipDragBar.addEventListener('pointermove',move);pipDragBar.addEventListener('pointerup',end);pipDragBar.addEventListener('pointercancel',end);
 }
-function getInkPoint(e){const r=inkCanvas.getBoundingClientRect();return{x:(e.clientX-r.left)*inkCanvas.width/r.width,y:(e.clientY-r.top)*inkCanvas.height/r.height};}
+function getInkPoint(e){
+ const r=inkCanvas.getBoundingClientRect();
+ return{x:Math.max(0,Math.min(1,(e.clientX-r.left)/Math.max(1,r.width))),y:Math.max(0,Math.min(1,(e.clientY-r.top)/Math.max(1,r.height)))};
+}
 function inkPressureScale(point){
  if(!$('inkPressure').checked||point.pointerType!=='pen'||!Number.isFinite(point.pressure)||point.pressure<=0)return 1;
  return .48+Math.max(0,Math.min(1,point.pressure))*.92;
 }
-function inkStyle(point){
- ink.lineCap='round';ink.lineJoin='round';
- const marker=activeTool==='highlighter',eraser=activeTool==='eraser';
- const base=marker?Number($('highlightWidth').value):Number($('inkWidth').value);
- ink.lineWidth=Math.max(1,base*inkPressureScale(point||{}));
- ink.globalCompositeOperation=eraser?'destination-out':'source-over';
- ink.globalAlpha=marker?Number($('highlightOpacity').value)/100:1;
- ink.strokeStyle=marker?$('highlightColor').value:$('inkColor').value;
- ink.fillStyle=ink.strokeStyle;
+function annotationPointScale(point,action){
+ if(!action.pressure||action.pointerType!=='pen'||!Number.isFinite(point.pressure)||point.pressure<=0)return 1;
+ return .48+Math.max(0,Math.min(1,point.pressure))*.92;
+}
+function annotationCommit(action){
+ if(!action)return;
+ annotationHistory.push(action);
+ if(annotationHistory.length>180)annotationHistory.shift();
+ annotationRedo.length=0;
+ updateAnnotationHistoryButtons();
+}
+function updateAnnotationHistoryButtons(){
+ const undo=$('undoInk'),redo=$('redoInk'),fsUndo=$('fsUndoInk'),fsRedo=$('fsRedoInk');
+ if(undo)undo.disabled=annotationHistory.length===0;
+ if(redo)redo.disabled=annotationRedo.length===0;
+ if(fsUndo)fsUndo.disabled=annotationHistory.length===0;
+ if(fsRedo)fsRedo.disabled=annotationRedo.length===0;
+}
+function drawAnnotationItem(target,item){
+ if(!item)return;
+ if(item.kind==='clear'){target.clearRect(0,0,inkCanvas.width,inkCanvas.height);return;}
+ const W=inkCanvas.width,H=inkCanvas.height;
+ target.save();target.lineCap='round';target.lineJoin='round';
+ const x=v=>v*W,y=v=>v*H;
+ if(item.kind==='stroke'){
+  target.globalCompositeOperation=item.tool==='eraser'?'destination-out':'source-over';
+  target.globalAlpha=item.tool==='highlighter'?item.opacity:1;
+  target.strokeStyle=item.tool==='highlighter'?item.highlightColor:item.color;
+  target.fillStyle=target.strokeStyle;
+  const points=item.points||[];
+  if(points.length){
+   const first=points[0],fx=x(first.x),fy=y(first.y);
+   target.lineWidth=Math.max(1,item.width*annotationPointScale(first,item));
+   target.beginPath();target.arc(fx,fy,Math.max(1,target.lineWidth/2),0,Math.PI*2);target.fill();
+   let previous=first,previousMid={x:first.x,y:first.y};
+   for(let i=1;i<points.length;i++){
+    const point=points[i],mid={x:(previous.x+point.x)/2,y:(previous.y+point.y)/2};
+    target.lineWidth=Math.max(1,item.width*annotationPointScale(point,item));
+    target.beginPath();target.moveTo(x(previousMid.x),y(previousMid.y));
+    target.quadraticCurveTo(x(previous.x),y(previous.y),x(mid.x),y(mid.y));target.stroke();
+    previous=point;previousMid=mid;
+   }
+   if(points.length>1){
+    target.lineWidth=Math.max(1,item.width*annotationPointScale(previous,item));
+    target.beginPath();target.moveTo(x(previousMid.x),y(previousMid.y));
+    target.quadraticCurveTo(x(previous.x),y(previous.y),x(previous.x),y(previous.y));target.stroke();
+   }
+  }
+ }else if(item.kind==='shape'){
+  const sx=x(item.start.x),sy=y(item.start.y),ex=x(item.end.x),ey=y(item.end.y),dx=ex-sx,dy=ey-sy;
+  target.globalCompositeOperation='source-over';target.globalAlpha=1;
+  target.strokeStyle=item.color;target.fillStyle=item.color;target.lineWidth=Math.max(1,item.width);
+  target.beginPath();
+  if(item.tool==='line'){target.moveTo(sx,sy);target.lineTo(ex,ey);target.stroke();}
+  else if(item.tool==='arrow'){
+   const angle=Math.atan2(dy,dx),head=Math.max(item.width*4,18);
+   target.moveTo(sx,sy);target.lineTo(ex,ey);target.stroke();
+   target.beginPath();target.moveTo(ex,ey);
+   target.lineTo(ex-head*Math.cos(angle-.48),ey-head*Math.sin(angle-.48));
+   target.lineTo(ex-head*Math.cos(angle+.48),ey-head*Math.sin(angle+.48));
+   target.closePath();target.fill();
+  }else if(item.tool==='rectangle'){
+   target.strokeRect(sx,sy,dx,dy);
+  }else if(item.tool==='ellipse'){
+   const rx=Math.abs(dx)/2,ry=Math.abs(dy)/2;
+   target.ellipse((sx+ex)/2,(sy+ey)/2,Math.max(1,rx),Math.max(1,ry),0,0,Math.PI*2);target.stroke();
+  }
+ }else if(item.kind==='text'){
+  target.globalCompositeOperation='source-over';target.globalAlpha=1;
+  target.fillStyle=item.color;target.shadowColor='rgba(0,0,0,.82)';target.shadowBlur=Math.max(4,W/500);
+  const size=Math.max(18,item.size*W);target.font='750 '+size+'px system-ui,-apple-system,"Noto Sans Gujarati",sans-serif';
+  target.textBaseline='top';const lines=String(item.text||'').split(/\r?\n/);
+  lines.forEach((line,index)=>target.fillText(line,x(item.x),y(item.y)+index*size*1.25,W*.8));
+ }
+ target.restore();
+}
+function redrawAnnotationHistory(previewAction=null){
+ ink.clearRect(0,0,inkCanvas.width,inkCanvas.height);
+ annotationHistory.forEach(item=>drawAnnotationItem(ink,item));
+ if(previewAction)drawAnnotationItem(ink,previewAction);
+}
+function undoAnnotation(){
+ if(!annotationHistory.length)return;
+ annotationRedo.push(annotationHistory.pop());redrawAnnotationHistory();updateAnnotationHistoryButtons();
+ const status=$('annotationStatus');if(status)status.textContent='Last annotation undone. Tap Redo to restore it.';
+}
+function redoAnnotation(){
+ if(!annotationRedo.length)return;
+ annotationHistory.push(annotationRedo.pop());redrawAnnotationHistory();updateAnnotationHistoryButtons();
+ const status=$('annotationStatus');if(status)status.textContent='Annotation restored.';
+}
+function clearAnnotations(){
+ if(!annotationHistory.length)return;
+ annotationCommit({kind:'clear'});redrawAnnotationHistory();toolTray.hidden=true;
+ const status=$('annotationStatus');if(status)status.textContent='Canvas cleared. Use Undo to restore the previous annotations.';
+}
+function setAnnotationTool(tool){
+ activeTool=tool;
+ document.querySelectorAll('[data-tool]').forEach(button=>{
+  const selected=button.dataset.tool===tool;
+  button.classList.toggle('active',selected);button.setAttribute('aria-pressed',selected?'true':'false');
+ });
+ inkCanvas.classList.toggle('enabled',tool!=='none');
+ inkCanvas.style.cursor=tool==='none'?'default':tool==='text'?'text':(['line','arrow','rectangle','ellipse'].includes(tool)?'crosshair':'crosshair');
+ const status=$('annotationStatus');
+ if(status){
+  const labels={pen:'Pen selected · draw freehand',highlighter:'Highlighter selected · transparent marker',line:'Line selected · drag from start to end',arrow:'Arrow selected · drag to point at a detail',rectangle:'Rectangle selected · drag around a key area',ellipse:'Circle selected · drag around a point',eraser:'Eraser selected · erase by drawing over ink',text:'Text selected · type in the text field, then tap the slide',none:'Present mode · drawing is off; slide controls are ready'};
+  status.textContent=labels[tool]||'Annotation tool ready.';
+ }
+ syncStagePresenterDock();
+}
+function inkStyleForAction(target,action,point){
+ target.lineCap='round';target.lineJoin='round';
+ target.globalCompositeOperation=action.tool==='eraser'?'destination-out':'source-over';
+ target.globalAlpha=action.tool==='highlighter'?action.opacity:1;
+ target.strokeStyle=action.tool==='highlighter'?action.highlightColor:action.color;
+ target.fillStyle=target.strokeStyle;
+ target.lineWidth=Math.max(1,action.width*annotationPointScale(point,action));
 }
 function inkStart(e){
- if(toolTray.contains(e.target)||drawing)return;
+ if(toolTray.contains(e.target)||drawing||activeTool==='none')return;
+ e.preventDefault();
+ const p=getInkPoint(e);
  if(activeTool==='text'){
-  e.preventDefault();const text=prompt('Enter text to place on this slide:');
-  if(text){const p=getInkPoint(e);ink.save();ink.globalAlpha=1;ink.fillStyle=$('inkColor').value;ink.font='bold '+Math.round(canvas.width/48)+'px system-ui';ink.shadowColor='#000';ink.shadowBlur=5;ink.fillText(text,p.x,p.y);ink.restore();}return;
+  const text=$('annotationTextValue').value.trim();
+  if(!text){$('annotationTextValue').focus();$('annotationStatus').textContent='Type the text first, then tap the slide to place it.';return;}
+  const item={kind:'text',text,x:p.x,y:p.y,color:$('inkColor').value,size:.027};
+  annotationCommit(item);redrawAnnotationHistory();$('annotationTextValue').value='';
+  $('annotationStatus').textContent='Text placed on the slide. Use Undo to remove it.';return;
  }
- e.preventDefault();drawing=true;lastInkPointerId=e.pointerId;
+ drawing=true;lastInkPointerId=e.pointerId;
  try{inkCanvas.setPointerCapture(e.pointerId);}catch{}
- const p=getInkPoint(e);lastInkPoint=p;lastInkMidpoint=p;inkStyle(e);
- // Round dab prevents an unpainted first frame on touch and stylus input.
- ink.beginPath();ink.arc(p.x,p.y,Math.max(1,ink.lineWidth/2),0,Math.PI*2);ink.fill();
+ if(['line','arrow','rectangle','ellipse'].includes(activeTool)){
+  currentAnnotation={kind:'shape',tool:activeTool,start:p,end:p,color:$('inkColor').value,width:Number($('inkWidth').value)};
+  redrawAnnotationHistory(currentAnnotation);
+ }else{
+  currentAnnotation={kind:'stroke',tool:activeTool,color:$('inkColor').value,highlightColor:$('highlightColor').value,width:activeTool==='highlighter'?Number($('highlightWidth').value):Number($('inkWidth').value),opacity:Number($('highlightOpacity').value)/100,pressure:$('inkPressure').checked,pointerType:e.pointerType||'mouse',points:[{x:p.x,y:p.y,pressure:e.pressure,pointerType:e.pointerType}]};
+  inkStyleForAction(ink,currentAnnotation,currentAnnotation.points[0]);
+  ink.beginPath();ink.arc(p.x*inkCanvas.width,p.y*inkCanvas.height,Math.max(1,ink.lineWidth/2),0,Math.PI*2);ink.fill();
+  lastInkPoint=p;lastInkMidpoint=p;
+ }
 }
 function inkMove(e){
- if(!drawing||!lastInkPoint||e.pointerId!==lastInkPointerId)return;
+ if(!drawing||!currentAnnotation||e.pointerId!==lastInkPointerId)return;
  const coalesced=typeof e.getCoalescedEvents==='function'?e.getCoalescedEvents():[];
  const events=coalesced.length?coalesced:[e];
  for(const point of events){
-  const p=getInkPoint(point),dx=p.x-lastInkPoint.x,dy=p.y-lastInkPoint.y;
+  const p=getInkPoint(point);
+  if(currentAnnotation.kind==='shape'){
+   currentAnnotation.end=p;redrawAnnotationHistory(currentAnnotation);continue;
+  }
+  const previous=currentAnnotation.points[currentAnnotation.points.length-1];
+  const dx=(p.x-previous.x)*inkCanvas.width,dy=(p.y-previous.y)*inkCanvas.height;
   if(dx*dx+dy*dy<.35*.35)continue;
-  const midpoint={x:(lastInkPoint.x+p.x)/2,y:(lastInkPoint.y+p.y)/2};
-  inkStyle(point);
-  // Quadratic midpoint interpolation smooths uneven touch/stylus samples without delaying the stroke.
-  ink.beginPath();ink.moveTo(lastInkMidpoint.x,lastInkMidpoint.y);
-  ink.quadraticCurveTo(lastInkPoint.x,lastInkPoint.y,midpoint.x,midpoint.y);ink.stroke();
-  lastInkPoint=p;lastInkMidpoint=midpoint;
+  const midpoint={x:(lastInkMidpoint.x+p.x)/2,y:(lastInkMidpoint.y+p.y)/2};
+  const pointData={x:p.x,y:p.y,pressure:point.pressure,pointerType:point.pointerType};
+  inkStyleForAction(ink,currentAnnotation,pointData);
+  ink.beginPath();ink.moveTo(lastInkMidpoint.x*inkCanvas.width,lastInkMidpoint.y*inkCanvas.height);
+  ink.quadraticCurveTo(previous.x*inkCanvas.width,previous.y*inkCanvas.height,midpoint.x*inkCanvas.width,midpoint.y*inkCanvas.height);ink.stroke();
+  currentAnnotation.points.push(pointData);lastInkPoint=p;lastInkMidpoint=midpoint;
  }
 }
 function inkEnd(e){
- if(!drawing)return;
+ if(!drawing||!currentAnnotation)return;
  if(e&&e.pointerId!==undefined&&e.pointerId!==lastInkPointerId)return;
- if(lastInkPoint&&lastInkMidpoint){
-  ink.beginPath();ink.moveTo(lastInkMidpoint.x,lastInkMidpoint.y);
-  ink.quadraticCurveTo(lastInkPoint.x,lastInkPoint.y,lastInkPoint.x,lastInkPoint.y);ink.stroke();
+ if(currentAnnotation.kind==='stroke'&&currentAnnotation.points.length>1){
+  const previous=currentAnnotation.points[currentAnnotation.points.length-1],last=previous;
+  const endMid=lastInkMidpoint||last;
+  inkStyleForAction(ink,currentAnnotation,last);
+  ink.beginPath();ink.moveTo(endMid.x*inkCanvas.width,endMid.y*inkCanvas.height);
+  ink.quadraticCurveTo(last.x*inkCanvas.width,last.y*inkCanvas.height,last.x*inkCanvas.width,last.y*inkCanvas.height);ink.stroke();
  }
- drawing=false;lastInkPoint=null;lastInkMidpoint=null;lastInkPointerId=null;
- ink.globalAlpha=1;ink.globalCompositeOperation='source-over';
+ const finished=currentAnnotation;
+ if(finished.kind==='shape'){
+  const dx=(finished.end.x-finished.start.x)*inkCanvas.width,dy=(finished.end.y-finished.start.y)*inkCanvas.height;
+  if(Math.hypot(dx,dy)<3){redrawAnnotationHistory();}else{annotationCommit(finished);redrawAnnotationHistory();}
+ }else{
+  annotationCommit(finished);
+ }
+ drawing=false;currentAnnotation=null;lastInkPoint=null;lastInkMidpoint=null;lastInkPointerId=null;
+ ink.globalAlpha=1;ink.globalCompositeOperation='source-over';updateAnnotationHistoryButtons();
 }
 function updateInkSettingLabels(){
  $('inkWidthVal').textContent=$('inkWidth').value+' px';
@@ -2775,15 +3118,35 @@ fsCameraOpacityToggle.onclick=()=>{
  fsCameraOpacityToggle.classList.toggle('active',open);
  fsCameraOpacityToggle.setAttribute('aria-expanded',String(open));
 };
-annotationFab.onclick=()=>{toolTray.hidden=!toolTray.hidden;inkCanvas.classList.add('enabled');};
-document.querySelectorAll('[data-tool]').forEach(b=>b.onclick=()=>{activeTool=b.dataset.tool;document.querySelectorAll('[data-tool]').forEach(x=>{const selected=x===b;x.classList.toggle('active',selected);x.setAttribute('aria-pressed',selected?'true':'false');});toolTray.hidden=true;inkCanvas.classList.add('enabled');syncStagePresenterDock();});
-document.querySelectorAll('[data-stage-tool]').forEach(b=>b.onclick=()=>{const tool=document.querySelector('[data-tool="'+b.dataset.stageTool+'"]');if(tool)tool.click();});
-$('fsClearInk').onclick=()=>$('clearInk').click();
+annotationFab.onclick=()=>{
+ const opening=toolTray.hidden;toolTray.hidden=!opening;
+ if(opening&&activeTool==='none')setAnnotationTool('pen');
+ if(opening)inkCanvas.classList.add('enabled');
+};
+$('annotationTrayClose').onclick=()=>{toolTray.hidden=true;};
+document.querySelectorAll('[data-tool]').forEach(button=>button.addEventListener('click',()=>{
+ setAnnotationTool(button.dataset.tool);
+ if(button.dataset.tool!=='none')toolTray.hidden=true;
+}));
+document.querySelectorAll('[data-stage-tool]').forEach(button=>button.addEventListener('click',()=>{
+ const tool=button.dataset.stageTool;
+ if(tool==='undo'){undoAnnotation();return;}
+ if(tool==='redo'){redoAnnotation();return;}
+ if(tool==='clear'){clearAnnotations();return;}
+ setAnnotationTool(tool);
+}));
+$('fsClearInk').onclick=clearAnnotations;
+$('fsUndoInk').onclick=undoAnnotation;
+$('fsRedoInk').onclick=redoAnnotation;
+$('undoInk').onclick=undoAnnotation;
+$('redoInk').onclick=redoAnnotation;
+$('clearInk').onclick=clearAnnotations;
+document.querySelectorAll('[data-ink-color]').forEach(button=>button.addEventListener('click',()=>{$('inkColor').value=button.dataset.inkColor;updateInkSettingLabels();}));
+document.querySelectorAll('[data-ink-width]').forEach(button=>button.addEventListener('click',()=>{$('inkWidth').value=button.dataset.inkWidth;updateInkSettingLabels();}));
 $('fsRecordToggle').onclick=()=>{if(recording)stopBtn.click();else recordBtn.click();syncStagePresenterDock();};
 $('fsPauseToggle').onclick=()=>{if(recording)pauseBtn.click();syncStagePresenterDock();};
 inkCanvas.addEventListener('pointerdown',inkStart,{passive:false});inkCanvas.addEventListener('pointermove',inkMove,{passive:false});inkCanvas.addEventListener('pointerup',inkEnd);inkCanvas.addEventListener('pointercancel',inkEnd);inkCanvas.addEventListener('lostpointercapture',inkEnd);
-$('clearInk').onclick=()=>{ink.clearRect(0,0,inkCanvas.width,inkCanvas.height);toolTray.hidden=true;};
-$('inkWidth').oninput=()=>$('inkWidthVal').textContent=$('inkWidth').value+' px';
+updateInkSettingLabels();updateAnnotationHistoryButtons();
 prevSlide.onclick=()=>showSlide(slideIndex-1);
 nextSlide.onclick=()=>showSlide(slideIndex+1);
 goSlide.onclick=()=>{const n=Number(slideJump.value);if(Number.isInteger(n)&&n>=1&&n<=slides.length)showSlide(n-1);else showError('Enter a slide number from 1 to '+slides.length+'.');};
