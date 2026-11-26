@@ -1924,7 +1924,7 @@ function drawSmartCaptions(c){if(!(recording?captionEnabled.checked:captionPrevi
 function captionStart(){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){smartCaptionStatus.textContent='Speech recognition unavailable in this browser. Use Chrome or enter captions manually.';return;}if(smartCaptionRecognition){try{smartCaptionRecognition.stop();}catch{}}smartCaptionRecognition=new SR();smartCaptionRecognition.lang=captionRecognitionLanguage.value;smartCaptionRecognition.continuous=true;smartCaptionRecognition.interimResults=true;smartCaptionRecognition.onresult=e=>{let interim='',final='';for(let i=e.resultIndex;i<e.results.length;i++){const t=e.results[i][0].transcript;if(e.results[i].isFinal)final+=t+' ';else interim+=t;}if(final)captionText.value=(captionText.value+' '+final).trim();if(interim){smartCaptionStatus.textContent='Live: '+interim;captionText.dataset.interim=interim;}else{captionText.dataset.interim='';smartCaptionStatus.textContent='Captions active';}captionSave();};smartCaptionRecognition.onerror=e=>{smartCaptionStatus.textContent='Recognition: '+e.error;};smartCaptionRecognition.onend=()=>{smartCaptionRecognition=null;if(captionRestartRequested){captionRestartRequested=false;captionStart();}};captionRestartRequested=false;smartCaptionRecognition.start();smartCaptionStatus.textContent='Listening…';}
 function captionStop(){captionRestartRequested=false;if(smartCaptionRecognition){try{smartCaptionRecognition.stop();}catch{}smartCaptionRecognition=null;}smartCaptionStatus.textContent='Captions stopped';}
 document.getElementById('captionStartBtn').onclick=captionStart;document.getElementById('captionStopBtn').onclick=captionStop;document.getElementById('captionClearBtn').onclick=()=>{captionText.value='';captionSecondLine.value='';captionText.dataset.interim='';captionSave();smartCaptionStatus.textContent='Cleared';};
-\n
+
 // Smart Chapters / bookmarks
 const chapterTitleInput=document.getElementById('chapterTitleInput'),chapterList=document.getElementById('chapterList'),chapterStatus=document.getElementById('chapterStatus');
 let lectureChapters=[];try{lectureChapters=JSON.parse(localStorage.getItem('officerlab-lecture-chapters')||'[]');if(!Array.isArray(lectureChapters))lectureChapters=[];}catch{lectureChapters=[];}
@@ -1935,7 +1935,8 @@ document.getElementById('chapterAddBtn').onclick=()=>{const title=(chapterTitleI
 document.getElementById('chapterClearBtn').onclick=()=>{if(confirm('Clear all lecture bookmarks?')){lectureChapters=[];saveChapters();}};
 document.getElementById('chapterExportBtn').onclick=()=>{if(!lectureChapters.length){chapterStatus.textContent='Add bookmarks first.';return;}const lines=['CHAPTERS / BOOKMARKS','',...lectureChapters.map(ch=>chapterTime(ch.ms)+' '+ch.title+(ch.slide?' (Slide '+ch.slide+')':''))];const blob=new Blob([lines.join('\n')],{type:'text/plain;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='OfficerLab-Lecture-Chapters.txt';a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);chapterStatus.textContent='Chapter list exported.';};
 renderChapters();
-\nconst examFocusLabels={
+
+const examFocusLabels={
  fact:{kicker:'IMPORTANT FACT',accent:'#f5c45f'},
  alert:{kicker:'EXAM ALERT',accent:'#ff7777'},
  article:{kicker:'ARTICLE / SECTION',accent:'#c6b5ff'},
