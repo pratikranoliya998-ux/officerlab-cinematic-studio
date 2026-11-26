@@ -1503,6 +1503,7 @@ function inkStyle(){
  ink.strokeStyle=activeTool==='highlighter'?'#ffeb3b':$('inkColor').value;
 }
 function inkStart(e){
+ if(wisdomModeActive){wisdomInkStart(e);return;}
  if(toolTray.contains(e.target)||drawing)return;
  if(activeTool==='text'){
   e.preventDefault();const text=prompt('Enter text to place on this slide:');
@@ -1515,6 +1516,7 @@ function inkStart(e){
  ink.beginPath();ink.arc(p.x,p.y,Math.max(1,ink.lineWidth/2),0,Math.PI*2);ink.fillStyle=ink.strokeStyle;ink.fill();
 }
 function inkMove(e){
+ if(wisdomModeActive){wisdomInkMove(e);return;}
  if(!drawing||!lastInkPoint||e.pointerId!==lastInkPointerId)return;
  const coalesced=typeof e.getCoalescedEvents==='function'?e.getCoalescedEvents():[];
  const events=coalesced.length?coalesced:[e];inkStyle();
@@ -1530,6 +1532,7 @@ function inkMove(e){
  if(moved)ink.stroke();
 }
 function inkEnd(e){
+ if(wisdomModeActive){wisdomInkEnd(e);return;}
  if(!drawing)return;
  if(e&&e.pointerId!==undefined&&e.pointerId!==lastInkPointerId)return;
  drawing=false;lastInkPoint=null;lastInkPointerId=null;
@@ -1921,10 +1924,19 @@ fsCameraOpacityToggle.onclick=()=>{
  fsCameraOpacityToggle.classList.toggle('active',open);
  fsCameraOpacityToggle.setAttribute('aria-expanded',String(open));
 };
+$('wisdomModeToggle').onclick=()=>setWisdomMode(!wisdomModeActive);
+document.querySelectorAll('[data-wisdom-tool]').forEach(button=>button.onclick=()=>wisdomSetTool(button.dataset.wisdomTool));
+$('wisdomBoard').onchange=()=>startDraw();
+$('wisdomInkWidth').oninput=()=>{$('wisdomInkWidthValue').textContent=$('wisdomInkWidth').value+' px';};
+$('wisdomUndo').onclick=()=>{if(wisdomHistoryIndex>0)wisdomRestoreHistory(wisdomHistoryIndex-1);};
+$('wisdomRedo').onclick=()=>{if(wisdomHistoryIndex<wisdomHistory.length-1)wisdomRestoreHistory(wisdomHistoryIndex+1);};
+$('wisdomAddTopic').onclick=()=>{const label=prompt('Enter the central topic or lesson title:');if(label&&label.trim()){wisdomDrawNodeAt(label.trim(),{x:inkCanvas.width*.5,y:inkCanvas.height*.22});wisdomCommitHistory();}};
+$('wisdomExport').onclick=exportWisdomMap;
+$('wisdomClear').onclick=()=>{ink.clearRect(0,0,inkCanvas.width,inkCanvas.height);wisdomCommitHistory();};
 annotationFab.onclick=()=>{toolTray.hidden=!toolTray.hidden;inkCanvas.classList.add('enabled');};
 document.querySelectorAll('[data-tool]').forEach(b=>b.onclick=()=>{activeTool=b.dataset.tool;document.querySelectorAll('[data-tool]').forEach(x=>{const selected=x===b;x.classList.toggle('active',selected);x.setAttribute('aria-pressed',selected?'true':'false');});toolTray.hidden=true;inkCanvas.classList.add('enabled');syncStagePresenterDock();});
-document.querySelectorAll('[data-stage-tool]').forEach(b=>b.onclick=()=>{const tool=document.querySelector('[data-tool="'+b.dataset.stageTool+'"]');if(tool)tool.click();});
-$('fsClearInk').onclick=()=>$('clearInk').click();
+document.querySelectorAll('[data-stage-tool]').forEach(b=>b.onclick=()=>{if(wisdomModeActive){const w=document.querySelector('[data-wisdom-tool="'+b.dataset.stageTool+'"]');if(w)w.click();return;}const tool=document.querySelector('[data-tool="'+b.dataset.stageTool+'"]');if(tool)tool.click();});
+$('fsClearInk').onclick=()=>{if(wisdomModeActive)$('wisdomClear').click();else $('clearInk').click();};
 $('fsRecordToggle').onclick=()=>{if(recording)stopBtn.click();else recordBtn.click();syncStagePresenterDock();};
 $('fsPauseToggle').onclick=()=>{if(recording)pauseBtn.click();syncStagePresenterDock();};
 inkCanvas.addEventListener('pointerdown',inkStart,{passive:false});inkCanvas.addEventListener('pointermove',inkMove,{passive:false});inkCanvas.addEventListener('pointerup',inkEnd);inkCanvas.addEventListener('pointercancel',inkEnd);inkCanvas.addEventListener('lostpointercapture',inkEnd);
