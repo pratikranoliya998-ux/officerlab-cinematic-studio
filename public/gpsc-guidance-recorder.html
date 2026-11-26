@@ -1315,7 +1315,7 @@ let audioContext=null,audioDestination=null,micGain=null,screenGain=null,micAnal
 
 let layout='pip',pip={x:.77,y:.73},activeTool='pen',drawing=false,slides=[],slideIndex=0,pdfDoc=null,slideSource=null,slideUrls=[],presentationSavedOutputRatio=null;
 let motionGraphics=[],activeMotionGraphicIndex=-1,lastInkMidpoint=null;
-let annotationHistory=[],annotationRedo=[],currentAnnotation=null,examFocusCard=null;
+let annotationHistory=[],annotationRedo=[],annotationSheets=new Map(),activeAnnotationSheetKey='general',currentAnnotation=null,examFocusCard=null;
 let slideLoadVersion=0,slideTransitionFromFrame=null,slideTransitionToFrame=null,slideTransitionStartedAt=0,slideMotionStartedAt=performance.now(),slideContinuousStartedAt=performance.now(),slideContinuousPending=false;
 let sessionId=null,chunkIndex=0,writeQueue=Promise.resolve(),localChunks=[],recording=false,paused=false,recordingStarting=false,stoppingRecording=false,startedAt=0,recordElapsedMs=0,recordSegmentStartedAt=0,testTimeout=null,outroStartedAt=0,outroTimer=null,legacyCaptureActive=false,legacyConverterReady=false;
 let saved=[],recoveryItems=[],activeMediaElement=null,mediaSessionReady=false;
@@ -2161,6 +2161,7 @@ async function startScreen(){
    });
   }
   if(!screenVideo.videoWidth||!screenVideo.videoHeight)throw new Error('Screen capture started without usable video dimensions. Please select the screen again.');
+  switchAnnotationSheet('screen');
   resetScreenCropDetection();
   videoTrack.addEventListener('ended',()=>{stopScreen();});
   if(screenStream.getAudioTracks().length){
@@ -2185,6 +2186,7 @@ async function startScreen(){
  }finally{updateScreenShareHint();}
 }
 function stopScreen(){
+  if(activeAnnotationSheetKey==='screen')switchAnnotationSheet(slideSource&&slides.length?'slide:'+slideIndex:'general');
   resetScreenCropDetection();
  if(screenStream)screenStream.getTracks().forEach(t=>t.stop());screenStream=null;screenVideo.srcObject=null;
  if(screenAudioSource){try{screenAudioSource.disconnect()}catch{}screenAudioSource=null;}if(screenGain){try{screenGain.disconnect()}catch{}screenGain=null;}
@@ -2192,6 +2194,7 @@ function stopScreen(){
 }
 async function loadSlides(files){
  clearError();slideLoadVersion++;clearSlideTransition();slides=[];slideSource=null;slideUrls.forEach(URL.revokeObjectURL);slideUrls=[];pdfDoc=null;
+ annotationSheets.clear();annotationHistory=[];annotationRedo=[];activeAnnotationSheetKey=screenStream?'screen':'general';redrawAnnotationHistory();updateAnnotationHistoryButtons();
  const selected=[...files];if(!selected.length){syncSlideControls();syncVisuals();return;}
  try{
   const pdf=selected.filter(f=>f.type==='application/pdf'||f.name.toLowerCase().endsWith('.pdf'));
@@ -2219,12 +2222,13 @@ async function showSlide(index){
   await page.render({canvasContext:c.getContext('2d'),viewport}).promise;nextSource=c;
  }else nextSource=slides[index].image;
  if(request!==slideLoadVersion)return;
+ switchAnnotationSheet('slide:'+index);
  slideIndex=index;slideSource=nextSource;syncScriptCue();slideMotionStartedAt=performance.now();slideContinuousStartedAt=performance.now();clearSlideTransition();
  if(slideTransitionsEnabled.checked&&previousSource&&previousIndex!==index&&!screenStream&&captureMode.value!=='camera'&&layout!=='split'){
   try{slideTransitionFromFrame=makeSlideTransitionFrame(previousSource);slideTransitionToFrame=makeSlideTransitionFrame(nextSource);slideTransitionStartedAt=performance.now();}
   catch(e){clearSlideTransition();console.warn('Slide crossfade unavailable; using a clean cut.',e);}
  }
- ink.clearRect(0,0,inkCanvas.width,inkCanvas.height);syncSlideControls();syncVisuals();
+ syncSlideControls();syncVisuals();
 }
 function syncSlideControls(){
  slideCount.textContent=slides.length?'Slide '+(slideIndex+1)+' / '+slides.length:'No slides loaded';
@@ -2265,11 +2269,26 @@ function annotationPointScale(point,action){
  if(!action.pressure||action.pointerType!=='pen'||!Number.isFinite(point.pressure)||point.pressure<=0)return 1;
  return .48+Math.max(0,Math.min(1,point.pressure))*.92;
 }
+function storeAnnotationSheet(){
+ annotationSheets.set(activeAnnotationSheetKey,{history:annotationHistory.slice(),redo:annotationRedo.slice()});
+}
+function switchAnnotationSheet(key){
+ if(!key||key===activeAnnotationSheetKey)return;
+ storeAnnotationSheet();
+ activeAnnotationSheetKey=key;
+ const saved=annotationSheets.get(key);
+ annotationHistory=saved?saved.history.slice():[];
+ annotationRedo=saved?saved.redo.slice():[];
+ redrawAnnotationHistory();updateAnnotationHistoryButtons();
+ const status=$('annotationStatus');
+ if(status)status.textContent=key==='screen'?'Screen annotations loaded.':'Slide-specific annotations loaded.';
+}
 function annotationCommit(action){
  if(!action)return;
  annotationHistory.push(action);
  if(annotationHistory.length>180)annotationHistory.shift();
  annotationRedo.length=0;
+ storeAnnotationSheet();
  updateAnnotationHistoryButtons();
 }
 function updateAnnotationHistoryButtons(){
@@ -2344,12 +2363,12 @@ function redrawAnnotationHistory(previewAction=null){
 }
 function undoAnnotation(){
  if(!annotationHistory.length)return;
- annotationRedo.push(annotationHistory.pop());redrawAnnotationHistory();updateAnnotationHistoryButtons();
+ annotationRedo.push(annotationHistory.pop());redrawAnnotationHistory();storeAnnotationSheet();updateAnnotationHistoryButtons();
  const status=$('annotationStatus');if(status)status.textContent='Last annotation undone. Tap Redo to restore it.';
 }
 function redoAnnotation(){
  if(!annotationRedo.length)return;
- annotationHistory.push(annotationRedo.pop());redrawAnnotationHistory();updateAnnotationHistoryButtons();
+ annotationHistory.push(annotationRedo.pop());redrawAnnotationHistory();storeAnnotationSheet();updateAnnotationHistoryButtons();
  const status=$('annotationStatus');if(status)status.textContent='Annotation restored.';
 }
 function clearAnnotations(){
